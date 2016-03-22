@@ -45,16 +45,28 @@ public class ImageAnalysisToolkit
             for(int j = 0; j < ndim.getNT(); j++){
                 for(int k = 0; k < ndim.getNPos(); k++){
                     BatchThread bt = new BatchThread(this,i,j,k);
-                    activeThreads++;
-                    bt.run();
+                    startThread(bt);
+                    System.out.println("Thread launched");
                 }
             }
         }
-        while(activeThreads > 0){}
+        while(activeThreads > 0){
+            try{
+                Thread.currentThread().join(600000);
+                System.out.println(""+activeThreads+" threads currently active");
+            }
+            catch(InterruptedException e){ e.printStackTrace(); }
+        }
         saveImageReports(outname);
     }
     
-    public void threadFinished(){ activeThreads--; }
+    public synchronized void threadFinished(){ activeThreads--; }
+    
+    public synchronized void startThread(BatchThread bt)
+    {
+        activeThreads++;
+        bt.run();
+    }
     
     public void standardAnalysis(int z, int t, int p)
     {
