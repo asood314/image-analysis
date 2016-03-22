@@ -152,7 +152,7 @@ public class NDImage
         int [][][][][][] im;
         if(dimension == WAVELENGTH){
             if(nZ != ndim.getNZ() || nT != ndim.getNT() || width != ndim.getWidth() || height != ndim.getHeight() || npos != ndim.getNPos()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(WAVELENGTH) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths+ndim.getNWavelengths()][nZ][nT][width][height][npos];
@@ -173,7 +173,7 @@ public class NDImage
         }
         else if(dimension == ZSLICE){
             if(nWavelengths != ndim.getNWavelengths() || nT != ndim.getNT() || width != ndim.getWidth() || height != ndim.getHeight() || npos != ndim.getNPos()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(ZSLICE) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths][nZ+ndim.getNZ()][nT][width][height][npos];
@@ -194,7 +194,7 @@ public class NDImage
         }
         else if(dimension == TIMEPOINT){
             if(nWavelengths != ndim.getNWavelengths() || nZ != ndim.getNZ() || width != ndim.getWidth() || height != ndim.getHeight() || npos != ndim.getNPos()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(TIMEPOINT) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths][nZ][nT+ndim.getNT()][width][height][npos];
@@ -215,7 +215,7 @@ public class NDImage
         }
         else if(dimension == WIDTH){
             if(nWavelengths != ndim.getNWavelengths() || nZ != ndim.getNZ() || nT != ndim.getNT() || height != ndim.getHeight() || npos != ndim.getNPos()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(WIDTH) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths][nZ][nT][width+ndim.getWidth()][height][npos];
@@ -236,7 +236,7 @@ public class NDImage
         }
         else if(dimension == HEIGHT){
             if(nWavelengths != ndim.getNWavelengths() || nZ != ndim.getNZ() || width != ndim.getWidth() || nT != ndim.getNT() || npos != ndim.getNPos()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(HEIGHT) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths][nZ][nT][width][height+ndim.getHeight()][npos];
@@ -257,7 +257,7 @@ public class NDImage
         }
         else if(dimension == POSITION){
             if(nWavelengths != ndim.getNWavelengths() || nZ != ndim.getNZ() || width != ndim.getWidth() || nT != ndim.getNT() || height != ndim.getHeight()){
-                System.out.println("Append failed: Dimension mismatch.");
+                System.out.println("Append(POSITION) failed: Dimension mismatch.");
                 return;
             }
             im = new int[nWavelengths][nZ][nT][width][height][npos+ndim.getNPos()];
@@ -267,7 +267,7 @@ public class NDImage
                         for(int x = 0; x < width; x++){
                             for(int y = 0; y < height; y++){
                                 for(int p = 0; p < npos; p++) im[w][z][t][x][y][p] = image[w][z][t][x][y][p];
-                                for(int p = 0; p < ndim.getNPos(); p++) im[w][z][t][x][height+y][p] = ndim.getPixel(w,z,t,x,y,p);
+                                for(int p = 0; p < ndim.getNPos(); p++) im[w][z][t][x][y][npos+p] = ndim.getPixel(w,z,t,x,y,p);
                             }
                         }
                     }

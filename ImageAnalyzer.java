@@ -714,7 +714,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             val = ((b[11] & 0xff) << 24) | ((b[10] & 0xff) << 16) | ((b[9] & 0xff) << 8) | (b[8] & 0xff);
             System.out.println(val);*/
             //NDImage ndi = new NDImage(2,5,"tf8_test.tiff");
-            NDImage ndi = NDImage.loadSamanthaData("/Volumes/ELEMENTS/Samantha Data files/xy4/","20130113-2",4,2,6);
+            NDImage ndi = NDImage.loadSamanthaData("Z:\\Samantha Processed Images\\New Nikon\\Long-term Live Imaging\\SHANK\\20130113\\20130113-2\\Files to Average\\xy4/","20130113-2",4,2,6);
+	    //NDImage ndi = NDImage.loadSamanthaData("/cygdrive/z/Samantha Processed Images/New Nikon/Long-term Live Imaging/SHANK/20130113/20130113-2/Files to Average/xy4/","20130113-2",4,2,6);
             ImageAnalyzer ia = new ImageAnalyzer(ndi,"20130113-2");
             
         }

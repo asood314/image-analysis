@@ -39,7 +39,7 @@ public class ImageAnalysisToolkit
     
     public void setImageReports(ImageReport [] reps){ reports = reps; }
     
-    public void batchProccess(String outname)
+    public void batchProcess(String outname)
     {
         for(int i = 0; i < ndim.getNZ(); i++){
             for(int j = 0; j < ndim.getNT(); j++){
@@ -103,7 +103,7 @@ public class ImageAnalysisToolkit
                 int x2 = Math.min(ndim.getWidth(),i+40);
                 int y1 = Math.max(j-40,0);
                 int y2 = Math.min(ndim.getHeight(),j+40);
-                double zscore = (ndim.getPixel(w,z,t,p,i,j) - ndim.mean(w,z,t,p,x1,x2,y1,y2,outMask)) / std;
+                double zscore = (ndim.getPixel(w,z,t,i,j,p) - ndim.mean(w,z,t,p,x1,x2,y1,y2,outMask)) / std;
                 if(zscore > 1.0) m.setValue(i,j,1);
             }
         }
