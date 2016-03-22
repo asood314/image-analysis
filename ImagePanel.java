@@ -138,9 +138,19 @@ public class ImagePanel extends JPanel
     
     public int getMode(){ return mode; }
     
-    public void setChannels(int[] chan){ channels = chan; }
+    public void setChannels(int[] chan)
+    {
+        if(chan.length < 3){
+            channels = new int[3];
+            for(int i = 0; i < chan.length; i++) channels[i] = chan[i];
+            for(int i = chan.length; i < 3; i++) channels[i] = -1;
+        }
+        channels = chan;
+    }
     
     public void setChannel(int rgb, int wl){ channels[rgb] = wl; }
+    
+    public int getChannel(int chan){ return channels[chan]; }
     
     public int findChannel(int wl){
         for(int i = 0; i < channels.length; i++){

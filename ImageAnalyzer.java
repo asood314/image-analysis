@@ -19,16 +19,20 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSlider;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
-public class ImageAnalyzer extends JFrame implements ActionListener, MouseListener
+public class ImageAnalyzer extends JFrame implements ActionListener, MouseListener, ChangeListener
 {
     
     private ImagePanel imPanel;
@@ -49,6 +53,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
     private JMenu analyzeMenu;
     private JMenu toolMenu;
     private JMenuItem menuItem;
+    private JSlider zslide, tslide, pslide;
+    private JButton znext,zback,tnext,tback,pnext,pback;
     private JDialog jd;
     private JTextField loadField;
     private JTextField wField;
@@ -92,11 +98,56 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         jintPanel = new Jint();
         jintPanel.setVar(imName,ndim);
         jintPanel.setVar(imName+"_reports",reports);
-        codePane = new JScrollPane(jintPanel);
+        //codePane = new JScrollPane(jintPanel);
         bottomPanel = new JPanel();
         bottomPanel.setLayout(new BoxLayout(bottomPanel, BoxLayout.Y_AXIS));
-        bottomPanel.add(codePane);
-        bottomPanel.setPreferredSize(new Dimension(1000,200));
+        //bottomPanel.add(codePane);
+        //bottomPanel.setPreferredSize(new Dimension(1000,200));
+        JPanel zPanel = new JPanel();
+        zPanel.setLayout(new BoxLayout(zPanel,BoxLayout.X_AXIS));
+        zslide = new JSlider(javax.swing.SwingConstants.HORIZONTAL,0,ndim.getNZ()-1,imPanel.getZSlice());
+        zslide.addChangeListener(this);
+        zback = new NextButton(false);
+        zback.addActionListener(this);
+        zback.setActionCommand("zback");
+        znext = new NextButton(true);
+        znext.addActionListener(this);
+        znext.setActionCommand("znext");
+        zPanel.add(new JLabel("z slice:"));
+        zPanel.add(zback);
+        zPanel.add(zslide);
+        zPanel.add(znext);
+        bottomPanel.add(zPanel);
+        JPanel tPanel = new JPanel();
+        tPanel.setLayout(new BoxLayout(tPanel,BoxLayout.X_AXIS));
+        tslide = new JSlider(javax.swing.SwingConstants.HORIZONTAL,0,ndim.getNT()-1,imPanel.getTimepoint());
+        tslide.addChangeListener(this);
+        tback = new NextButton(false);
+        tback.addActionListener(this);
+        tback.setActionCommand("tback");
+        tnext = new NextButton(true);
+        tnext.addActionListener(this);
+        tnext.setActionCommand("tnext");
+        tPanel.add(new JLabel("time point:"));
+        tPanel.add(tback);
+        tPanel.add(tslide);
+        tPanel.add(tnext);
+        bottomPanel.add(tPanel);
+        JPanel pPanel = new JPanel();
+        pPanel.setLayout(new BoxLayout(pPanel,BoxLayout.X_AXIS));
+        pslide = new JSlider(javax.swing.SwingConstants.HORIZONTAL,0,ndim.getNPos()-1,imPanel.getPosition());
+        pslide.addChangeListener(this);
+        pback = new NextButton(false);
+        pback.addActionListener(this);
+        pback.setActionCommand("pback");
+        pnext = new NextButton(true);
+        pnext.addActionListener(this);
+        pnext.setActionCommand("pnext");
+        pPanel.add(new JLabel("position:"));
+        pPanel.add(pback);
+        pPanel.add(pslide);
+        pPanel.add(pnext);
+        bottomPanel.add(pPanel);
         loadField = new JTextField(50);
         loadField.addActionListener(this);
         wField = new JTextField(3);
@@ -257,7 +308,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         setJMenuBar(menuBar);
         getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
         getContentPane().add(topPanel);
-        //getContentPane().add(bottomPanel);
+        getContentPane().add(bottomPanel);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         //pack();
         setVisible(true);
@@ -563,6 +614,30 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             analysisTools.findSynapses(z,t,p);
             System.out.println("Done.");
         }
+        else if(cmd.equals("zback")){
+            int z = zslide.getValue();
+            if(z > 0) zslide.setValue(z-1);
+        }
+        else if(cmd.equals("znext")){
+            int z = zslide.getValue()+1;
+            if(z < ndim.getNZ()) zslide.setValue(z);
+        }
+        else if(cmd.equals("tback")){
+            int t = tslide.getValue();
+            if(t > 0) tslide.setValue(t-1);
+        }
+        else if(cmd.equals("tnext")){
+            int t = tslide.getValue()+1;
+            if(t < ndim.getNT()) tslide.setValue(t);
+        }
+        else if(cmd.equals("pback")){
+            int p = pslide.getValue();
+            if(p > 0) pslide.setValue(p-1);
+        }
+        else if(cmd.equals("pnext")){
+            int p = pslide.getValue()+1;
+            if(p < ndim.getNPos()) pslide.setValue(p);
+        }
         Runtime.getRuntime().gc();
     }
     
@@ -605,6 +680,22 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int trueX2 = (int)(e.getX() / imPanel.getZoom());
             int trueY2 = (int)(e.getY() / imPanel.getZoom());
             imPanel.setDisplayRegion(Math.min(trueX1,trueX2),Math.min(trueY1,trueY2),Math.abs(trueX1-trueX2),Math.abs(trueY1-trueY2));
+            imPanel.repaint();
+        }
+    }
+    
+    public void stateChanged(ChangeEvent e)
+    {
+        if(e.getSource() == zslide){
+            imPanel.setZSlice(zslide.getValue());
+            imPanel.repaint();
+        }
+        if(e.getSource() == tslide){
+            imPanel.setTimepoint(tslide.getValue());
+            imPanel.repaint();
+        }
+        if(e.getSource() == pslide){
+            imPanel.setPosition(pslide.getValue());
             imPanel.repaint();
         }
     }

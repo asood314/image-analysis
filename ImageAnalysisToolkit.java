@@ -27,17 +27,25 @@ public class ImageAnalysisToolkit
     private NDImage ndim;
     private ImageReport[] reports;
     private int activeThreads;
+    private int signalDetectionWindow;
+    private int punctaDetectionWindow;
     
     public ImageAnalysisToolkit(NDImage im, ImageReport[] r)
     {
         ndim = im;
         reports = r;
         activeThreads = 0;
+        signalDetectionWindow = 40;
+        punctaDetectionWindow = 20;
     }
     
     public void setImage(NDImage im){ ndim = im; }
     
     public void setImageReports(ImageReport [] reps){ reports = reps; }
+    
+    public void setSignalDetectionWindow(int sdt){ signalDetectionWindow = sdt; }
+    
+    public void setPunctaDetectionWindow(int pdt){ punctaDetectionWindow = pdt; }
     
     public void batchProcess(String outname)
     {
@@ -111,10 +119,10 @@ public class ImageAnalysisToolkit
         double std = ndim.std(w,z,t,p,outMask);
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
-                int x1 = Math.max(i-40,0);
-                int x2 = Math.min(ndim.getWidth(),i+40);
-                int y1 = Math.max(j-40,0);
-                int y2 = Math.min(ndim.getHeight(),j+40);
+                int x1 = Math.max(i-signalDetectionWindow,0);
+                int x2 = Math.min(ndim.getWidth(),i+signalDetectionWindow);
+                int y1 = Math.max(j-signalDetectionWindow,0);
+                int y2 = Math.min(ndim.getHeight(),j+signalDetectionWindow);
                 double zscore = (ndim.getPixel(w,z,t,i,j,p) - ndim.mean(w,z,t,p,x1,x2,y1,y2,outMask)) / std;
                 if(zscore > 1.0) m.setValue(i,j,1);
             }
@@ -171,10 +179,10 @@ public class ImageAnalysisToolkit
         Mask m = r.getSignalMask(w);
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
-                int x1 = Math.max(i-20,0);
-                int x2 = Math.min(ndim.getWidth(),i+20);
-                int y1 = Math.max(j-20,0);
-                int y2 = Math.min(ndim.getHeight(),j+20);
+                int x1 = Math.max(i-punctaDetectionWindow,0);
+                int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
+                int y1 = Math.max(j-punctaDetectionWindow,0);
+                int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
                 double signalFraction = ((double)r.getSignalMask(w).sum(x1,x2,y1,y2)) / ((x2-x1)*(y2-y1));
                 if(signalFraction < 0.05){
                     zscores[i][j] = 0;
