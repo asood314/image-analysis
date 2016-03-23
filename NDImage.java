@@ -786,6 +786,76 @@ public class NDImage
         }
         return bi;
     }
+
+    public double median(int wl, int z, int t, int p)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int sum = 0;
+	int target = width*height/2;
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double median(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int sum = 0;
+	int target = (x2-x1)*(y2-y1)/2;
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double median(int wl, int z, int t, int p, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	int sum = 0;
+	target = target/2;
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double median(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	int sum = 0;
+	target = target/2;
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
     
     public double mean(int wl, int z, int t, int p)
     {

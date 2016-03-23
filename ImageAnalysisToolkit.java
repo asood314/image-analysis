@@ -1,10 +1,13 @@
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Vector;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class ImageAnalysisToolkit
 {
-    public class BatchThread extends Thread
+    public class BatchThread implements Runnable
     {
         private ImageAnalysisToolkit analyzer;
         private int zslice,timepoint,position;
@@ -20,7 +23,7 @@ public class ImageAnalysisToolkit
         public void run()
         {
             analyzer.standardAnalysis(zslice,timepoint,position);
-            analyzer.threadFinished();
+            //analyzer.threadFinished();
         }
     }
     
@@ -47,33 +50,38 @@ public class ImageAnalysisToolkit
     
     public void setPunctaDetectionWindow(int pdt){ punctaDetectionWindow = pdt; }
     
-    public void batchProcess(String outname)
+    public void batchProcess(String outname) throws InterruptedException
     {
+	ExecutorService executor = Executors.newFixedThreadPool(ndim.getNZ()*ndim.getNT()*ndim.getNPos());
         for(int i = 0; i < ndim.getNZ(); i++){
             for(int j = 0; j < ndim.getNT(); j++){
                 for(int k = 0; k < ndim.getNPos(); k++){
                     BatchThread bt = new BatchThread(this,i,j,k);
-                    startThread(bt);
+                    //addThread();
+		    //bt.run();
+		    executor.execute(bt);
                     System.out.println("Thread launched");
                 }
             }
         }
-        while(activeThreads > 0){
+	executor.shutdown();
+        while(!executor.awaitTermination(10,TimeUnit.MINUTES)){
+	    /*
             try{
                 Thread.currentThread().join(600000);
                 System.out.println(""+activeThreads+" threads currently active");
             }
             catch(InterruptedException e){ e.printStackTrace(); }
+	    */
         }
         saveImageReports(outname);
     }
     
     public synchronized void threadFinished(){ activeThreads--; }
     
-    public synchronized void startThread(BatchThread bt)
+    public synchronized void addThread()
     {
         activeThreads++;
-        bt.run();
     }
     
     public void standardAnalysis(int z, int t, int p)
@@ -92,7 +100,7 @@ public class ImageAnalysisToolkit
     
     public Mask findOutlierMask(int w, int z, int t, int p)
     {
-        double mean = ndim.mean(w,z,t,p);
+        double mean = ndim.median(w,z,t,p);
         double std = ndim.std(w,z,t,p);
         Mask m = new Mask(ndim.getWidth(),ndim.getHeight(),false);
         for(int i = 0; i < ndim.getWidth(); i++){
@@ -123,7 +131,7 @@ public class ImageAnalysisToolkit
                 int x2 = Math.min(ndim.getWidth(),i+signalDetectionWindow);
                 int y1 = Math.max(j-signalDetectionWindow,0);
                 int y2 = Math.min(ndim.getHeight(),j+signalDetectionWindow);
-                double zscore = (ndim.getPixel(w,z,t,i,j,p) - ndim.mean(w,z,t,p,x1,x2,y1,y2,outMask)) / std;
+                double zscore = (ndim.getPixel(w,z,t,i,j,p) - ndim.median(w,z,t,p,x1,x2,y1,y2,outMask)) / std;
                 if(zscore > 1.0) m.setValue(i,j,1);
             }
         }
@@ -188,7 +196,7 @@ public class ImageAnalysisToolkit
                     zscores[i][j] = 0;
                     continue;
                 }
-                double localMean = ndim.mean(w,z,t,p,x1,x2,y1,y2,m);
+                double localMean = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
                 double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
                 zscores[i][j] = (ndim.getPixel(w,z,t,i,j,p) - localMean) / localStd;
             }

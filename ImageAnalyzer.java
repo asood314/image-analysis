@@ -254,6 +254,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm synapses");
         maskMenu.add(menuItem);
+	menuItem = new JMenuItem("Stats");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("stats");
+        viewMenu.add(menuItem);
         menuItem = new JMenuItem("Zoom In");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("zin");
@@ -509,6 +513,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             imPanel.setZoom(imPanel.getZoom() - 0.1);
             imPanel.repaint();
         }
+	else if(cmd.equals("zreg")){
+	    imPanel.setZoomToRegion(true);
+	    imPanel.repaint();
+	}
         else if(cmd.equals("unzoom")){
             imPanel.unzoom();
             imPanel.repaint();
