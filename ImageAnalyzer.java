@@ -69,6 +69,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
     private boolean regionSelectorTool;
     private int mousePressX,mousePressY;
     private ImageAnalysisToolkit analysisTools;
+    private StatsPage stats;
     
     public ImageAnalyzer(NDImage im, String name)
     {
@@ -77,7 +78,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         imName = name;
         reports = new ImageReport[im.getNZ()*im.getNT()*im.getNPos()];
         analysisTools = new ImageAnalysisToolkit(ndim,reports);
-        setBounds(200,200,1000,1000);
+	stats = null;
+        setBounds(120,20,1220,1020);
         int[] chan = {1,0};
         imPanel = new ImagePanel(im);
         imPanel.addMouseListener(this);
@@ -154,7 +156,6 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         zField = new JTextField(3);
         tField = new JTextField(3);
         pField = new JTextField(3);
-        setJMenuBar(menuBar);
         menuBar = new JMenuBar();
         fileMenu = new JMenu("Image");
         menuBar.add(fileMenu);
@@ -577,6 +578,9 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                 imPanel.repaint();
             }
         }
+	else if(cmd.equals("stats")){
+	    stats = new StatsPage(imPanel);
+	}
         else if(cmd.equals("rsel")){
             regionSelectorTool = true;
             punctaSelectorTool = false;
@@ -689,6 +693,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int trueY2 = (int)(e.getY() / imPanel.getZoom());
             imPanel.setDisplayRegion(Math.min(trueX1,trueX2),Math.min(trueY1,trueY2),Math.abs(trueX1-trueX2),Math.abs(trueY1-trueY2));
             imPanel.repaint();
+	    if(stats != null) stats.updateRegion();
         }
     }
     

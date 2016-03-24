@@ -960,6 +960,102 @@ public class NDImage
         }
         return Math.sqrt(sum / (npix - 1));
     }
+
+    public int min(int wl, int z, int t, int p)
+    {
+        int min = 65535;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(image[wl][z][t][i][j][p] < min) min = image[wl][z][t][i][j][p];
+            }
+        }
+        return min;
+    }
+    
+    public int min(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+        int min = 65535;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(image[wl][z][t][i][j][p] < min) min = image[wl][z][t][i][j][p];
+            }
+        }
+        return min;
+    }
+    
+    public int min(int wl, int z, int t, int p, Mask m)
+    {
+        int min = 65535;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(m.getValue(i,j) > 0){
+		    if(image[wl][z][t][i][j][p] < min) min = image[wl][z][t][i][j][p];
+		}
+            }
+        }
+        return min;
+    }
+    
+    public int min(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+        int min = 65535;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(m.getValue(i,j) > 0){
+		    if(image[wl][z][t][i][j][p] < min) min = image[wl][z][t][i][j][p];
+		}
+            }
+        }
+        return min;
+    }
+
+    public int max(int wl, int z, int t, int p)
+    {
+        int max = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(image[wl][z][t][i][j][p] > max) max = image[wl][z][t][i][j][p];
+            }
+        }
+        return max;
+    }
+    
+    public int max(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+        int max = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(image[wl][z][t][i][j][p] > max) max = image[wl][z][t][i][j][p];
+            }
+        }
+        return max;
+    }
+    
+    public int max(int wl, int z, int t, int p, Mask m)
+    {
+        int max = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(m.getValue(i,j) > 0){
+		    if(image[wl][z][t][i][j][p] > max) max = image[wl][z][t][i][j][p];
+		}
+            }
+        }
+        return max;
+    }
+    
+    public int max(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+        int max = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(m.getValue(i,j) > 0){
+		    if(image[wl][z][t][i][j][p] > max) max = image[wl][z][t][i][j][p];
+		}
+            }
+        }
+        return max;
+    }
     
     public NDImage zprojection()
     {

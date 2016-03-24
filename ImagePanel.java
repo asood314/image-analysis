@@ -2,6 +2,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
+import java.awt.image.BufferedImage;
 import javax.swing.JPanel;
 
 public class ImagePanel extends JPanel
@@ -101,7 +102,8 @@ public class ImagePanel extends JPanel
     protected void paintComponent(Graphics g)
     {
         if(ndim == null) return;
-        double aspectRatio = ((double)displayRegion[2]) / displayRegion[3];
+	double aspectRatio = ((double)ndim.getWidth()) / ndim.getHeight();
+        if(zoomToRegion) aspectRatio = ((double)displayRegion[2]) / displayRegion[3];
         int imWidth = (int)(ndim.getHeight() * aspectRatio * zoom);
         int imHeight = (int)(ndim.getHeight() * zoom);
         //if(mode == SPLIT) setPreferredSize(new Dimension(2*imWidth,2*imHeight));
@@ -156,7 +158,7 @@ public class ImagePanel extends JPanel
 	    g.drawImage(bim.getScaledInstance(imWidth,imHeight,Image.SCALE_SMOOTH),0,0,this);
 	    if(!zoomToRegion && displayRegionSet){
 		g.setColor(Color.white);
-		g.drawRect(displayRegion[0],displayRegion[1],displayRegion[2],displayRegion[3]);
+		g.drawRect((int)(displayRegion[0]*zoom),(int)(displayRegion[1]*zoom),(int)(displayRegion[2]*zoom),(int)(displayRegion[3]*zoom));
 	    }
             revalidate();
         }
@@ -279,5 +281,81 @@ public class ImagePanel extends JPanel
         displayRegion[2] = width;
         displayRegion[3] = height;
 	displayRegionSet = true;
+    }
+
+    public int[] getDisplayRegion(){ return displayRegion; }
+
+    public int getImPixel(int i, int j, boolean maskIn)
+    {
+	if(imMask != null){
+	    if(maskIn) return imMask.getValue(i,j) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
+	    else return (1-imMask.getValue(i,j)) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
+	}
+	return ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
+    }
+
+    public int imMin(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
+    public int imMax(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
+    public double imMean(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
+    public double imMedian(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
+    public double imStd(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
 }

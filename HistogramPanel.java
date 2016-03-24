@@ -28,7 +28,7 @@ public class HistogramPanel extends JPanel
 	width = 800;
 	height = 600;
 	histColor = Color.gray;
-	setPreferredDimension(new Dimension(width,height));
+	setPreferredSize(new Dimension(width,height));
 	setBackground(Color.white);
     }
 
@@ -36,7 +36,7 @@ public class HistogramPanel extends JPanel
     {
 	width = w;
 	height = h;
-	setPreferredDimension(new Dimension(width,height));
+	setPreferredSize(new Dimension(width,height));
 	repaint();
     }
 
@@ -93,6 +93,8 @@ public class HistogramPanel extends JPanel
 
     public void paintComponent(Graphics g)
     {
+	g.setColor(Color.white);
+	g.fillRect(0,0,width,height);
 	g.setColor(Color.black);
 	g.drawLine(40,height-40,40,20);
 	g.drawLine(40,height-40,width-20,height-40);
@@ -100,15 +102,23 @@ public class HistogramPanel extends JPanel
 	int minValue = ymin;
 	if(maxValue < 0) maxValue = max();
 	if(logBaseY > 1){
-	    if(minValue = 0) minValue = -1;
-	    int nTicks = (int)log(logBaseY,maxValue);
-	    int startHeight = height - 60 - (int)(nTicks/log(logBaseY,maxValue))
-	    int yTickSpacing = (height-60) / nTicks;
+	    if(minValue == 0) minValue = -1;
+	    int nTicks = (int)(log(logBaseY,maxValue) - minValue);
+	    int startHeight = (int)(((double)nTicks)*(height-60)/log(logBaseY,maxValue));
+	    int yTickSpacing = startHeight / nTicks;
+	    int spacer = height - 60 - startHeight;
+	    //System.out.println(""+nTicks+", "+startHeight+", "+yTickSpacing+", "+spacer);
 	    if(nTicks < 10){
-		for(int i = 0; i < nTicks; i++) g.drawLine(30,20+startHeight+(i*yTickSpacing),40,20+startHeight+(i*yTickSpacing));
+		for(int i = 0; i < nTicks; i++){
+		    g.drawLine(30,20+spacer+(i*yTickSpacing),40,20+spacer+(i*yTickSpacing));
+		    g.drawString(""+logBaseY+"^"+(nTicks-i-1),5,20+spacer+(i*yTickSpacing));
+		}
 	    }
 	    else{
-		for(int i = 0; i < nTicks; i+=2) g.drawLine(30,20+startHeight+(i*yTickSpacing),40,20+startHeight+(i*yTickSpacing));
+		for(int i = 0; i < nTicks; i+=2){
+		    g.drawLine(30,20+spacer+(i*yTickSpacing),40,20+spacer+(i*yTickSpacing));
+		    g.drawString(""+logBaseY+"^"+(nTicks-i-1),5,20+spacer+(i*yTickSpacing));
+		}
 	    }
 	}
 	else{
@@ -116,20 +126,26 @@ public class HistogramPanel extends JPanel
 	    for(int i = 0; i < 10; i++){
 		g.drawLine(30,20+(i*yTickSpacing),40,20+(i*yTickSpacing));
 		g.drawLine(35,20+((2*i+1)*yTickSpacing/2),40,20+((2*i+1)*yTickSpacing/2));
+		g.drawString(""+(maxValue-(i*maxValue/10)),5,20+(i*yTickSpacing));
 	    }
 	}
+	//System.out.println(maxValue);
+	//System.out.println(minValue);
 	int xTickSpacing = (width-60) / 10;
 	for(int i = 0; i < 10; i++){
-	    g.drawLine(40+(i*xTickSpacing),height-30,40+(i*xTickSpacing),height-40);
-	    g.drawLine(40+((2*i+1)*xTickSpacing/2),height-35,40+((2*i+1)*xTickSpacing/2),height-40);
+	    g.drawLine(width-20-(i*xTickSpacing),height-30,width-20-(i*xTickSpacing),height-40);
+	    g.drawLine(width-20-((2*i+1)*xTickSpacing/2),height-35,width-20-((2*i+1)*xTickSpacing/2),height-40);
+	    g.drawString(""+((int)(xmax-(i*(xmax-xmin)/10))),width-25-(i*xTickSpacing),height-20);
 	}
-	int rectWidth = (int)((width-60) / binWidth);
+	int rectWidth = (int)(((double)(width-60)) / nbins);
+	//System.out.println(rectWidth);
 	g.setColor(histColor);
 	for(int i = 0; i < nbins; i++){
 	    int rectHeight = 0;
 	    if(logBaseY > 1) rectHeight = (int)((height-60) * (log(logBaseY,histogram[i])-minValue)/(log(logBaseY,maxValue)-minValue));
 	    else rectHeight = (int)((height-60) * (((double)histogram[i] - minValue)/(maxValue-minValue)));
-	    if(rectHeight > 0) g.fillRect(40+(i*rectWidth),height-40+rectHeight,rectWidth,rectHeight);
+	    //System.out.println(rectHeight);
+	    if(rectHeight > 0) g.fillRect(40+(i*rectWidth),height-40-rectHeight,rectWidth,rectHeight);
 	}
     }
 }
