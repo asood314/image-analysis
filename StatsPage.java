@@ -44,6 +44,10 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	menuItem.addActionListener(this);
 	menuItem.setActionCommand("histOpt");
 	menu.add(menuItem);
+	menuItem = new JMenuItem("Plot Function");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("plotf");
+	menu.add(menuItem);
 	setJMenuBar(menuBar);
 	getContentPane().setLayout(new BoxLayout(getContentPane(),BoxLayout.Y_AXIS));
 	figPanel = new JPanel();
@@ -75,11 +79,13 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	textPanel.add(lab);
 	lab = new JLabel("max: "+imPanel.imMax(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("mean: "+imPanel.imMean(maskIn));
+	lab = new JLabel("mean: "+(int)imPanel.imMean(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("median: "+imPanel.imMedian(maskIn));
+	lab = new JLabel("median: "+(int)imPanel.imMedian(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("std dev: "+imPanel.imStd(maskIn));
+	lab = new JLabel("mode: "+(int)imPanel.imMode(maskIn));
+	textPanel.add(lab);
+	lab = new JLabel("std dev: "+(int)imPanel.imStd(maskIn));
 	textPanel.add(lab);
 	setDefaultCloseOperation(DISPOSE_ON_CLOSE);
 	pack();
@@ -94,7 +100,8 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 
     public void actionPerformed(ActionEvent e)
     {
-	if(e.getActionCommand().equals("histOpt")){
+	String cmd = e.getActionCommand();
+	if(cmd.equals("histOpt")){
 	    JDialog jd = new JDialog(this,true);
 	    jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.Y_AXIS));
 	    JPanel pan = new JPanel();
@@ -142,6 +149,21 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	    jd.pack();
 	    jd.setVisible(true);
 	}
+	else if(cmd.equals("plotf")){
+	    double mean = imPanel.imMode(maskIn);
+	    double norm = 45236.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
+	    histPanel.setFunction(new Function(){
+		    public double calculate(double x){
+			//return norm*Math.exp(x - mean + x*(Math.log(mean)-Math.log(x)) -0.5*Math.log(2*Math.PI*x));
+			return norm*Math.exp(-(x-mean)*(x-mean)/(2*mean))/Math.sqrt(2*Math.PI*mean);
+		    }
+		    public double integral(double x1, double x2){
+			double sum = 0;
+			for(double x = x1; x < x2; x += 1.0) sum += calculate(x);
+			return sum;
+		    }
+		});
+	}
     }
 
     public void refresh()
@@ -159,11 +181,13 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	textPanel.add(lab);
 	lab = new JLabel("max: "+imPanel.imMax(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("mean: "+imPanel.imMean(maskIn));
+	lab = new JLabel("mean: "+(int)imPanel.imMean(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("median: "+imPanel.imMedian(maskIn));
+	lab = new JLabel("median: "+(int)imPanel.imMedian(maskIn));
 	textPanel.add(lab);
-	lab = new JLabel("std dev: "+imPanel.imStd(maskIn));
+	lab = new JLabel("mode: "+(int)imPanel.imMode(maskIn));
+	textPanel.add(lab);
+	lab = new JLabel("std dev: "+(int)imPanel.imStd(maskIn));
 	textPanel.add(lab);
 	histPanel.repaint();
 	textPanel.repaint();

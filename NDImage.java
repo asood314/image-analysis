@@ -787,6 +787,76 @@ public class NDImage
         return bi;
     }
 
+    public double percentile(double frac, int wl, int z, int t, int p)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int sum = 0;
+	int target = (int)(width*height*frac);
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double percentile(double frac, int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int sum = 0;
+	int target = (int)((x2-x1)*(y2-y1)*frac);
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double percentile(double frac, int wl, int z, int t, int p, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	int sum = 0;
+	target = (int)(target*frac);
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
+    public double percentile(double frac, int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	int sum = 0;
+	target = (int)(target*frac);
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	return (double)index;
+    }
+
     public double median(int wl, int z, int t, int p)
     {
 	int[] values = new int[65536];
@@ -961,6 +1031,92 @@ public class NDImage
         return Math.sqrt(sum / (npix - 1));
     }
 
+    public double mode(int wl, int z, int t, int p)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int max = 0;
+	int index = 0;
+	for(int i = 0; i < 65536; i++){
+	    if(values[i] > max){
+		max = values[i];
+		index = i;
+	    }
+	}
+	return (double)index;
+    }
+
+    public double mode(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	int max = 0;
+	int index = 0;
+	for(int i = 0; i < 65536; i++){
+	    if(values[i] > max){
+		max = values[i];
+		index = i;
+	    }
+	}
+	return (double)index;
+    }
+
+    public double mode(int wl, int z, int t, int p, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+      	int max = 0;
+	int index = 0;
+	for(int i = 0; i < 65536; i++){
+	    if(values[i] > max){
+		max = values[i];
+		index = i;
+	    }
+	}
+	return (double)index;
+    }
+
+    public double mode(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+       	int max = 0;
+	int index = 0;
+	for(int i = 0; i < 65536; i++){
+	    if(values[i] > max){
+		max = values[i];
+		index = i;
+	    }
+	}
+	return (double)index;
+    }
+
     public int min(int wl, int z, int t, int p)
     {
         int min = 65535;
@@ -1055,6 +1211,60 @@ public class NDImage
             }
         }
         return max;
+    }
+
+    public int[] getDistribution(int wl, int z, int t, int p)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	return values;
+    }
+
+    public int[] getDistribution(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+	int[] values = new int[65536];
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                values[image[wl][z][t][i][j][p]]++;
+            }
+        }
+	return values;
+    }
+
+    public int[] getDistribution(int wl, int z, int t, int p, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	return values;
+    }
+
+    public int[] getDistribution(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+	int[] values = new int[65536];
+	int target = 0;
+	for(int i = 0; i < 65536; i++) values[i] = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+		int a = m.getValue(i,j);
+                values[image[wl][z][t][i][j][p]] += a;
+		target += a;
+            }
+        }
+	return values;
     }
     
     public NDImage zprojection()

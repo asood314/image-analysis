@@ -346,6 +346,19 @@ public class ImagePanel extends JPanel
 	return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
 
+    public double imPercentile(double frac, boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
     public double imStd(boolean maskIn)
     {
 	int x1 = displayRegion[0];
@@ -357,5 +370,18 @@ public class ImagePanel extends JPanel
 	    else return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
 	}
 	return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
+    public double imMode(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
 }

@@ -8,8 +8,11 @@ public class HistogramPanel extends JPanel
     private int[] histogram;
     private double xmin,xmax,binWidth;
     private int nbins,logBaseX,logBaseY,ymin,ymax,entries;
+    private int preferredWidth;
     private int width,height;
     private Color histColor;
+    private Function funk;
+    private Color funkColor;
 
     public HistogramPanel(double min, double max, int nb)
     {
@@ -25,19 +28,23 @@ public class HistogramPanel extends JPanel
 	logBaseX = 1;
 	logBaseY = 1;
 	entries = 0;
-	width = 800;
-	height = 600;
+	preferredWidth = 860;
+	width = ((preferredWidth-60)/nbins) * nbins + 60;
+	height = 660;
 	histColor = Color.gray;
+	funk = null;
+	funkColor = Color.black;
 	setPreferredSize(new Dimension(width,height));
 	setBackground(Color.white);
     }
 
     public void setDimensions(int w, int h)
     {
-	width = w;
+	preferredWidth = w;
+	width = ((preferredWidth-60)/nbins) * nbins + 60;
 	height = h;
 	setPreferredSize(new Dimension(width,height));
-	repaint();
+	revalidate();
     }
 
     public void setLogBaseX(int base)
@@ -52,6 +59,12 @@ public class HistogramPanel extends JPanel
 	repaint();
     }
 
+    public void setFunction(Function f)
+    {
+	funk = f;
+	repaint();
+    }
+
     public void newHistogram(double min, double max, int nb)
     {
 	histogram = new int[nb+2];
@@ -61,6 +74,9 @@ public class HistogramPanel extends JPanel
 	nbins = nb;
 	binWidth = (xmax - xmin) / nbins;
 	entries = 0;
+	width = ((preferredWidth-60)/nbins) * nbins + 60;
+	setPreferredSize(new Dimension(width,height));
+	revalidate();
     }
 
     public void Fill(double value)
@@ -85,6 +101,15 @@ public class HistogramPanel extends JPanel
 	return m;
     }
 
+    public int getEntries(){ return entries; }
+
+    public int getIntegral()
+    {
+	int sum = 0;
+	for(int i = 0; i < nbins; i++) sum += histogram[i];
+	return sum;
+    }
+
     private double log(int base, int value)
     {
 	if(value < 1) return -1;
@@ -104,7 +129,7 @@ public class HistogramPanel extends JPanel
 	if(logBaseY > 1){
 	    if(minValue == 0) minValue = -1;
 	    int nTicks = (int)(log(logBaseY,maxValue) - minValue);
-	    int startHeight = (int)(((double)nTicks)*(height-60)/log(logBaseY,maxValue));
+	    int startHeight = (int)(((double)nTicks)*(height-60)/(log(logBaseY,maxValue)-minValue));
 	    int yTickSpacing = startHeight / nTicks;
 	    int spacer = height - 60 - startHeight;
 	    //System.out.println(""+nTicks+", "+startHeight+", "+yTickSpacing+", "+spacer);
@@ -126,7 +151,7 @@ public class HistogramPanel extends JPanel
 	    for(int i = 0; i < 10; i++){
 		g.drawLine(30,20+(i*yTickSpacing),40,20+(i*yTickSpacing));
 		g.drawLine(35,20+((2*i+1)*yTickSpacing/2),40,20+((2*i+1)*yTickSpacing/2));
-		g.drawString(""+(maxValue-(i*maxValue/10)),5,20+(i*yTickSpacing));
+		g.drawString(""+(maxValue-(i*maxValue/10)),2,18+(i*yTickSpacing));
 	    }
 	}
 	//System.out.println(maxValue);
@@ -135,7 +160,7 @@ public class HistogramPanel extends JPanel
 	for(int i = 0; i < 10; i++){
 	    g.drawLine(width-20-(i*xTickSpacing),height-30,width-20-(i*xTickSpacing),height-40);
 	    g.drawLine(width-20-((2*i+1)*xTickSpacing/2),height-35,width-20-((2*i+1)*xTickSpacing/2),height-40);
-	    g.drawString(""+((int)(xmax-(i*(xmax-xmin)/10))),width-25-(i*xTickSpacing),height-20);
+	    g.drawString(""+((int)(xmax-(i*(xmax-xmin)/10))),width-30-(i*xTickSpacing),height-20);
 	}
 	int rectWidth = (int)(((double)(width-60)) / nbins);
 	//System.out.println(rectWidth);
@@ -146,6 +171,42 @@ public class HistogramPanel extends JPanel
 	    else rectHeight = (int)((height-60) * (((double)histogram[i] - minValue)/(maxValue-minValue)));
 	    //System.out.println(rectHeight);
 	    if(rectHeight > 0) g.fillRect(40+(i*rectWidth),height-40-rectHeight,rectWidth,rectHeight);
+	}
+	if(funk != null){
+	    //System.out.println(funk.integral(xmin,xmax) / (45236.0*Math.sqrt(2*Math.PI*106)));
+	    //double xconv = (xmax-xmin)/(width-60);
+	    int stepSize = (width-60)/nbins;
+	    int startW = 40 + stepSize/2;
+	    double startX = xmin;
+	    double startY = funk.integral(xmin,xmin+binWidth);
+	    //double startY = funk.calculate(xmin);
+	    g.setColor(funkColor);
+	    if(logBaseY > 1){
+		double yconvLog = (log(logBaseY,maxValue) - minValue)/(height-60);
+		for(int i = 1; i < nbins; i++){
+		    double endY = funk.integral(startX + binWidth,startX + 2*binWidth);
+		    //double endY = funk.calculate(startX + binWidth);
+		    int startH = height-40-(int)((log(logBaseY,(int)startY) - minValue)/yconvLog);
+		    int endH = height-40-(int)((log(logBaseY,(int)endY) - minValue)/yconvLog);
+		    g.drawLine(startW,startH,startW+stepSize,endH);
+		    startX += binWidth;
+		    startY = endY;
+		    startW += stepSize;
+		}
+	    }
+	    else{
+		double yconv = ((double)(maxValue-minValue))/(height-60);
+		for(int i = 1; i < nbins; i++){
+		    double endY = funk.integral(startX + binWidth,startX + 2*binWidth);
+		    //double endY = funk.calculate(startX + binWidth);
+		    int startH = height-40-(int)((startY-minValue)/yconv);
+		    int endH = height-40-(int)((endY-minValue)/yconv);
+		    g.drawLine(startW,startH,startW+stepSize,endH);
+		    startX += binWidth;
+		    startY = endY;
+		    startW += stepSize;
+		}
+	    }
 	}
     }
 }
