@@ -48,6 +48,10 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	menuItem.addActionListener(this);
 	menuItem.setActionCommand("plotf");
 	menu.add(menuItem);
+	menuItem = new JMenuItem("Fit Function");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("fitf");
+	menu.add(menuItem);
 	setJMenuBar(menuBar);
 	getContentPane().setLayout(new BoxLayout(getContentPane(),BoxLayout.Y_AXIS));
 	figPanel = new JPanel();
@@ -151,18 +155,33 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	}
 	else if(cmd.equals("plotf")){
 	    double mean = imPanel.imMode(maskIn);
-	    double norm = 45236.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
+	    double norm = 22618.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
+	    double[] par = {norm,mean};
+	    histPanel.setFunctionParameters(par);
 	    histPanel.setFunction(new Function(){
-		    public double calculate(double x){
-			//return norm*Math.exp(x - mean + x*(Math.log(mean)-Math.log(x)) -0.5*Math.log(2*Math.PI*x));
-			return norm*Math.exp(-(x-mean)*(x-mean)/(2*mean))/Math.sqrt(2*Math.PI*mean);
-		    }
-		    public double integral(double x1, double x2){
-			double sum = 0;
-			for(double x = x1; x < x2; x += 1.0) sum += calculate(x);
-			return sum;
-		    }
-		});
+	    	    public double calculate(double[] param, double x){
+	    		//return norm*Math.exp(x - mean + x*(Math.log(mean)-Math.log(x)) -0.5*Math.log(2*Math.PI*x));
+	    		return param[0]*Math.exp(-(x-param[1])*(x-param[1])/(2*param[1]))/Math.sqrt(2*Math.PI*param[1]);
+	    	    }
+	    	    public double integral(double[] param, double x1, double x2){
+	    		double sum = 0;
+	    		for(double x = x1; x < x2; x += 1.0) sum += calculate(param,x);
+	    		return sum;
+	    	    }
+	    	});
+	}
+	else if(cmd.equals("fitf")){
+	    double mean = imPanel.imMode(maskIn);
+	    double par[] = {mean,Math.sqrt(mean)};
+	    Function f = Functions.gaussian();
+	    Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
+	    fitter.setDistribution(imPanel.getDistribution(maskIn));
+	    fitter.fit();
+	    histPanel.setFunctionParameters(fitter.getParameters());
+	    histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(fitter.getParameters(),xmin,xmax));
+	    histPanel.setFunction(f);
+	    par = fitter.getParameters();
+	    System.out.println(""+par[0]+", "+par[1]);
 	}
     }
 
