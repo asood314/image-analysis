@@ -1,7 +1,10 @@
 public interface Function
 {
+    public void setParameters(double[] param);
     
-    public double calculate(double[] params, double x);
+    public double[] getParameters();
+    
+    public double calculate(double x);
 
-    public double integral(double[] params, double x1, double x2);
+    public double integral(double x1, double x2);
 }

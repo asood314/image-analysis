@@ -12,7 +12,6 @@ public class HistogramPanel extends JPanel
     private int width,height;
     private Color histColor;
     private Function funk;
-    private double[] fparm;
     private double fnorm;
     private Color funkColor;
 
@@ -66,8 +65,6 @@ public class HistogramPanel extends JPanel
 	funk = f;
 	repaint();
     }
-
-    public void setFunctionParameters(double[] p){ fparm = p; }
 
     public void setFunctionNorm(double n){ fnorm = n; }
 
@@ -179,18 +176,18 @@ public class HistogramPanel extends JPanel
 	    if(rectHeight > 0) g.fillRect(40+(i*rectWidth),height-40-rectHeight,rectWidth,rectHeight);
 	}
 	if(funk != null){
-	    //System.out.println(funk.integral(xmin,xmax) / (45236.0*Math.sqrt(2*Math.PI*106)));
+	    System.out.println(funk.integral(xmin,xmax));
 	    //double xconv = (xmax-xmin)/(width-60);
 	    int stepSize = (width-60)/nbins;
 	    int startW = 40 + stepSize/2;
 	    double startX = xmin;
-	    double startY = fnorm*funk.integral(fparm,xmin,xmin+binWidth);
+	    double startY = fnorm*funk.integral(xmin,xmin+binWidth);
 	    //double startY = funk.calculate(xmin);
 	    g.setColor(funkColor);
 	    if(logBaseY > 1){
 		double yconvLog = (log(logBaseY,maxValue) - minValue)/(height-60);
 		for(int i = 1; i < nbins; i++){
-		    double endY = fnorm*funk.integral(fparm,startX + binWidth,startX + 2*binWidth);
+		    double endY = fnorm*funk.integral(startX + binWidth,startX + 2*binWidth);
 		    //double endY = funk.calculate(startX + binWidth);
 		    int startH = height-40-(int)((log(logBaseY,(int)startY) - minValue)/yconvLog);
 		    int endH = height-40-(int)((log(logBaseY,(int)endY) - minValue)/yconvLog);
@@ -203,7 +200,7 @@ public class HistogramPanel extends JPanel
 	    else{
 		double yconv = ((double)(maxValue-minValue))/(height-60);
 		for(int i = 1; i < nbins; i++){
-		    double endY = fnorm*funk.integral(fparm,startX + binWidth,startX + 2*binWidth);
+		    double endY = fnorm*funk.integral(startX + binWidth,startX + 2*binWidth);
 		    //double endY = funk.calculate(startX + binWidth);
 		    int startH = height-40-(int)((startY-minValue)/yconv);
 		    int endH = height-40-(int)((endY-minValue)/yconv);

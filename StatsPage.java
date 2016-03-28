@@ -104,85 +104,76 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 
     public void actionPerformed(ActionEvent e)
     {
-	String cmd = e.getActionCommand();
-	if(cmd.equals("histOpt")){
-	    JDialog jd = new JDialog(this,true);
-	    jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.Y_AXIS));
-	    JPanel pan = new JPanel();
-	    pan.setLayout(new FlowLayout());
-	    pan.add(new JLabel("x min:"));
-	    JTextField minField = new JTextField(5);
-	    minField.setText(""+xmin);
-	    pan.add(minField);
-	    jd.getContentPane().add(pan);
-	    pan = new JPanel();
-	    pan.setLayout(new FlowLayout());
-	    pan.add(new JLabel("x max:"));
-	    JTextField maxField = new JTextField(5);
-	    maxField.setText(""+xmax);
-	    pan.add(maxField);
-	    jd.getContentPane().add(pan);
-	    pan = new JPanel();
-	    pan.setLayout(new FlowLayout());
-	    pan.add(new JLabel("n bins:"));
-	    JTextField binField = new JTextField(5);
-	    binField.setText(""+nbins);
-	    pan.add(binField);
-	    jd.getContentPane().add(pan);
-	    pan = new JPanel();
-	    pan.setLayout(new FlowLayout());
-	    pan.add(new JLabel("mask in/out:"));
-	    JCheckBox maskBox = new JCheckBox();
-	    if(maskIn) maskBox.setSelected(true);
-	    pan.add(maskBox);
-	    jd.getContentPane().add(pan);
-	    JButton ok = new JButton("OK");
-	    ok.addActionListener(new ActionListener(){
-		    public void actionPerformed(ActionEvent e){
-			xmin = Double.parseDouble(minField.getText());
-			xmax = Double.parseDouble(maxField.getText());
-			nbins = Integer.parseInt(binField.getText());
-			if(maskBox.isSelected()) maskIn = true;
-			else maskIn = false;
-			jd.dispose();
-			refresh();
-		    }
-		});
-	    jd.getContentPane().add(ok);
-	    jd.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-	    jd.pack();
-	    jd.setVisible(true);
-	}
-	else if(cmd.equals("plotf")){
-	    double mean = imPanel.imMode(maskIn);
-	    double norm = 22618.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
-	    double[] par = {norm,mean};
-	    histPanel.setFunctionParameters(par);
-	    histPanel.setFunction(new Function(){
-	    	    public double calculate(double[] param, double x){
-	    		//return norm*Math.exp(x - mean + x*(Math.log(mean)-Math.log(x)) -0.5*Math.log(2*Math.PI*x));
-	    		return param[0]*Math.exp(-(x-param[1])*(x-param[1])/(2*param[1]))/Math.sqrt(2*Math.PI*param[1]);
-	    	    }
-	    	    public double integral(double[] param, double x1, double x2){
-	    		double sum = 0;
-	    		for(double x = x1; x < x2; x += 1.0) sum += calculate(param,x);
-	    		return sum;
-	    	    }
-	    	});
-	}
-	else if(cmd.equals("fitf")){
-	    double mean = imPanel.imMode(maskIn);
-	    double par[] = {mean,Math.sqrt(mean)};
-	    Function f = Functions.gaussian();
-	    Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
-	    fitter.setDistribution(imPanel.getDistribution(maskIn));
-	    fitter.fit();
-	    histPanel.setFunctionParameters(fitter.getParameters());
-	    histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(fitter.getParameters(),xmin,xmax));
-	    histPanel.setFunction(f);
-	    par = fitter.getParameters();
-	    System.out.println(""+par[0]+", "+par[1]);
-	}
+        String cmd = e.getActionCommand();
+        if(cmd.equals("histOpt")){
+            final JDialog jd = new JDialog(this,true);
+            jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.Y_AXIS));
+            JPanel pan = new JPanel();
+            pan.setLayout(new FlowLayout());
+            pan.add(new JLabel("x min:"));
+            final JTextField minField = new JTextField(5);
+            minField.setText(""+xmin);
+            pan.add(minField);
+            jd.getContentPane().add(pan);
+            pan = new JPanel();
+            pan.setLayout(new FlowLayout());
+            pan.add(new JLabel("x max:"));
+            final JTextField maxField = new JTextField(5);
+            maxField.setText(""+xmax);
+            pan.add(maxField);
+            jd.getContentPane().add(pan);
+            pan = new JPanel();
+            pan.setLayout(new FlowLayout());
+            pan.add(new JLabel("n bins:"));
+            final JTextField binField = new JTextField(5);
+            binField.setText(""+nbins);
+            pan.add(binField);
+            jd.getContentPane().add(pan);
+            pan = new JPanel();
+            pan.setLayout(new FlowLayout());
+            pan.add(new JLabel("mask in/out:"));
+            final JCheckBox maskBox = new JCheckBox();
+            if(maskIn) maskBox.setSelected(true);
+            pan.add(maskBox);
+            jd.getContentPane().add(pan);
+            JButton ok = new JButton("OK");
+            ok.addActionListener(new ActionListener(){
+                public void actionPerformed(ActionEvent e){
+                    xmin = Double.parseDouble(minField.getText());
+                    xmax = Double.parseDouble(maxField.getText());
+                    nbins = Integer.parseInt(binField.getText());
+                    if(maskBox.isSelected()) maskIn = true;
+                    else maskIn = false;
+                    jd.dispose();
+                    refresh();
+                }
+            });
+            jd.getContentPane().add(ok);
+            jd.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            jd.pack();
+            jd.setVisible(true);
+        }
+        else if(cmd.equals("plotf")){
+            double mean = imPanel.imMode(maskIn);
+            double norm = 22618.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
+            double[] par = {mean,Math.sqrt(mean)};
+            Function f = Functions.gaussian();
+            f.setParameters(par);
+            histPanel.setFunctionNorm(norm);
+            histPanel.setFunction(f);
+        }
+        else if(cmd.equals("fitf")){
+            double mean = imPanel.imMode(maskIn);
+            double par[] = {mean,mean};
+            Function f = Functions.gamma();
+            Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
+            fitter.setDistribution(imPanel.getDistribution(maskIn));
+            fitter.fit();
+            histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(xmin,xmax));
+            histPanel.setFunction(f);
+            par = f.getParameters();
+            System.out.println(""+par[0]+", "+par[1]);
+        }
     }
 
     public void refresh()

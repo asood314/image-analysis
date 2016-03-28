@@ -1,17 +1,16 @@
 public class Fitter
 {
     private Function funk;
-    private double[] parameters;
     private int[] range;
     private int[] dist;
 
     public Fitter(Function f, int min, int max, double[] par)
     {
-	funk = f;
-	range = new int[2];
-	range[0] = min;
-	range[1] =  max;
-	parameters = par;
+        funk = f;
+        range = new int[2];
+        range[0] = min;
+        range[1] =  max;
+        funk.setParameters(par);
     }
 
     public void setFunction(Function f){ funk = f; }
@@ -20,71 +19,72 @@ public class Fitter
 
     public void setDistribution(int[] d){ dist = d; }
 
-    public void setParameters(double[] p){ parameters = p; }
-
-    public double[] getParameters(){ return parameters; }
-
     public void setRange(int min, int max)
     {
-	range[0] = min;
-	range[1] = max;
+        range[0] = min;
+        range[1] = max;
     }
 
     public void fit(double[] guess)
     {
-	parameters = guess;
-	fit();
+        funk.setParameters(guess);
+        fit();
     }
 
     public void fit()
     {
-	double[] iparam = new double[parameters.length];
-	double[] step = new double[parameters.length];
-	boolean[] fixed = new boolean[parameters.length];
-	for(int i = 0; i < parameters.length; i++){
-	    iparam[i] = parameters[i];
-	    step[i] = 0.1 * parameters[i];
-	    fixed[i] = false;
-	}
-	boolean allFixed = false;
-	double maxLL = logLikelihood(parameters);
-	int[] updown = new int[parameters.length];
-	int counter = 0;
-	while(!allFixed && counter < 1000){
-	    allFixed = true;
-	    for(int i = 0; i < parameters.length; i++){
-		if(fixed[i]) continue;
-		updown[i] = 0;
-		iparam[i] = parameters[i] + step[i];
-		double iLL = logLikelihood(iparam);
-		if(iLL > maxLL){
-		    maxLL = iLL;
-		    updown[i] = 1;
-		}
-		iparam[i] = parameters[i] - step[i];
-		iLL = logLikelihood(iparam);
-		if(iLL > maxLL){
-		    maxLL = iLL;
-		    updown[i] = -1;
-		}
-	    }
-	    for(int i = 0; i < parameters.length; i++){
-		parameters[i] += updown[i]*step[i];
-		if(updown[i] < 1){
-		    step[i] *= 0.5;
-		    if(updown[i] < 0) step[i] *= -1;
-		}
-		if(step[i]/parameters[i] < 0.001) fixed[i] = true;
-		allFixed = allFixed && fixed[i];
-	    }
-	    counter++;
-	}
+        double[] param = funk.getParameters();
+        double[] iparam = new double[param.length];
+        double[] step = new double[param.length];
+        boolean[] fixed = new boolean[param.length];
+        for(int i = 0; i < param.length; i++){
+            iparam[i] = param[i];
+            step[i] = 0.1 * param[i];
+            fixed[i] = false;
+        }
+        boolean allFixed = false;
+        double maxLL = logLikelihood();
+        int[] updown = new int[param.length];
+        int counter = 0;
+        while(!allFixed && counter < 1000){
+            allFixed = true;
+            for(int i = 0; i < param.length; i++){
+                if(fixed[i]) continue;
+                updown[i] = 0;
+                iparam[i] = param[i] + step[i];
+                funk.setParameters(iparam);
+                double iLL = logLikelihood();
+                if(iLL > maxLL){
+                    maxLL = iLL;
+                    updown[i] = 1;
+                }
+                iparam[i] = param[i] - step[i];
+                funk.setParameters(iparam);
+                iLL = logLikelihood();
+                if(iLL > maxLL){
+                    maxLL = iLL;
+                    updown[i] = -1;
+                }
+            }
+            for(int i = 0; i < param.length; i++){
+                param[i] += updown[i]*step[i];
+                if(updown[i] < 1){
+                    step[i] *= 0.5;
+                    if(updown[i] < 0) step[i] *= -1;
+                }
+                if(step[i]/param[i] < 0.001) fixed[i] = true;
+                allFixed = allFixed && fixed[i];
+            }
+            counter++;
+        }
+        if(counter > 999) System.out.println("Failed to converge: Iteration limit reached.");
+        funk.setParameters(param);
     }
 
-    public double logLikelihood(double[] param)
+    public double logLikelihood()
     {
-	double sum = 0;
-	for(int i = range[0]; i < range[1]; i++) sum += dist[i] * Math.log(funk.calculate(param,(double)i));
-	return sum;
+        double sum = 0;
+        for(int i = range[0]; i < range[1]; i++) sum += dist[i] * Math.log(funk.calculate((double)i));
+        return sum;
     }
 }

@@ -434,6 +434,23 @@ public class NDImage
     
     public int getPixel(int w, int z, int t, int x, int y, int p){ return image[w][z][t][x][y][p]; }
     
+    public void divide(int a)
+    {
+        for(int w = 0; w < nWavelengths; w++){
+            for(int z = 0; z < nZ; z++){
+                for(int t = 0; t < nT; t++){
+                    for(int p = 0; p < npos; p++){
+                        for(int i = 0; i < width; i++){
+                            for(int j = 0; j < height; j++){
+                                image[w][z][t][i][j][p] = image[w][z][t][i][j][p] / a;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     public int[] getMinMax(int wl, int z, int t, int p)
     {
         int[] region = {0,0,width,height};
