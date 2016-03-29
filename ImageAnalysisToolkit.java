@@ -179,6 +179,59 @@ public class ImageAnalysisToolkit
         }
         return m;
     }
+
+    public Mask findSignalMask2(int w, int z, int t, int p)
+    {
+	int[] dist = ndim.getDistribution(w,z,t,p);
+	int Imax = (int)ndim.max(w,z,t,p);
+	int[] avgDist = new int[Imax];
+	Vector<Integer> maxima = new Vector<Integer>();
+	for(int i = 0; i < Imax; i+=1000){
+	    int max = 0;
+	    int maxbin = i;
+	    int lim = Math.min(Imax,i+1000);
+	    for(int j = i; j < lim; j++){
+		if(dist[j] > max){
+		    max = dist[j];
+		}
+	    }
+	    if(max < 10) continue;
+	    int avgLength = Math.max(1,1500/max);
+	    for(int j = i; j < lim; j++){
+		int sum = 0;
+		for(int k = j-avgLength+1; k < j+avgLength+1; k++) sum += dist[k];
+		avgDist[j] = sum/avgLength;
+	    }
+	    max = 0;
+	    for(int j = i; j < lim; j++){
+		if(avgDist[j] > max){
+		    max = avgDist[j];
+		    maxbin = j;
+		}
+	    }
+	    maxima.addElement(new Integer(maxbin));
+	}
+	for(int i = maxima.size()-1; i >= 0; i--){
+	    int max = avgDist[maxima.elementAt(i)];
+	    int low = Math.max(0,maxima.elementAt(i)-1500);
+	    int high = Math.min(Imax,maxima.elementAt(i)+1500);
+	    for(int j = low; j < high; j++){
+		if(avgDist[j] > max){
+		    maxima.remove(i);
+		    break;
+		}
+	    }
+	}
+	for(int i = 0; i < maxima.size(); i++) System.out.println(maxima.elementAt(i));
+	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+	double threshold = 4000.0 + 7500*w;
+	for(int i = 0; i < ndim.getWidth(); i++){
+            for(int j = 0; j < ndim.getHeight(); j++){
+		if(ndim.getPixel(w,z,t,i,j,p) > threshold) m.setValue(i,j,1);
+	    }
+	}
+	return m;
+    }
     
     public void findPuncta(int w, int z, int t, int p)
     {

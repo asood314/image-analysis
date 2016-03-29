@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.StringTokenizer;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -30,6 +31,7 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
     private JMenuBar menuBar;
     private JMenu menu;
     private JPanel figPanel,textPanel;
+    private JTextField parField;
 
     public StatsPage(ImagePanel ip)
     {
@@ -44,14 +46,38 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	menuItem.addActionListener(this);
 	menuItem.setActionCommand("histOpt");
 	menu.add(menuItem);
-	menuItem = new JMenuItem("Plot Function");
+	JMenu plotMenu = new JMenu("Plot Function");
+	menuBar.add(plotMenu);
+	menuItem = new JMenuItem("Poisson");
 	menuItem.addActionListener(this);
-	menuItem.setActionCommand("plotf");
-	menu.add(menuItem);
-	menuItem = new JMenuItem("Fit Function");
+	menuItem.setActionCommand("plotpois");
+	plotMenu.add(menuItem);
+	menuItem = new JMenuItem("Gaussian");
 	menuItem.addActionListener(this);
-	menuItem.setActionCommand("fitf");
-	menu.add(menuItem);
+	menuItem.setActionCommand("plotgaus");
+	plotMenu.add(menuItem);
+	menuItem = new JMenuItem("Exponential");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("plotexp");
+	plotMenu.add(menuItem);
+	JMenu fitMenu = new JMenu("Fit Function");
+	menuBar.add(fitMenu);
+	menuItem = new JMenuItem("Poisson");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("fitpois");
+	fitMenu.add(menuItem);
+	menuItem = new JMenuItem("Gaussian");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("fitgaus");
+	fitMenu.add(menuItem);
+	menuItem = new JMenuItem("Exponential");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("fitexp");
+	fitMenu.add(menuItem);
+	menuItem = new JMenuItem("Poisson*Gaussian");
+	menuItem.addActionListener(this);
+	menuItem.setActionCommand("fitconv");
+	fitMenu.add(menuItem);
 	setJMenuBar(menuBar);
 	getContentPane().setLayout(new BoxLayout(getContentPane(),BoxLayout.Y_AXIS));
 	figPanel = new JPanel();
@@ -153,19 +179,55 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
             jd.pack();
             jd.setVisible(true);
         }
-        else if(cmd.equals("plotf")){
+        else if(cmd.contains("plot")){
+	    JDialog jd = new JDialog(this,false);
+	    jd.getContentPane().setLayout(new FlowLayout());
+	    jd.getContentPane().add(new JLabel("Enter function parameters:"));
+	    parField = new JTextField(20);
+	    parField.addActionListener(this);
+	    parField.setActionCommand(cmd.substring(4,cmd.length()));
+	    jd.getContentPane().add(parField);
+	    jd.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+	    jd.pack();
+	    jd.setVisible(true);
+	}
+	else if(cmd.equals("pois")){
+	    StringTokenizer parTok = new StringTokenizer(parField.getText(), ";:, ");
+	    double[] par = new double[2];
+	    par[0] = Double.parseDouble(parTok.nextToken());
+	    par[1] = Double.parseDouble(parTok.nextToken());
+	    Function f = Functions.poisson2();
+	    f.setParameters(par);
+	    if(parTok.hasMoreTokens()) histPanel.setFunctionNorm(Double.parseDouble(parTok.nextToken()));
+	    else histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(xmin,xmax));
+	    histPanel.setFunction(f);
+	}
+	else if(cmd.equals("gaus")){
+	    StringTokenizer parTok = new StringTokenizer(parField.getText(), ";:, ");
+	    double[] par = new double[2];
+	    par[0] = Double.parseDouble(parTok.nextToken());
+	    par[1] = Double.parseDouble(parTok.nextToken());
+	    Function f = Functions.gaussian();
+	    f.setParameters(par);
+	    if(parTok.hasMoreTokens()) histPanel.setFunctionNorm(Double.parseDouble(parTok.nextToken()));
+	    else histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(xmin,xmax));
+	    histPanel.setFunction(f);
+	}
+	else if(cmd.equals("exp")){
+	    StringTokenizer parTok = new StringTokenizer(parField.getText(), ";:, ");
+	    double[] par = new double[2];
+	    par[0] = Double.parseDouble(parTok.nextToken());
+	    par[1] = Double.parseDouble(parTok.nextToken());
+	    Function f = Functions.exponentialDecay();
+	    f.setParameters(par);
+	    if(parTok.hasMoreTokens()) histPanel.setFunctionNorm(Double.parseDouble(parTok.nextToken()));
+	    else histPanel.setFunctionNorm(histPanel.max()/histPanel.getBinWidth());
+	    histPanel.setFunction(f);
+	}
+        else if(cmd.equals("fitpois")){
             double mean = imPanel.imMode(maskIn);
-            double norm = 22618.0*Math.sqrt(2*Math.PI*mean);//(double)histPanel.getEntries();
-            double[] par = {mean,Math.sqrt(mean)};
-            Function f = Functions.gaussian();
-            f.setParameters(par);
-            histPanel.setFunctionNorm(norm);
-            histPanel.setFunction(f);
-        }
-        else if(cmd.equals("fitf")){
-            double mean = imPanel.imMode(maskIn);
-            double par[] = {mean,mean};
-            Function f = Functions.gamma();
+            double par[] = {mean,1.01};
+            Function f = Functions.poisson2();
             Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
             fitter.setDistribution(imPanel.getDistribution(maskIn));
             fitter.fit();
@@ -173,6 +235,54 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
             histPanel.setFunction(f);
             par = f.getParameters();
             System.out.println(""+par[0]+", "+par[1]);
+        }
+	else if(cmd.equals("fitgaus")){
+            double mean = imPanel.imMode(maskIn);
+            double par[] = {mean,Math.sqrt(mean)};
+            Function f = Functions.gaussian();
+            Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
+            fitter.setDistribution(imPanel.getDistribution(maskIn));
+            fitter.fit();
+            histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(xmin,xmax));
+            histPanel.setFunction(f);
+            par = f.getParameters();
+            System.out.println(""+par[0]+", "+par[1]);
+        }
+	else if(cmd.equals("fitexp")){
+            double mode = histPanel.argmax();
+	    double threshold = histPanel.max() / Math.E;
+	    double rate = 0;
+	    for(int i = 0; i < nbins; i++){
+		if(histPanel.getBinValue(i) < threshold){
+		    rate = (double)i;
+		    break;
+		}
+	    }
+            double par[] = {mode,rate};
+            Function f = Functions.exponentialDecay();
+            Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
+	    fitter.fixParameter(0);
+            fitter.setDistribution(imPanel.getDistribution(maskIn));
+            fitter.fit();
+            histPanel.setFunctionNorm(histPanel.max()/histPanel.getBinWidth());
+            histPanel.setFunction(f);
+            par = f.getParameters();
+            System.out.println(""+par[0]+", "+par[1]);
+        }
+	else if(cmd.equals("fitconv")){
+            double mean = imPanel.imMode(maskIn);
+            double par[] = {mean,mean,Math.sqrt(mean)};
+	    Function f1 = Functions.poisson();
+	    Function f2 = Functions.gaussian();
+            Function f = Functions.convolution(f1,f2,0);
+            Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
+	    fitter.fixParameter(0);
+            fitter.setDistribution(imPanel.getDistribution(maskIn));
+            fitter.fit();
+            histPanel.setFunctionNorm(histPanel.getIntegral()/f.integral(xmin,xmax));
+            histPanel.setFunction(f);
+            par = f.getParameters();
+            System.out.println(""+par[0]+", "+par[1]+", "+par[2]);
         }
     }
 

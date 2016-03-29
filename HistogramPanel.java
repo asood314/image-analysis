@@ -104,6 +104,21 @@ public class HistogramPanel extends JPanel
 	return m;
     }
 
+    public double argmax()
+    {
+	int m = 0;
+	int imax = 0;
+	for(int i = 0; i < nbins; i++){
+	    if(histogram[i] > m){
+		m = histogram[i];
+		imax = i;
+	    }
+	}
+	return xmin + binWidth*imax;
+    }
+
+    public double getBinValue(int i){ return histogram[i]; }
+
     public int getEntries(){ return entries; }
 
     public int getIntegral()
@@ -112,6 +127,8 @@ public class HistogramPanel extends JPanel
 	for(int i = 0; i < nbins; i++) sum += histogram[i];
 	return sum;
     }
+
+    public double getBinWidth(){ return binWidth; }
 
     private double log(int base, int value)
     {
@@ -176,7 +193,7 @@ public class HistogramPanel extends JPanel
 	    if(rectHeight > 0) g.fillRect(40+(i*rectWidth),height-40-rectHeight,rectWidth,rectHeight);
 	}
 	if(funk != null){
-	    System.out.println(funk.integral(xmin,xmax));
+	    //System.out.println(funk.integral(xmin,xmax));
 	    //double xconv = (xmax-xmin)/(width-60);
 	    int stepSize = (width-60)/nbins;
 	    int startW = 40 + stepSize/2;

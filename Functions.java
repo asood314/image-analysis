@@ -4,7 +4,7 @@ public class Functions
     public static Function poisson()
     {
         return new Function(){
-            private double[] parameters;// 1 parameter - mean
+            private double[] parameters = new double[1];// 1 parameter - mean
             public void setParameters(double[] param){ parameters = param; }
             public double[] getParameters(){ return parameters; }
             public double calculate(double x){
@@ -18,10 +18,29 @@ public class Functions
         };
     }
 
+    public static Function poisson2()
+    {
+	return new Function(){
+	    private double[] parameters = new double[2]; // 2 parameters - mean, ratio mean to var
+            public void setParameters(double[] param){ parameters = param; }
+            public double[] getParameters(){ return parameters; }
+            public double calculate(double x){
+		double m = parameters[0];
+		double a = parameters[1];
+                return (1.0/a)*Math.exp((x - m)/a + (((a-1)*m + x)/a)*(Math.log(a*m)-Math.log((a-1)*m+x)) -0.5*Math.log((2/a)*Math.PI*((a-1)*m + x)));
+            }
+            public double integral(double x1, double x2){
+                double sum = 0;
+                for(double x = x1; x < x2; x += 1.0) sum += calculate(x);
+                return sum;
+            }
+	};
+    }
+
     public static Function gaussian()
     {
         return new Function(){
-            private double[] parameters;// 2 parameters - mean, standard deviation
+            private double[] parameters = new double[2];// 2 parameters - mean, standard deviation
             public void setParameters(double[] param){ parameters = param; }
             public double[] getParameters(){ return parameters; }
             public double calculate(double x){
@@ -38,13 +57,30 @@ public class Functions
     public static Function gamma()
     {
         return new Function(){
-            private double[] parameters;// 2 parameters - mean, variance
+            private double[] parameters = new double[2];// 2 parameters - mean, variance
             public void setParameters(double[] param){ parameters = param; }
             public double[] getParameters(){ return parameters; }
             public double calculate(double x){
                 double theta = parameters[1]/parameters[0];
                 double k = parameters[0]/theta;
                 return Math.exp(k - 1 - x/theta + (k - 1)*Math.log(x) - k*Math.log(theta) - 0.5*Math.log(2*Math.PI*(k-1)));
+            }
+            public double integral(double x1, double x2){
+                double sum = 0;
+                for(double x = x1; x < x2; x += 1.0) sum += calculate(x);
+                return sum;
+            }
+        };
+    }
+
+    public static Function exponentialDecay()
+    {
+	return new Function(){
+            private double[] parameters = new double[2];// 2 parameters - maximum, decay constant
+            public void setParameters(double[] param){ parameters = param; }
+            public double[] getParameters(){ return parameters; }
+            public double calculate(double x){
+                return Math.exp(-(1.0/parameters[1])*(x-parameters[0]));
             }
             public double integral(double x1, double x2){
                 double sum = 0;

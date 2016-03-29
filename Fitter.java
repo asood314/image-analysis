@@ -3,6 +3,7 @@ public class Fitter
     private Function funk;
     private int[] range;
     private int[] dist;
+    private boolean[] fixedParameters;
 
     public Fitter(Function f, int min, int max, double[] par)
     {
@@ -11,6 +12,8 @@ public class Fitter
         range[0] = min;
         range[1] =  max;
         funk.setParameters(par);
+	fixedParameters = new boolean[par.length];
+	for(int i = 0; i < par.length; i++) fixedParameters[i] = false;
     }
 
     public void setFunction(Function f){ funk = f; }
@@ -24,6 +27,8 @@ public class Fitter
         range[0] = min;
         range[1] = max;
     }
+
+    public void fixParameter(int parIndex){ fixedParameters[parIndex] = true; }
 
     public void fit(double[] guess)
     {
@@ -40,7 +45,8 @@ public class Fitter
         for(int i = 0; i < param.length; i++){
             iparam[i] = param[i];
             step[i] = 0.1 * param[i];
-            fixed[i] = false;
+            fixed[i] = fixedParameters[i];
+	    System.out.println(fixed[i]);
         }
         boolean allFixed = false;
         double maxLL = logLikelihood();
@@ -72,12 +78,13 @@ public class Fitter
                     step[i] *= 0.5;
                     if(updown[i] < 0) step[i] *= -1;
                 }
-                if(step[i]/param[i] < 0.001) fixed[i] = true;
+                if(Math.abs(step[i]/param[i]) < 0.001) fixed[i] = true;
                 allFixed = allFixed && fixed[i];
             }
             counter++;
         }
         if(counter > 999) System.out.println("Failed to converge: Iteration limit reached.");
+	else System.out.println("Converged in " + counter + " iterations.");
         funk.setParameters(param);
     }
 
