@@ -524,6 +524,8 @@ public class NDImage
         for(int i = region[0]; i < region[0]+region[2]; i++){
             for(int j = region[1]; j < region[1]+region[3]; j++){
                 int value = (int)((image[wl][z][t][i][j][p] - min) * sf);
+                if(value > 255) value = 255;
+                else if(value < 0) value = 0;
                 value = 0xff000000 | (value << 16) | (value << 8) | value;
                 bi.setRGB(i-region[0],j-region[1],value);
             }
@@ -559,6 +561,8 @@ public class NDImage
         for(int i = region[0]; i < region[0]+region[2]; i++){
             for(int j = region[1]; j < region[1]+region[3]; j++){
                 int value = (int)((image[wl][z][t][i][j][p] - min) * sf);
+                if(value > 255) value = 255;
+                else if(value < 0) value = 0;
                 value = 0xff000000 | (value << 16) | (value << 8) | value;
                 if(m.getValue(i,j) > 0) value = color;
                 bi.setRGB(i-region[0],j-region[1],value);
@@ -604,6 +608,8 @@ public class NDImage
                 for(int w = 0; w < wl.length; w++){
                     if(wl[w] < 0) continue;
                     rgbPixel[w] = (int)((image[wl[w]][z][t][i][j][p] - min[w]) * sf[w]);
+                    if(rgbPixel[w] > 255) rgbPixel[w] = 255;
+                    else if(rgbPixel[w] < 0) rgbPixel[w] = 0;
                 }
                 int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                 bi.setRGB(i-region[0],j-region[1],value);
@@ -649,6 +655,8 @@ public class NDImage
                 for(int w = 0; w < wl.length; w++){
                     if(wl[w] < 0) continue;
                     rgbPixel[w] = (int)((image[wl[w]][z][t][i][j][p] - min[w]) * sf[w]);
+                    if(rgbPixel[w] > 255) rgbPixel[w] = 255;
+                    else if(rgbPixel[w] < 0) rgbPixel[w] = 0;
                 }
                 int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                 if(m.getValue(i,j) > 0) value = color;
@@ -694,6 +702,8 @@ public class NDImage
                 for(int w = 0; w < wl.length; w++){
                     if(wl[w] < 0) continue;
                     rgbPixel[w] = (int)((image[wl[w]][z][t][i][j][p] - min[w]) * sf[w]);
+                    if(rgbPixel[w] > 255) rgbPixel[w] = 255;
+                    else if(rgbPixel[w] < 0) rgbPixel[w] = 0;
                 }
                 int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                 bi.setRGB(i-region[0],j-region[1],value);
@@ -703,6 +713,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {(int)((image[wl[0]][z][t][i][j][p] - min[0]) * sf[0]),0,0};
+                    if(rgbPixel[0] > 255) rgbPixel[0] = 255;
+                    else if(rgbPixel[0] < 0) rgbPixel[0] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     bi.setRGB(region[2]+i-region[0],j-region[1],value);
                 }
@@ -712,6 +724,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {0,(int)((image[wl[1]][z][t][i][j][p] - min[1]) * sf[1]),0};
+                    if(rgbPixel[1] > 255) rgbPixel[1] = 255;
+                    else if(rgbPixel[1] < 0) rgbPixel[1] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     bi.setRGB(i-region[0],region[3]+j-region[1],value);
                 }
@@ -721,6 +735,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {0,0,(int)((image[wl[2]][z][t][i][j][p] - min[2]) * sf[2])};
+                    if(rgbPixel[2] > 255) rgbPixel[2] = 255;
+                    else if(rgbPixel[2] < 0) rgbPixel[2] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     bi.setRGB(region[2]+i-region[0],region[3]+j-region[1],value);
                 }
@@ -765,6 +781,8 @@ public class NDImage
                 for(int w = 0; w < wl.length; w++){
                     if(wl[w] < 0) continue;
                     rgbPixel[w] = (int)((image[wl[w]][z][t][i][j][p] - min[w]) * sf[w]);
+                    if(rgbPixel[w] > 255) rgbPixel[w] = 255;
+                    else if(rgbPixel[w] < 0) rgbPixel[w] = 0;
                 }
                 int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                 if(m.getValue(i,j) > 0) value = color;
@@ -775,6 +793,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {(int)((image[wl[0]][z][t][i][j][p] - min[0]) * sf[0]),0,0};
+                    if(rgbPixel[0] > 255) rgbPixel[0] = 255;
+                    else if(rgbPixel[0] < 0) rgbPixel[0] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     if(m.getValue(width+i,j) > 0) value = color;
                     bi.setRGB(region[2]+i-region[0],j-region[1],value);
@@ -785,6 +805,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {0,(int)((image[wl[1]][z][t][i][j][p] - min[1]) * sf[1]),0};
+                    if(rgbPixel[1] > 255) rgbPixel[1] = 255;
+                    else if(rgbPixel[1] < 0) rgbPixel[1] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     if(m.getValue(i,height+j) > 0) value = color;
                     bi.setRGB(i-region[0],region[3]+j-region[1],value);
@@ -795,6 +817,8 @@ public class NDImage
             for(int i = region[0]; i < region[0]+region[2]; i++){
                 for(int j = region[1]; j < region[1]+region[3]; j++){
                     int[] rgbPixel = {0,0,(int)((image[wl[2]][z][t][i][j][p] - min[2]) * sf[2])};
+                    if(rgbPixel[2] > 255) rgbPixel[2] = 255;
+                    else if(rgbPixel[2] < 0) rgbPixel[2] = 0;
                     int value = 0xff000000 | (rgbPixel[0] << 16) | (rgbPixel[1] << 8) | rgbPixel[2];
                     if(m.getValue(width+i,height+j) > 0) value = color;
                     bi.setRGB(region[2]+i-region[0],region[3]+j-region[1],value);
