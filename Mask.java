@@ -74,6 +74,16 @@ public class Mask
             }
         }
     }
+
+    public void add(Mask m, int coeff)
+    {
+        if(m == null) return;
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                mask[i][j] += coeff*m.getValue(i,j);
+            }
+        }
+    }
     
     public void add(Mask m, int xOffset, int yOffset)
     {

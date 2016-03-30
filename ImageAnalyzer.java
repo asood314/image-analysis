@@ -78,7 +78,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         imName = name;
         reports = new ImageReport[im.getNZ()*im.getNT()*im.getNPos()];
 	for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths());
-        analysisTools = new ImageAnalysisToolkit(ndim,reports);
+        analysisTools = new FixedCellAnalyzer(ndim,reports);
 	stats = null;
         setBounds(120,20,1220,1020);
         int[] chan = {1,0};
@@ -239,6 +239,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem = new JMenuItem("None");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm none");
+	menuItem.setAccelerator(KeyStroke.getKeyStroke('n', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
         menuItem = new JMenuItem("Outlier Mask");
         menuItem.addActionListener(this);
@@ -247,14 +248,17 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem = new JMenuItem("Signal Mask");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm signal");
+	menuItem.setAccelerator(KeyStroke.getKeyStroke('m', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
         menuItem = new JMenuItem("Puncta");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm puncta");
+	menuItem.setAccelerator(KeyStroke.getKeyStroke('p', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
         menuItem = new JMenuItem("Synapses");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm synapses");
+	menuItem.setAccelerator(KeyStroke.getKeyStroke('s', Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
 	menuItem = new JMenuItem("Stats");
         menuItem.addActionListener(this);
@@ -609,8 +613,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             for(int w = 0; w < ndim.getNWavelengths(); w++){
                 Mask m = analysisTools.findOutlierMask(w,z,t,p);
                 reports[index].setOutlierMask(w,m);
-                //reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,m));
-		reports[index].setSignalMask(w,analysisTools.findSignalMask2(w,z,t,p));
+                reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,m));
+		//reports[index].setSignalMask(w,analysisTools.findSignalMask2(w,z,t,p));
             }
             System.out.println("Done.");
         }
