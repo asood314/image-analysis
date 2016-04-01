@@ -172,33 +172,33 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         double[][] zscores = new double[ndim.getWidth()][ndim.getHeight()];
         Mask m = r.getSignalMask(w);
-	Mask m2 = r.getPunctaMask(w);
-	m.add(m2,-1);
-	Vector<Point> localMaxima = new Vector<Point>();
-	Vector<Point> upperLeft = new Vector<Point>();
-	Vector<Point> lowerRight = new Vector<Point>();
+        Mask m2 = r.getPunctaMask(w);
+        m.add(m2,-1);
+        Vector<Point> localMaxima = new Vector<Point>();
+        Vector<Point> upperLeft = new Vector<Point>();
+        Vector<Point> lowerRight = new Vector<Point>();
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
-		if(m.getValue(i,j) < 1){
-		    zscores[i][j] = 0;
-		    continue;
-		}
+                if(m.getValue(i,j) < 1){
+                    zscores[i][j] = 0;
+                    continue;
+                }
                 int x1 = Math.max(i-punctaDetectionWindow,0);
                 int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
                 int y1 = Math.max(j-punctaDetectionWindow,0);
                 int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
-		if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
-		localMaxima.add(new Point(i,j));
-		int nSignal = m.sum(x1,x2,y1,y2);
-		while(nSignal < 1000){
-		    x1 = Math.max(x1-punctaDetectionWindow,0);
-		    x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
-		    y1 = Math.max(y1-punctaDetectionWindow,0);
-		    y2 = Math.min(ndim.getHeight(),y2+punctaDetectionWindow);
-		    nSignal = m.sum(x1,x2,y1,y2);
-		}
-		upperLeft.add(new Point(x1,y1));
-		lowerRight.add(new Point(x2,y2));
+                if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
+                localMaxima.add(new Point(i,j));
+                int nSignal = m.sum(x1,x2,y1,y2);
+                while(nSignal < 1000){
+                    x1 = Math.max(x1-punctaDetectionWindow,0);
+                    x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
+                    y1 = Math.max(y1-punctaDetectionWindow,0);
+                    y2 = Math.min(ndim.getHeight(),y2+punctaDetectionWindow);
+                    nSignal = m.sum(x1,x2,y1,y2);
+                }
+                upperLeft.add(new Point(x1,y1));
+                lowerRight.add(new Point(x2,y2));
                 //double signalFraction = ((double)m.sum(x1,x2,y1,y2)) / (punctaDetectionWindow*punctaDetectionWindow);
                 //if(signalFraction < 0.05){
                 //    zscores[i][j] = 0;
@@ -207,80 +207,81 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 //double localMean = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
                 //double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
                 //zscores[i][j] = (ndim.getPixel(w,z,t,i,j,p) - localMean) / localStd;
-		//double localMean = ndim.mean(w,z,t,p,x1,x2,y1,y2,m);
+                //double localMean = ndim.mean(w,z,t,p,x1,x2,y1,y2,m);
             }
         }
-        int[] maxXY = argmax(zscores);
-	int[] diArr = {-1,0,1,-1,1,-1,0,1};
-	int[] djArr = {-1,-1,-1,0,0,1,1,1};
-	Mask used = new Mask(ndim.getWidth(),ndim.getHeight(),false);
-	Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
+        //int[] maxXY = argmax(zscores);
+        int[] diArr = {-1,0,1,-1,1,-1,0,1};
+        int[] djArr = {-1,-1,-1,0,0,1,1,1};
+        Mask used = new Mask(ndim.getWidth(),ndim.getHeight(),false);
+        used.multiply(m);
+        Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
         //while(zscores[maxXY[0]][maxXY[1]] > 3){
-	for(int s = 0; s < localMaxima.size(); s++){
-	    //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
-	    Point lm = localMaxima.elementAt(s);
-	    Point ul = upperLeft.elementAt(s);
-	    Point lr = lowerRight.elementAt(s);
-	    int Imax = ndim.getPixel(w,z,t,lm.x,lm.y,p);
-	    double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
+        for(int s = 0; s < localMaxima.size(); s++){
+            //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
+            Point lm = localMaxima.elementAt(s);
+            Point ul = upperLeft.elementAt(s);
+            Point lr = lowerRight.elementAt(s);
+            int Imax = ndim.getPixel(w,z,t,lm.x,lm.y,p);
+            double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
             Cluster c = new Cluster();
             Vector<Integer> borderX = new Vector<Integer>();
             Vector<Integer> borderY = new Vector<Integer>();
-	    Vector<Integer> intensities = new Vector<Integer>();
+            Vector<Integer> intensities = new Vector<Integer>();
             //borderX.addElement(maxXY[0]);
             //borderY.addElement(maxXY[1]);
             //zscores[maxXY[0]][maxXY[1]] = 0;
             //used.setValue(maxXY[0],maxXY[1],1);
-	    borderX.addElement(lm.x);
+            borderX.addElement(lm.x);
             borderY.addElement(lm.y);
-	    used.setValue(lm.x,lm.y,0);
-	    cMask.setValue(lm.x,lm.y,1);
-	    intensities.add(Imax);
+            used.setValue(lm.x,lm.y,0);
+            cMask.setValue(lm.x,lm.y,1);
+            intensities.add(Imax);
             while(borderX.size() > 0){
                 int bi = borderX.elementAt(0);
                 int bj = borderY.elementAt(0);
                 c.addPixel(bi,bj);
                 for(int k = 0; k < 8; k++){
                     int i = bi+diArr[k];
-		    int j = bj+djArr[k];
-		    try{
-			//double val = (1-used.getValue(i,j))*((double)ndim.getPixel(w,z,t,i,j,p)) / Imax;
-			double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localMean) / (Imax - localMean);
-			if(val > 0.5 /*&& subMask.getValue(bi+di,bj+dj) == 0*/){
-			    used.setValue(i,j,0);
-			    borderX.addElement(i);
-			    borderY.addElement(j);
-			    //zscores[i][j] = 0;
-			    cMask.setValue(i,j,1);
-			    intensities.add(ndim.getPixel(w,z,t,i,j,p));
-			}
-		    }
-		    catch(ArrayIndexOutOfBoundsException e){ continue; }
+                    int j = bj+djArr[k];
+                    try{
+                        //double val = (1-used.getValue(i,j))*((double)ndim.getPixel(w,z,t,i,j,p)) / Imax;
+                        double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localMean) / (Imax - localMean);
+                        if(val < 0.5 || val > 1.0) continue;
+                        used.setValue(i,j,0);
+                        borderX.addElement(i);
+                        borderY.addElement(j);
+                        //zscores[i][j] = 0;
+                        cMask.setValue(i,j,1);
+                        intensities.add(ndim.getPixel(w,z,t,i,j,p));
+                    }
+                    catch(ArrayIndexOutOfBoundsException e){ continue; }
                 }
                 borderX.remove(0);
                 borderY.remove(0);
             }
-	    double limit = 2*ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,cMask) - Imax;
-	    for(int i = c.size()-1; i >=0; i--){
-		Point pt = c.getPixel(i);
-		if(ndim.getPixel(w,z,t,pt.x,pt.y,p) < limit) c.removePixel(i);
-		cMask.setValue(pt.x,pt.y,0);
-		used.setValue(pt.x,pt.y,1);
-	    }
-	    limit = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used) + 3*ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
-	    if(ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,cMask) < limit){
-		used.add(cMask,ul.x,lr.x,ul.y,lr.y);
-		cMask.clear(ul.x,lr.x,ul.y,lr.y);
-		continue;
-	    }
-	    if(c.size() > 2000){
-		Point seed = c.getPixel(0);
-		System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");
-		//maxXY = argmax(zscores);
-		continue;
-	    }
+            double limit = 2*ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,cMask) - Imax;
+            for(int i = c.size()-1; i >=0; i--){
+                Point pt = c.getPixel(i);
+                if(ndim.getPixel(w,z,t,pt.x,pt.y,p) < limit) c.removePixel(i);
+                cMask.setValue(pt.x,pt.y,0);
+                used.setValue(pt.x,pt.y,1);
+            }
+            limit = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used) + 3*ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
+            if(ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,cMask) < limit){
+                used.add(cMask,ul.x,lr.x,ul.y,lr.y);
+                cMask.clear(ul.x,lr.x,ul.y,lr.y);
+                continue;
+            }
+            if(c.size() > 2000){
+                Point seed = c.getPixel(0);
+                System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");
+                //maxXY = argmax(zscores);
+                cMask.clear(ul.x,lr.x,ul.y,lr.y);
+                continue;
+            }
             if(c.contains(c.getCentroid())) r.addPunctum(w,c);
-	    cMask.clear(ul.x,lr.x,ul.y,lr.y);
+            cMask.clear(ul.x,lr.x,ul.y,lr.y);
             //maxXY = argmax(zscores);
         }
     }

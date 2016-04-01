@@ -65,6 +65,15 @@ public class Mask
         }
     }
     
+    public void multiply(Mask m)
+    {
+        for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                mask[i][j] *= m.getValue(i,j);
+            }
+        }
+    }
+    
     public void add(Mask m)
     {
         if(m == null) return;
