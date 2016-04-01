@@ -94,6 +94,16 @@ public class Mask
             }
         }
     }
+
+    public void add(Mask m, int x1, int x2, int y1, int y2)
+    {
+        if(m == null) return;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                mask[i][j] += m.getValue(i,j);
+            }
+        }
+    }
     
     public void threshold(int val)
     {
@@ -114,5 +124,14 @@ public class Mask
             }
         }
         return sum;
+    }
+
+    public void clear(int x1, int x2, int y1, int y2)
+    {
+	for(int i = x1; i < x2; i++){
+	    for(int j = y1; j < y2; j++){
+		mask[i][j] = 0;
+	    }
+	}
     }
 }

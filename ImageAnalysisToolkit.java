@@ -1,3 +1,7 @@
+import java.awt.AWTException;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Robot;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Vector;
@@ -50,14 +54,16 @@ public abstract class ImageAnalysisToolkit
             }
         }
 	executor.shutdown();
-        while(!executor.awaitTermination(10,TimeUnit.MINUTES)){
-	    /*
-            try{
-                Thread.currentThread().join(600000);
-                System.out.println(""+activeThreads+" threads currently active");
-            }
-            catch(InterruptedException e){ e.printStackTrace(); }
-	    */
+	Robot bot = null;
+	try{ bot = new Robot(); }
+	catch(AWTException e){ e.printStackTrace(); }
+        while(!executor.awaitTermination(8,TimeUnit.MINUTES)){
+	    if(bot != null){
+		Point mouseLocation = MouseInfo.getPointerInfo().getLocation();
+		bot.mouseMove(mouseLocation.x + 1, mouseLocation.y);
+		bot.mouseMove(mouseLocation.x - 1, mouseLocation.y);
+		bot.mouseMove(mouseLocation.x, mouseLocation.y);
+	    }
         }
         saveImageReports(outname);
     }
@@ -72,6 +78,8 @@ public abstract class ImageAnalysisToolkit
     public abstract void standardAnalysis(int z, int t, int p);
     
     public abstract Mask findOutlierMask(int w, int z, int t, int p);
+
+    public abstract Mask findBackgroundMask(int w, int z, int t, int p);
     
     public abstract Mask findSignalMask(int w, int z, int t, int p, Mask outMask);
 

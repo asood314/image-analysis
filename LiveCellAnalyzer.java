@@ -54,6 +54,8 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
         }
         return m;
     }
+
+    public Mask findBackgroundMask(int w, int z, int t, int p){ return (Mask)null; }
     
     public Mask findSignalMask(int w, int z, int t, int p, Mask outMask)
     {
@@ -147,7 +149,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
             Vector<Integer> borderY = new Vector<Integer>();
             borderX.addElement(maxXY[0]);
             borderY.addElement(maxXY[1]);
-            //zscores[maxXY[0]][maxXY[1]] = 0;
+            zscores[maxXY[0]][maxXY[1]] = 0;
             used.setValue(maxXY[0],maxXY[1],1);
             while(borderX.size() > 0){
                 int bi = borderX.elementAt(0);
@@ -162,7 +164,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
 			    used.setValue(i,j,1);
 			    borderX.addElement(i);
 			    borderY.addElement(j);
-			    //zscores[bi+di][bj+dj] = 0;
+			    zscores[i][j] = 0;
 			}
 		    }
 		    catch(ArrayIndexOutOfBoundsException e){ continue; }

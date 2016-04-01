@@ -245,6 +245,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm outlier");
         maskMenu.add(menuItem);
+	menuItem = new JMenuItem("Background Mask");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("vm bkgd");
+        maskMenu.add(menuItem);
         menuItem = new JMenuItem("Signal Mask");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm signal");
@@ -288,6 +292,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem = new JMenuItem("Standard Analysis");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("Standard Analysis");
+        analyzeMenu.add(menuItem);
+	menuItem = new JMenuItem("Find Background Mask");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("findbm");
         analyzeMenu.add(menuItem);
         menuItem = new JMenuItem("Find Signal Mask");
         menuItem.addActionListener(this);
@@ -535,6 +543,13 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     imPanel.repaint();
                 }
             }
+	    else if(cmd.equals("vm bkgd")){
+                ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
+                if(r != null){
+                    imPanel.setMask(r.getUtilityMask(imPanel.getWavelength()));
+                    imPanel.repaint();
+                }
+            }
             else if(cmd.equals("vm outlier")){
                 ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(r != null){
@@ -614,7 +629,16 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                 Mask m = analysisTools.findOutlierMask(w,z,t,p);
                 reports[index].setOutlierMask(w,m);
                 reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,m));
-		//reports[index].setSignalMask(w,analysisTools.findSignalMask2(w,z,t,p));
+            }
+            System.out.println("Done.");
+        }
+	else if(cmd.equals("findbm")){
+            int z = imPanel.getZSlice();
+            int t = imPanel.getTimepoint();
+            int p = imPanel.getPosition();
+            int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
+            for(int w = 0; w < ndim.getNWavelengths(); w++){
+                reports[index].setUtilityMask(w,analysisTools.findBackgroundMask(w,z,t,p));
             }
             System.out.println("Done.");
         }

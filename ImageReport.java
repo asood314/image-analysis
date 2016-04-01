@@ -5,8 +5,9 @@ import java.util.Vector;
 
 public class ImageReport
 {
-    private Mask outlierMasks[];
-    private Mask signalMasks[];
+    private Mask[] outlierMasks;
+    private Mask[] signalMasks;
+    private Mask[] utilityMasks;
     private Vector<Vector<Cluster>> puncta;
     private Vector<Synapse> synapses;
     private int nChannels;
@@ -16,6 +17,7 @@ public class ImageReport
         nChannels = nchan;
         outlierMasks = new Mask[nChannels];
         signalMasks = new Mask[nChannels];
+	utilityMasks = new Mask[nChannels];
         puncta = new Vector<Vector<Cluster>>();
         for(int i = 0; i < nchan; i++) puncta.add(new Vector<Cluster>());
         synapses = new Vector<Synapse>();
@@ -27,9 +29,13 @@ public class ImageReport
     
     public void setSignalMask(int chan, Mask m){ signalMasks[chan] = m; }
     
+    public void setUtilityMask(int chan, Mask m){ utilityMasks[chan] = m; }
+    
     public Mask getOutlierMask(int chan){ return outlierMasks[chan]; }
     
     public Mask getSignalMask(int chan){ return signalMasks[chan]; }
+
+    public Mask getUtilityMask(int chan){ return utilityMasks[chan]; }
     
     public void addPunctum(int chan, Cluster c){ puncta.elementAt(chan).add(c); }
     
@@ -107,7 +113,7 @@ public class ImageReport
     
     public void write(RandomAccessFile fout) throws IOException
     {
-        byte[] buf = new byte[10000];
+        byte[] buf = new byte[400000];
         int width = outlierMasks[0].getWidth();
         int height = outlierMasks[0].getHeight();
         buf[0] = (byte)(nChannels & 0x000000ff);
