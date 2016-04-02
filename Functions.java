@@ -76,11 +76,11 @@ public class Functions
     public static Function exponentialDecay()
     {
 	return new Function(){
-            private double[] parameters = new double[2];// 2 parameters - maximum, decay constant
-            public void setParameters(double[] param){ parameters = param; }
-            public double[] getParameters(){ return parameters; }
+            private double[] ps = new double[5];// 3 parameters - maximum, decay constant, constant offset, norm, range;
+            public void setParameters(double[] param){ ps = param; }
+            public double[] getParameters(){ return ps; }
             public double calculate(double x){
-                return Math.exp(-(1.0/parameters[1])*(x-parameters[0]));
+                return ((ps[3] - ps[2]*ps[4])/(ps[1]*Math.exp(ps[0]/ps[1]))) * Math.exp(-(1.0/ps[1])*(x-ps[0])) + ps[2];
             }
             public double integral(double x1, double x2){
                 double sum = 0;

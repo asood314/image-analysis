@@ -273,6 +273,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 cMask.clear(ul.x,lr.x,ul.y,lr.y);
                 continue;
             }
+	    if(c.size() < 1) continue;
             if(c.size() > 2000){
                 Point seed = c.getPixel(0);
                 System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");

@@ -67,6 +67,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
     private boolean punctaSelectorTool;
     private boolean synapseSelectorTool;
     private boolean regionSelectorTool;
+    private boolean pixelSelectorTool;
     private int mousePressX,mousePressY;
     private ImageAnalysisToolkit analysisTools;
     private StatsPage stats;
@@ -80,6 +81,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths());
         analysisTools = new FixedCellAnalyzer(ndim,reports);
 	stats = null;
+	punctaSelectorTool = false;
+	synapseSelectorTool = false;
+	regionSelectorTool = false;
+	pixelSelectorTool = true;
         setBounds(120,20,1220,1020);
         int[] chan = {1,0};
         imPanel = new ImagePanel(im);
@@ -322,6 +327,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem = new JMenuItem("Synapse Selector");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("ssel");
+        toolMenu.add(menuItem);
+	menuItem = new JMenuItem("Pixel Selector");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("pxsel");
         toolMenu.add(menuItem);
         setJMenuBar(menuBar);
         getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
@@ -605,16 +614,25 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             regionSelectorTool = true;
             punctaSelectorTool = false;
             synapseSelectorTool = false;
+	    pixelSelectorTool = false;
         }
         else if(cmd.equals("psel")){
             regionSelectorTool = false;
             punctaSelectorTool = true;
             synapseSelectorTool = false;
+	    pixelSelectorTool = false;
         }
         else if(cmd.equals("ssel")){
             regionSelectorTool = false;
             punctaSelectorTool = false;
             synapseSelectorTool = true;
+	    pixelSelectorTool = false;
+        }
+	else if(cmd.equals("pxsel")){
+            regionSelectorTool = false;
+            punctaSelectorTool = false;
+            synapseSelectorTool = false;
+	    pixelSelectorTool = true;
         }
         else if(cmd.equals("Standard Analysis")){
             analysisTools.standardAnalysis(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition());
@@ -692,13 +710,17 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         if(punctaSelectorTool){
             Point p = new Point(trueX,trueY);
             Cluster c = r.selectPunctum(p);
-            System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size());
+	    p = c.getPixel(0);
+            System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size() + ", Peak Location: " + p.toString() + ", Peak Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),p.x,p.y,imPanel.getPosition()));
         }
-        if(synapseSelectorTool){
+        else if(synapseSelectorTool){
             Point p = new Point(trueX,trueY);
             Synapse s = r.selectSynapse(p);
             System.out.println("Center: " + s.getCenter().toString() + ", Overlap: " + s.getOverlap());
         }
+	else if(pixelSelectorTool){
+	    System.out.println("Location: (" + trueX + "," + trueY + ") Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),trueX,trueY,imPanel.getPosition()));
+	}
     }
     
     public void mouseEntered(MouseEvent e){}

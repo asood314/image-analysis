@@ -1281,13 +1281,10 @@ public class NDImage
     public int[] getDistribution(int wl, int z, int t, int p, Mask m)
     {
 	int[] values = new int[65536];
-	int target = 0;
 	for(int i = 0; i < 65536; i++) values[i] = 0;
         for(int i = 0; i < width; i++){
             for(int j = 0; j < height; j++){
-		int a = m.getValue(i,j);
-                values[image[wl][z][t][i][j][p]] += a;
-		target += a;
+                values[image[wl][z][t][i][j][p]] += m.getValue(i,j);
             }
         }
 	return values;
@@ -1296,13 +1293,10 @@ public class NDImage
     public int[] getDistribution(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
     {
 	int[] values = new int[65536];
-	int target = 0;
 	for(int i = 0; i < 65536; i++) values[i] = 0;
         for(int i = x1; i < x2; i++){
             for(int j = y1; j < y2; j++){
-		int a = m.getValue(i,j);
-                values[image[wl][z][t][i][j][p]] += a;
-		target += a;
+                values[image[wl][z][t][i][j][p]] += m.getValue(i,j);
             }
         }
 	return values;

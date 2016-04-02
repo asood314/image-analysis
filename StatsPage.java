@@ -215,9 +215,12 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	}
 	else if(cmd.equals("exp")){
 	    StringTokenizer parTok = new StringTokenizer(parField.getText(), ";:, ");
-	    double[] par = new double[2];
+	    double[] par = new double[5];
 	    par[0] = Double.parseDouble(parTok.nextToken());
 	    par[1] = Double.parseDouble(parTok.nextToken());
+	    par[2] = Double.parseDouble(parTok.nextToken());
+	    par[3] = Double.parseDouble(parTok.nextToken());
+	    par[4] = Double.parseDouble(parTok.nextToken());
 	    Function f = Functions.exponentialDecay();
 	    f.setParameters(par);
 	    if(parTok.hasMoreTokens()) histPanel.setFunctionNorm(Double.parseDouble(parTok.nextToken()));
@@ -254,20 +257,28 @@ public class StatsPage extends JFrame implements ChangeListener, ActionListener
 	    double rate = 0;
 	    for(int i = 0; i < nbins; i++){
 		if(histPanel.getBinValue(i) < threshold){
-		    rate = (double)i;
+		    rate = i * histPanel.getBinWidth();
 		    break;
 		}
 	    }
-            double par[] = {mode,rate};
+	    double asym = 0;
+	    for(int i = nbins-1; i >= 4*nbins/5; i--) asym += histPanel.getBinValue(i);
+	    asym = asym / (nbins/5) / histPanel.getBinWidth();
+            double par[] = {mode,rate,asym,histPanel.getIntegral(),xmax-xmin};
+	    System.out.println("Guess: "+par[0]+", "+par[1]+", "+par[2]+", "+par[3]+", "+par[4]);
             Function f = Functions.exponentialDecay();
             Fitter fitter = new Fitter(f,(int)xmin,(int)xmax,par);
 	    fitter.fixParameter(0);
+	    fitter.fixParameter(3);
+	    fitter.fixParameter(4);
+	    fitter.setLimits(1,0.2*par[1],2*par[1]);
+	    fitter.setLimits(2,0,(par[3]-1)/par[4]);
             fitter.setDistribution(imPanel.getDistribution(maskIn));
             fitter.fit();
             histPanel.setFunctionNorm(histPanel.max()/histPanel.getBinWidth());
             histPanel.setFunction(f);
             par = f.getParameters();
-            System.out.println(""+par[0]+", "+par[1]);
+            System.out.println("Fit: "+par[0]+", "+par[1]+", "+par[2]+", "+par[3]+", "+par[4]);
         }
 	else if(cmd.equals("fitconv")){
             double mean = imPanel.imMode(maskIn);
