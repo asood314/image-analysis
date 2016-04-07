@@ -645,9 +645,9 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int p = imPanel.getPosition();
             int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
             for(int w = 0; w < ndim.getNWavelengths(); w++){
-                Mask m = analysisTools.findOutlierMask(w,z,t,p);
-                reports[index].setOutlierMask(w,m);
-                reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,m));
+                //Mask m = analysisTools.findOutlierMask(w,z,t,p);
+                //reports[index].setOutlierMask(w,m);
+                reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,reports[index].getUtilityMask(w)));
             }
             System.out.println("Done.");
         }
