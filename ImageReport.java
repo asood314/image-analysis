@@ -125,6 +125,7 @@ public class ImageReport
                 for(int i = 0; i < width; i++){
                     buf[i] = (byte)(outlierMasks[c].getValue(i,j) & 0x000000ff);
                     buf[width+i] = (byte)(signalMasks[c].getValue(i,j) & 0x000000ff);
+		    //buf[2*width+i] = (byte)(utilityMasks[c].getValue(i,j) & 0x000000ff);
                 }
                 fout.write(buf,0,2*width);
             }
@@ -182,15 +183,18 @@ public class ImageReport
         for(int c = 0; c < nc; c++){
             Mask om = new Mask(width,height);
             Mask sm = new Mask(width,height);
+	    //Mask um = new Mask(width,height);
             for(int j = 0; j < height; j++){
                 fin.read(buf,0,2*width);
                 for(int i = 0; i < width; i++){
                     om.setValue(i,j,(int)buf[i]);
                     sm.setValue(i,j,(int)buf[width+i]);
+		    //um.setValue(i,j,(int)buf[2*width+i]);
                 }
             }
             r.setOutlierMask(c,om);
             r.setSignalMask(c,sm);
+	    //r.setUtilityMask(c,sm);
             fin.read(buf,0,2);
             int np = readShortFromBuffer(buf,0);
             for(int i = 0; i < np; i++){
