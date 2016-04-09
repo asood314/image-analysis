@@ -13,8 +13,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         reports = r;
         activeThreads = 0;
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
-        punctaDetectionWindow = 20*(ndim.getWidth()/1000);
-	punctaFindingIterations = 1;
+        punctaDetectionWindow = 10*(ndim.getWidth()/1000);
+	punctaFindingIterations = 2;
     }
     
     public void setSignalDetectionWindow(int sdt){ signalDetectionWindow = sdt; }
@@ -69,13 +69,49 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     {
 	double mode = ndim.mode(w,z,t,p);
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+	int[] dist = new int[65536];
 	for(int i = 20; i < ndim.getWidth()-20; i++){
+	    int x1 = i-20;
+	    int x2 = i+20;
+	    for(int k = 0; k < 65536; k++) dist[k] = 0;
+	    int n = 0;
+	    for(int k = x1; k < x2; k++){
+		for(int j = 0; j < 40; j++){
+		    int a = ndim.getPixel(w,z,t,k,j,p);
+		    dist[a]++;
+		    n++;
+		}
+	    }
+	    int sum = 0;
+	    double target = n/2.0;
+	    int index;
+	    for(index = 0; sum < target; index++) sum += dist[index];
+	    int lmedian = index-1;
+	    if(lmedian < 3*mode) m.setValue(i,19,1);
 	    for(int j = 20; j < ndim.getHeight()-20; j++){
-		//if(m.getValue(i,j) > 0) continue;
-		double lmode = ndim.mode(w,z,t,p,i-20,i+20,j-20,j+20);
-		if(lmode/mode > 2) continue;
-		double lmedian = ndim.median(w,z,t,p,i-20,i+20,j-20,j+20);
-		if(lmedian/lmode < 1.5) m.setValue(i,j,1);
+		int y1 = j-20;
+		int y2 = j+20;
+		for(int k = x1; k < x2; k++){
+		    int val1 = ndim.getPixel(w,z,t,k,y1,p);
+		    int val2 = ndim.getPixel(w,z,t,k,y2,p);
+		    dist[val1]--;
+		    dist[val2]++;
+		    if(val1 <= lmedian) sum--;
+		    if(val2 <= lmedian) sum++;
+		}
+		while(sum > target){
+		    sum -= dist[lmedian];
+		    lmedian--;
+		}
+		while(sum < target){
+		    lmedian++;
+		    sum += dist[lmedian];
+		}
+		if(lmedian < 3*mode) m.setValue(i,j,1);
+		//double lmode = ndim.mode(w,z,t,p,i-20,i+20,j-20,j+20);
+		//if(lmode/mode > 2) continue;
+		//double lmedian = ndim.median(w,z,t,p,i-20,i+20,j-20,j+20);
+		//if(lmedian/lmode < 1.5) m.setValue(i,j,1);
 	    }
 	}
 	return m;
@@ -83,323 +119,48 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     
     public Mask findSignalMask(int w, int z, int t, int p, Mask bkgdMask)
     {
-	/*
-	int[] dist = ndim.getDistribution(w,z,t,p);
-	int mode = (int)ndim.mode(w,z,t,p);
-	int halfMax = dist[mode]/2;
-	int low = 0;
-	int high = 0;
-	for(int i = mode; i > 0; i--){
-	    if(dist[i] < halfMax){
-		low = i;
-		break;
-	    }
-	}
-	for(int i = mode; i < 65536; i++){
-	    if(dist[i] < halfMax){
-		high = i;
-		break;
-	    }
-	}
-	*/
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
-	//double threshold = mode + 10*(high-low);
-	double thresholdSig = ndim.max(w,z,t,p,bkgdMask);
-	double thresholdBkg = ndim.mean(w,z,t,p,bkgdMask) + 3*ndim.std(w,z,t,p,bkgdMask);
+	//Mask m2 = new Mask(ndim.getWidth(),ndim.getHeight());
+	double stdBkg = ndim.std(w,z,t,p,bkgdMask);
+	//double thresholdSig = ndim.max(w,z,t,p,bkgdMask);
+	double globalThreshold = ndim.mean(w,z,t,p,bkgdMask) + 5*stdBkg;
+	//int[] dist = new int[8192];
+	//for(int i = 0; i < 8192; i++) dist[i] = 0;
 	for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
 		//if(bkgdMask.getValue(i,j) > 0) continue;
 		int value = ndim.getPixel(w,z,t,i,j,p);
-		if(value > thresholdSig){
+		if(value > globalThreshold){
 		    m.setValue(i,j,1);
-		    //continue;
+		    //m2.setValue(i,j,1);
+		    //dist[value/8]++;
 		}
 	    }
 	}
+	/*
+	int modeSig = 0;
+	int modeHeight = 0;
+	for(int i = 0; i < 8192; i++){
+	    if(dist[i] > modeHeight){
+		modeHeight = dist[i];
+		modeSig = i;
+	    }
+	}
+	int halfMode = modeSig;
+	for(halfMode = modeSig; modeHeight/dist[halfMode] < 2; halfMode++);
+	double stdSig = 8*(halfMode - modeSig);
+	*/
+	//System.out.println(globalThreshold);
+	//System.out.println(stdBkg);
+	/*
+	double outlierThreshold = 8*globalThreshold;
 	for(int i = 0; i < ndim.getWidth(); i++){
-	    //System.out.println("Column "+i);
-	    int x1 = Math.max(0,i-signalDetectionWindow);
-	    int x2 = Math.min(ndim.getWidth(),i+signalDetectionWindow);
-	    int[] bdist = new int[65536];
-	    int[] sdist = new int[65536];
-	    double btarget = 0;
-	    double starget = 0;
-	    for(int k = 0; k < 65536; k++){
-		bdist[k] = 0;
-		sdist[k] = 0;
-	    }
-	    double meanSig = 0;
-	    double meanBkg = 0;
-	    double varSig = 0;
-	    double varBkg = 0;
-	    int nSig = 0;
-	    int nBkg = 0;
-	    for(int k = x1; k < x2; k++){
-		for(int j = 0; j < signalDetectionWindow; j++){
-		    int a = ndim.getPixel(w,z,t,k,j,p);
-		    int b = bkgdMask.getValue(k,j);
-		    int s = m.getValue(k,j);
-		    bdist[a] += b;
-		    btarget += b;
-		    sdist[a] += s;
-		    starget += s;
-		    meanSig += s*a;
-		    meanBkg += b*a;
-		    nSig += s;
-		    nBkg += b;
-		}
-	    }
-	    meanSig = meanSig / nSig;
-	    meanBkg = meanBkg / nBkg;
-	    for(int k = x1; k < x2; k++){
-		for(int j = 0; j < signalDetectionWindow; j++){
-		    int a = ndim.getPixel(w,z,t,k,j,p);
-		    int b = bkgdMask.getValue(k,j);
-		    int s = m.getValue(k,j);
-		    varSig += s*(a-meanSig)*(a-meanSig);
-		    varBkg += b*(a-meanBkg)*(a-meanBkg);
-		}
-	    }
-	    varSig = varSig / (nSig-1);
-	    varBkg = varBkg / (nBkg-1);
-	    int bsum = 0;
-	    int ssum = 0;
-	    btarget = btarget/2;
-	    starget = starget/2;
-	    int index;
-	    for(index = 0; bsum < btarget; index++) bsum += bdist[index];
-	    int bmed = index-1;
-	    for(index = 0; ssum < starget; index++) ssum += sdist[index];
-	    int smed = index-1;
-	    double localThreshold = (bmed + smed)/2;
-	    if(nSig < 100 && nBkg < 100) localThreshold = thresholdBkg;
-	    if(nSig < 100) localThreshold = meanBkg + 3*Math.sqrt(varBkg);
-	    else if(nBkg < 100) localThreshold = meanSig - 3*Math.sqrt(varSig);
-	    else localThreshold = (meanBkg + 3*Math.sqrt(varBkg) + meanSig - 3*Math.sqrt(varSig)) / 2;
-	    //if(starget >= 50 && btarget >= 50){
-	    if(ndim.getPixel(w,z,t,i,0,p) > localThreshold) m.setValue(i,0,1);
-	    else m.setValue(i,0,0);
-	    //}
-	    //System.out.println("btarget: "+btarget+", starget: "+starget+", bsum: "+bsum+", ssum: "+ssum);
-	    for(int j = 1; j < signalDetectionWindow+1; j++){
-		int y2 = j+signalDetectionWindow-1;
-		meanSig *= nSig;
-		meanBkg *= nBkg;
-		varSig = 0;
-		varBkg = 0;
-		for(int k = x1; k < x2; k++){
-		    int val2 = ndim.getPixel(w,z,t,k,y2,p);
-		    int b = bkgdMask.getValue(k,y2);
-		    int s = m.getValue(k,y2);
-		    meanSig += s*val2;
-		    meanBkg += b*val2;
-		    nSig += s;
-		    nBkg += b;
-		    /*
-		    btarget += b/2.0;
-		    starget += s/2.0;
-		    bdist[val2] += b;
-		    sdist[val2] += s;
-		    if(val2 <= bmed){
-			ssum += s;
-			bsum += b;
-		    }
-		    else if(val2 <= smed) ssum += s;
-		    */
-		}
-		meanSig = meanSig / nSig;
-		meanBkg = meanBkg / nBkg;
-		for(int k = x1; k < x2; k++){
-		    for(int l = 0; l < y2; l++){
-			int a = ndim.getPixel(w,z,t,k,l,p);
-			int b = bkgdMask.getValue(k,l);
-			int s = m.getValue(k,l);
-			varSig += s*(a-meanSig)*(a-meanSig);
-			varBkg += b*(a-meanBkg)*(a-meanBkg);
-		    }
-		}
-		varSig = varSig / (nSig-1);
-		varBkg = varBkg / (nBkg-1);
-		/*
-		if(starget < 50 || btarget < 50) continue;
-		while(bsum > btarget){
-		    bsum -= bdist[bmed];
-		    bmed--;
-		}
-		while(bsum < btarget){
-		    bmed++;
-		    bsum += bdist[bmed];
-		}
-		while(ssum > starget){
-		    ssum -= sdist[smed];
-		    smed--;
-		}
-		while(ssum < starget){
-		    smed++;
-		    ssum += sdist[smed];
-		}
-		*/
-		//localThreshold = (bmed + smed) / 2;
-		if(nSig < 100 && nBkg < 100) localThreshold = thresholdBkg;
-		if(nSig < 100) localThreshold = meanBkg + 3*Math.sqrt(varBkg);
-		else if(nBkg < 100) localThreshold = meanSig - 3*Math.sqrt(varSig);
-		else localThreshold = (meanBkg + 3*Math.sqrt(varBkg) + meanSig - 3*Math.sqrt(varSig)) / 2;
-		int value = ndim.getPixel(w,z,t,i,j,p);
-		//if(value < thresholdBkg) continue;
-		if(value > localThreshold) m.setValue(i,j,1);
-		else m.setValue(i,j,0);
-	    }
-	    for(int j = signalDetectionWindow+1; j < ndim.getHeight()-signalDetectionWindow; j++){
-		int value = ndim.getPixel(w,z,t,i,j,p);
-		//if(value < thresholdBkg) continue;
-		int y1 = j-signalDetectionWindow-1;
-		int y2 = j+signalDetectionWindow-1;
-		meanSig *= nSig;
-		meanBkg *= nBkg;
-		varSig = 0;
-		varBkg = 0;
-		for(int k = x1; k < x2; k++){
-		    int val1 = ndim.getPixel(w,z,t,k,y1,p);
-		    int val2 = ndim.getPixel(w,z,t,k,y2,p);
-		    int b1 = bkgdMask.getValue(k,y1);
-		    int s1 = m.getValue(k,y1);
-		    int b2 = bkgdMask.getValue(k,y2);
-		    int s2 = m.getValue(k,y2);
-		    meanSig -= s1*val1;
-		    meanBkg -= b1*val1;
-		    nSig -= s1;
-		    nBkg -= b1;
-		    meanSig += s2*val2;
-		    meanBkg += b2*val2;
-		    nSig += s2;
-		    nBkg += b2;
-		    /*
-		    btarget = btarget + (b2 - b1)/2.0;
-		    starget = starget + (s2 - s1)/2.0;
-		    bdist[val1] -= b1;
-		    sdist[val1] -= s1;
-		    bdist[val2] += b2;
-		    sdist[val2] += s2;
-		    if(val1 <= bmed){
-			ssum -= s1;
-			bsum -= b1;
-		    }
-		    else if(val1 <= smed) ssum -= s1;
-		    if(val2 <= bmed){
-			ssum += s2;
-			bsum += b2;
-		    }
-		    else if(val2 <= smed) ssum += s2;
-		    */
-		}
-		meanSig = meanSig / nSig;
-		meanBkg = meanBkg / nBkg;
-		for(int k = x1; k < x2; k++){
-		    for(int l = y1; l < y2; l++){
-			int a = ndim.getPixel(w,z,t,k,l,p);
-			int b = bkgdMask.getValue(k,l);
-			int s = m.getValue(k,l);
-			varSig += s*(a-meanSig)*(a-meanSig);
-			varBkg += b*(a-meanBkg)*(a-meanBkg);
-		    }
-		}
-		varSig = varSig / (nSig-1);
-		varBkg = varBkg / (nBkg-1);
-		//if(starget < 50 || btarget < 50) continue;
-		//System.out.println("Row: "+j+", btarget: "+btarget+", starget: "+starget+", bsum: "+bsum+", ssum: "+ssum+", bmed: "+bmed+", smed: "+smed);
-		/*
-		while(bsum > btarget){
-		    bsum -= bdist[bmed];
-		    bmed--;
-		}
-		while(bsum < btarget){
-		    bmed++;
-		    bsum += bdist[bmed];
-		}
-		while(ssum > starget){
-		    ssum -= sdist[smed];
-		    smed--;
-		}
-		while(ssum < starget){
-		    smed++;
-		    ssum += sdist[smed];
-		}
-		localThreshold = (bmed + smed) / 2;
-		*/
-		if(nSig < 100 && nBkg < 100) localThreshold = thresholdBkg;
-		if(nSig < 100) localThreshold = meanBkg + 3*Math.sqrt(varBkg);
-		else if(nBkg < 100) localThreshold = meanSig - 3*Math.sqrt(varSig);
-		else localThreshold = (meanBkg + 3*Math.sqrt(varBkg) + meanSig - 3*Math.sqrt(varSig)) / 2;
-		if(value > localThreshold) m.setValue(i,j,1);
-		else m.setValue(i,j,0);
-	    }
-	    for(int j = ndim.getHeight()-signalDetectionWindow; j < ndim.getHeight(); j++){
-		int value = ndim.getPixel(w,z,t,i,j,p);
-		//if(value < thresholdBkg) continue;
-		int y1 = j-signalDetectionWindow-1;
-		meanSig *= nSig;
-		meanBkg *= nBkg;
-		varSig = 0;
-		varBkg = 0;
-		for(int k = x1; k < x2; k++){
-		    int val1 = ndim.getPixel(w,z,t,k,y1,p);
-		    int b = bkgdMask.getValue(k,y1);
-		    int s = m.getValue(k,y1);
-		    meanSig -= s*val1;
-		    meanBkg -= b*val1;
-		    nSig -= s;
-		    nBkg -= b;
-		    //btarget = btarget - b/2.0;
-		    //starget = starget - s/2.0;
-		    /*
-		    bdist[val1] -= b;
-		    sdist[val1] -= s;
-		    if(val1 <= bmed){
-			ssum -= s;
-			bsum -= b;
-		    }
-		    else if(val1 <= smed) ssum -= s;
-		    */
-		}
-		for(int k = x1; k < x2; k++){
-		    for(int l = y1; l < ndim.getHeight(); l++){
-			int a = ndim.getPixel(w,z,t,k,l,p);
-			int b = bkgdMask.getValue(k,l);
-			int s = m.getValue(k,l);
-			varSig += s*(a-meanSig)*(a-meanSig);
-			varBkg += b*(a-meanBkg)*(a-meanBkg);
-		    }
-		}
-		varSig = varSig / (nSig-1);
-		varBkg = varBkg / (nBkg-1);
-		/*
-		if(starget < 50 || btarget < 50) continue;
-		while(bsum > btarget){
-		    bsum -= bdist[bmed];
-		    bmed--;
-		}
-		while(bsum < btarget){
-		    bmed++;
-		    bsum += bdist[bmed];
-		}
-		while(ssum > starget){
-		    ssum -= sdist[smed];
-		    smed--;
-		}
-		while(ssum < starget){
-		    smed++;
-		    ssum += sdist[smed];
-		}
-		localThreshold = (bmed + smed) / 2;
-		*/
-		if(nSig < 100 && nBkg < 100) localThreshold = thresholdBkg;
-		if(nSig < 100) localThreshold = meanBkg + 3*Math.sqrt(varBkg);
-		else if(nBkg < 100) localThreshold = meanSig - 3*Math.sqrt(varSig);
-		else localThreshold = (meanBkg + 3*Math.sqrt(varBkg) + meanSig - 3*Math.sqrt(varSig)) / 2;
-		if(value > localThreshold) m.setValue(i,j,1);
-		else m.setValue(i,j,0);
+            for(int j = 0; j < ndim.getHeight(); j++){
+		if(ndim.getPixel(w,z,t,i,j,p) < outlierThreshold) m2.setValue(i,j,m.getValue(i,j));
 	    }
 	}
+	System.out.println(outlierThreshold);
+	*/
 	Vector<Integer> borderX = new Vector<Integer>(10);
         Vector<Integer> borderY = new Vector<Integer>(10);
         for(int i = 0; i < ndim.getWidth(); i++){
@@ -448,7 +209,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     {
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         double[][] zscores = new double[ndim.getWidth()][ndim.getHeight()];
-        Mask m = r.getSignalMask(w);
+        Mask m = new Mask(r.getSignalMask(w));
         Mask m2 = r.getPunctaMask(w);
         m.add(m2,-1);
         Vector<Point> localMaxima = new Vector<Point>();
@@ -467,7 +228,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
                 localMaxima.add(new Point(i,j));
                 int nSignal = m.sum(x1,x2,y1,y2);
-                while(nSignal < 2000){
+                while(nSignal < 10000){
                     x1 = Math.max(x1-punctaDetectionWindow,0);
                     x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
                     y1 = Math.max(y1-punctaDetectionWindow,0);
@@ -494,7 +255,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         used.multiply(m);
         //Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
         //while(zscores[maxXY[0]][maxXY[1]] > 3){
-	System.out.println(localMaxima.size());
+	//System.out.println(localMaxima.size());
         for(int s = 0; s < localMaxima.size(); s++){
             //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
             Point lm = localMaxima.elementAt(s);
@@ -502,9 +263,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             Point lr = lowerRight.elementAt(s);
             int Imax = ndim.getPixel(w,z,t,lm.x,lm.y,p);
             //double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	    double localThreshold = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	    localThreshold += ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
+	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
+	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
+	    double minThreshold = localMedian + 1.5*localStd;
+	    double localThreshold = localMedian + 3*localStd;
 	    if(Imax < localThreshold) continue;
+	    localThreshold = Imax;
             Cluster c = new Cluster();
             Vector<Integer> borderX = new Vector<Integer>();
             Vector<Integer> borderY = new Vector<Integer>();
@@ -521,6 +285,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 int bi = borderX.elementAt(0);
                 int bj = borderY.elementAt(0);
                 c.addPixel(bi,bj);
+		localThreshold = minThreshold + 0.9*(localThreshold - minThreshold);
                 for(int k = 0; k < 8; k++){
                     int i = bi+diArr[k];
                     int j = bj+djArr[k];

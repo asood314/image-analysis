@@ -36,6 +36,17 @@ public class Mask
             }
         }
     }
+
+    public Mask(Mask m){
+	width = m.getWidth();
+	height = m.getHeight();
+	mask = new int[width][height];
+	for(int i = 0; i < width; i++){
+	    for(int j = 0; j < height; j++){
+		mask[i][j] = m.getValue(i,j);
+	    }
+	}
+    }
     
     public int getWidth(){ return width; }
     
