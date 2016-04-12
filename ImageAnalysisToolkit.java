@@ -83,7 +83,7 @@ public abstract class ImageAnalysisToolkit
     
     public abstract Mask findSignalMask(int w, int z, int t, int p, Mask outMask);
 
-    public abstract void findPuncta(int w, int z, int t, int p);
+    public abstract int findPuncta(int w, int z, int t, int p);
     
     public abstract void findSynapses(int z, int t, int p);
     

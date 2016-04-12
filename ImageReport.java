@@ -173,7 +173,7 @@ public class ImageReport
     
     public static ImageReport read(RandomAccessFile fin) throws IOException
     {
-        byte[] buf = new byte[10000];
+        byte[] buf = new byte[40000];
         fin.read(buf,0,9);
         int nc = (int)buf[0];
         if((nc & 0x000000ff) == 0x000000ff) return null;

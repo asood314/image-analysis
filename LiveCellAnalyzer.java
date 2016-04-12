@@ -115,13 +115,14 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
         return m;
     }
 
-    public void findPuncta(int w, int z, int t, int p)
+    public int findPuncta(int w, int z, int t, int p)
     {
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         double[][] zscores = new double[ndim.getWidth()][ndim.getHeight()];
-        Mask m = r.getSignalMask(w);
+        Mask m = new Mask(r.getSignalMask(w));
 	Mask m2 = r.getPunctaMask(w);
 	m.add(m2,-1);
+	int nPuncta = 0;
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
                 int x1 = Math.max(i-punctaDetectionWindow,0);
@@ -172,9 +173,13 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
                 borderX.remove(0);
                 borderY.remove(0);
             }
-            if(c.contains(c.getCentroid())) r.addPunctum(w,c);
+            if(c.contains(c.getCentroid())){
+		r.addPunctum(w,c);
+		nPuncta++;
+	    }
             maxXY = argmax(zscores);
         }
+	return nPuncta;
     }
     
     private int[] argmax(double[][] arr)
