@@ -490,7 +490,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             imPanel.setWavelength(wl);
             imPanel.setMode(ImagePanel.GRAY_8);
             //imPanel.autoScale();
-            imPanel.setMaskColor(0xffffff00);
+            imPanel.setMaskColor(0xffff00ff);
             imPanel.repaint();
         }
         else if(cmd.equals("vcom")){

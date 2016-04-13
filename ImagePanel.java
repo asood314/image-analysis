@@ -46,7 +46,7 @@ public class ImagePanel extends JPanel
         timepoint = 0;
         position = 0;
         imMask = null;
-        maskColor = 0xffffff00;
+        maskColor = 0xffff00ff;
         zoom = 1.0;
         displayRegion = new int[4];
         displayRegion[0] = 0;
