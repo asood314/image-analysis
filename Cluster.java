@@ -30,6 +30,8 @@ public class Cluster
     public Point getPixel(int index){ return pixels.elementAt(index); }
 
     public void removePixel(int index){ pixels.remove(index); }
+
+    public void removePixel(Point p){ pixels.remove(p); }
     
     public boolean contains(Point p){ return pixels.contains(p); }
     

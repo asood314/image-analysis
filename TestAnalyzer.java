@@ -26,6 +26,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
         Mask m = new Mask(r.getSignalMask(w));
         Mask m2 = r.getPunctaMask(w);
         m.add(m2,-1);
+	imPanel.setMask(m);
 	int[] seed = imPanel.imArgMax(true);
 	Point lm = new Point(seed[0],seed[1]);
 	int punctaDetectionWindow = 10;
