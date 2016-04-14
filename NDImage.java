@@ -1254,6 +1254,40 @@ public class NDImage
         return max;
     }
 
+    public int[] argmax(int wl, int z, int t, int p, int x1, int x2, int y1, int y2)
+    {
+        int max = 0;
+	int[] amax = {0,0};
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(image[wl][z][t][i][j][p] > max){
+		    max = image[wl][z][t][i][j][p];
+		    amax[0] = i;
+		    amax[1] = j;
+		}
+            }
+        }
+        return amax;
+    }
+
+    public int[] argmax(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+        int max = 0;
+	int[] amax = {0,0};
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                if(m.getValue(i,j) > 0){
+		    if(image[wl][z][t][i][j][p] > max){
+			max = image[wl][z][t][i][j][p];
+			amax[0] = i;
+			amax[1] = j;
+		    }
+		}
+            }
+        }
+        return amax;
+    }
+
     public int[] getDistribution(int wl, int z, int t, int p)
     {
 	int[] values = new int[65536];

@@ -216,6 +216,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         Vector<Point> localMaxima = new Vector<Point>();
         Vector<Point> upperLeft = new Vector<Point>();
         Vector<Point> lowerRight = new Vector<Point>();
+	Vector<Integer> intensities = new Vector<Integer>();
 	int nPuncta = 0;
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
@@ -229,6 +230,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
                 if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
                 localMaxima.add(new Point(i,j));
+		intensities.add(ndim.getPixel(w,z,t,i,j,p));
                 int nSignal = m.sum(x1,x2,y1,y2);
                 while(nSignal < 10000){
                     x1 = Math.max(x1-punctaDetectionWindow,0);
@@ -250,6 +252,27 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 //double localMean = ndim.mean(w,z,t,p,x1,x2,y1,y2,m);
             }
         }
+	for(int i = 0; i < intensities.size(); i++){
+	    int max = intensities.elementAt(i);
+	    int imax = i;
+	    for(int j = i+1; j < intensities.size(); j++){
+		if(intensities.elementAt(j) > max){
+		    max = intensities.elementAt(j);
+		    imax = j;
+		}
+	    }
+	    intensities.set(imax,intensities.elementAt(i));
+	    intensities.set(i,max);
+	    Point temp = localMaxima.elementAt(i);
+	    localMaxima.set(i,localMaxima.elementAt(imax));
+	    localMaxima.set(imax,temp);
+	    temp = upperLeft.elementAt(i);
+	    upperLeft.set(i,upperLeft.elementAt(imax));
+	    upperLeft.set(imax,temp);
+	    temp = lowerRight.elementAt(i);
+	    lowerRight.set(i,lowerRight.elementAt(imax));
+	    lowerRight.set(imax,temp);
+	}
         //int[] maxXY = argmax(zscores);
         int[] diArr = {-1,0,1,-1,1,-1,0,1};
         int[] djArr = {-1,-1,-1,0,0,1,1,1};
@@ -267,7 +290,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             //double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	    double minThreshold = localMedian + (Imax - localMedian)/2;
+	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2*localStd);
 	    double localThreshold = localMedian + 3*localStd;
 	    if(Imax < localThreshold) continue;
 	    localThreshold = Imax;
@@ -285,35 +308,57 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    //System.out.println("Imax: "+Imax+", Threshold: "+localThreshold);
 	    double sumI = Imax;
 	    int npix = 1;
+	    int count = 0;
+	    Vector<Double> removalQueueI = new Vector<Double>();
+	    Vector<Integer> removalQueueN = new Vector<Integer>();
+	    for(int k = 0; k < 4; k++){
+		removalQueueI.addElement(0.0);
+		removalQueueN.addElement(0);
+	    }
             while(borderX.size() > 0){
-                int bi = borderX.elementAt(0);
-                int bj = borderY.elementAt(0);
-                c.addPixel(bi,bj);
+		sumI -= removalQueueI.elementAt(0);
+		npix -= removalQueueN.elementAt(0);
+		removalQueueI.remove(0);
+		removalQueueN.remove(0);
 		double upperLimit = sumI / npix;
-                for(int k = 0; k < 8; k++){
-                    int i = bi+diArr[k];
-                    int j = bj+djArr[k];
-		    localThreshold = minThreshold;// + Math.pow(0.95,(int)(Math.sqrt(i*i + j*j)))*(localThreshold - minThreshold);
-                    try{
-                        //double val = (1-used.getValue(i,j))*((double)ndim.getPixel(w,z,t,i,j,p)) / Imax;
-                        //double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localMean) / (Imax - localMean);
-			double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localThreshold) / (upperLimit - localThreshold);
-                        if(val < 0.001 || val > 1.0) continue;
-                        used.setValue(i,j,0);
-                        borderX.addElement(i);
-                        borderY.addElement(j);
-			sumI += ndim.getPixel(w,z,t,i,j,p);
-			npix++;
-                        //zscores[i][j] = 0;
-                        //cMask.setValue(i,j,1);
-                    }
-                    catch(ArrayIndexOutOfBoundsException e){ continue; }
-                }
-		//sumI -= ndim.getPixel(w,z,t,bi,bj,p);
-		//npix--;
-                borderX.remove(0);
-                borderY.remove(0);
-            }
+		if(count < 5) upperLimit = Imax;
+		int nborder = borderX.size();
+		double sumNew = 0.0;
+		int numNew = 0;
+		for(int b = 0; b < nborder; b++){
+		    int bi = borderX.elementAt(0);
+		    int bj = borderY.elementAt(0);
+		    c.addPixel(bi,bj);
+		    for(int k = 0; k < 8; k++){
+			int i = bi+diArr[k];
+			int j = bj+djArr[k];
+			localThreshold = minThreshold;// + Math.pow(0.95,(int)(Math.sqrt(i*i + j*j)))*(localThreshold - minThreshold);
+			try{
+			    //double val = (1-used.getValue(i,j))*((double)ndim.getPixel(w,z,t,i,j,p)) / Imax;
+			    //double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localMean) / (Imax - localMean);
+			    double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localThreshold) / (upperLimit - localThreshold);
+			    if(val < 0.001 || val > 1.0) continue;
+			    used.setValue(i,j,0);
+			    borderX.addElement(i);
+			    borderY.addElement(j);
+			    sumNew += ndim.getPixel(w,z,t,i,j,p);
+			    numNew++;
+			    //zscores[i][j] = 0;
+			    //cMask.setValue(i,j,1);
+			}
+			catch(ArrayIndexOutOfBoundsException e){ continue; }
+		    }
+		    //sumI -= ndim.getPixel(w,z,t,bi,bj,p);
+		    //npix--;
+		    borderX.remove(0);
+		    borderY.remove(0);
+		}
+		sumI += sumNew;
+		npix += numNew;
+		removalQueueI.addElement(sumNew);
+		removalQueueN.addElement(numNew);
+		count++;
+	    }
 	    /*
             double limit = 2*ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,cMask) - Imax;
             for(int i = c.size()-1; i >=0; i--){
@@ -336,7 +381,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 		continue;
 	    }
-	    if(c.contains(c.getCentroid())){
+	    Point center = c.getCentroid();
+	    if(c.contains(center)){
+		for(int i = c.size()-1; i >=0; i--){
+		    Point pt = c.getPixel(i);
+		    Point mirror = new Point(2*center.x - pt.x,2*center.y - pt.y);
+		    if(!(c.contains(mirror))){
+			c.removePixel(i);
+			used.setValue(pt.x,pt.y,1);
+		    }
+		}
 		if(c.size() > 5000){
 		    Point seed = c.getPixel(0);
 		    System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");

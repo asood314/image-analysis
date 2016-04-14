@@ -320,6 +320,19 @@ public class ImagePanel extends JPanel
 	return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
 
+    public int[] imArgMax(boolean maskIn)
+    {
+	int x1 = displayRegion[0];
+	int x2 = displayRegion[0]+displayRegion[2];
+	int y1 = displayRegion[1];
+	int y2 = displayRegion[1]+displayRegion[3];
+	if(imMask != null){
+	    if(maskIn) return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
+	    else return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	}
+	return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
+    }
+
     public double imMean(boolean maskIn)
     {
 	int x1 = displayRegion[0];

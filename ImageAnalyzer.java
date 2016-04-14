@@ -80,7 +80,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         imName = name;
         reports = new ImageReport[im.getNZ()*im.getNT()*im.getNPos()];
         for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths());
-        analysisTools = new FixedCellAnalyzer(ndim,reports);
+        //analysisTools = new FixedCellAnalyzer(ndim,reports);
         stats = null;
         punctaSelectorTool = false;
         synapseSelectorTool = false;
@@ -90,6 +90,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         int[] chan = {1,0};
         imPanel = new ImagePanel(im);
         imPanel.addMouseListener(this);
+	analysisTools = new TestAnalyzer(ndim,reports,imPanel);
         imPane = new JScrollPane(imPanel);
         imPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         imPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
