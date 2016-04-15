@@ -3,6 +3,7 @@ import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.util.Vector;
 import javax.swing.JPanel;
 
 public class ImagePanel extends JPanel
@@ -21,6 +22,8 @@ public class ImagePanel extends JPanel
     private int[] channels;
     private Mask imMask;
     private int maskColor;
+    private Vector<Mask> imMasks;
+    private Vector<Integer> maskColors;
     private double zoom;
     private int wpixMin,wpixMax;
     private int[] cpixMin;
@@ -47,6 +50,11 @@ public class ImagePanel extends JPanel
         position = 0;
         imMask = null;
         maskColor = 0xffff00ff;
+	imMasks = new Vector<Mask>();
+	maskColors = new Vector<Integer>();
+	maskColors.addElement(0xffff0000);
+	maskColors.addElement(0xff00ff00);
+	maskColors.addElement(0xff0000ff);
         zoom = 1.0;
         displayRegion = new int[4];
         displayRegion[0] = 0;
@@ -80,6 +88,11 @@ public class ImagePanel extends JPanel
         position = 0;
         imMask = null;
         maskColor = 0xffffffff;
+	imMasks = new Vector<Mask>();
+	maskColors = new Vector<Integer>();
+	maskColors.addElement(0xffffffff);
+	maskColors.addElement(0xffff00ff);
+	maskColors.addElement(0xff00ffff);
         zoom = 1.0;
         displayRegion = new int[4];
         displayRegion[0] = 0;
@@ -134,27 +147,38 @@ public class ImagePanel extends JPanel
             }
             else{
 		if(zoomToRegion){
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,imMask,maskColor,displayRegion);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,imMask,maskColor,displayRegion);
+		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,displayRegion);
+		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
 		    else if(mode == SPLIT){
 			imWidth *= 2;
 			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,imMask,maskColor,displayRegion);
+			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
 		    }
 		    else return;
 		}
 		else{
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,imMask,maskColor);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,imMask,maskColor);
+		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax);
+		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
 		    else if(mode == SPLIT){
 			imWidth *= 2;
 			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,imMask,maskColor);
+			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
 		    }
 		    else return;
 		}
             }
             setPreferredSize(new Dimension(imWidth,imHeight));
+	    if(imMasks.size() > 0){
+		for(int i = 0; i < bim.getWidth(); i++){
+		    for(int j = 0; j < bim.getHeight(); j++){
+			int color = 0x00000000;
+			for(int k = 0; k < imMasks.size(); k++){
+			    if(imMasks.elementAt(k).getValue(i,j) > 0) color = color | maskColors.elementAt(k);
+			}
+			if(color != 0) bim.setRGB(i,j,color);
+		    }
+		}
+	    }
 	    g.drawImage(bim.getScaledInstance(imWidth,imHeight,Image.SCALE_SMOOTH),0,0,this);
 	    if(!zoomToRegion && displayRegionSet){
 		g.setColor(Color.white);
@@ -200,6 +224,27 @@ public class ImagePanel extends JPanel
     public void setMask(Mask m){ imMask = m; }
     
     public void setMaskColor(int color){ maskColor = color; }
+
+    public void addMask(Mask m){ imMasks.addElement(m); }
+
+    public void toggleMask(Mask m)
+    {
+	for(int i = 0; i < imMasks.size(); i++){
+	    if(imMasks.elementAt(i).equals(m)){
+		imMasks.remove(i);
+		return;
+	    }
+	}
+	imMasks.addElement(m);
+    }
+
+    public void setMaskColor(int index, int color){ maskColors.set(index,color); }
+
+    public void addMaskColor(int color){ maskColors.addElement(color); }
+
+    public void clearMasks(){ imMasks.clear(); }
+
+    public void removeMask(Mask m){ imMasks.remove(m); }
     
     public void setZoom(double z){ zoom = z; }
     
@@ -287,9 +332,9 @@ public class ImagePanel extends JPanel
 
     public int getImPixel(int i, int j, boolean maskIn)
     {
-	if(imMask != null){
-	    if(maskIn) return imMask.getValue(i,j) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
-	    else return (1-imMask.getValue(i,j)) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
+	if(imMasks.size() > 0){
+	    if(maskIn) return imMasks.elementAt(0).getValue(i,j) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
+	    else return (1-imMasks.elementAt(0).getValue(i,j)) * ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
 	}
 	return ndim.getPixel(wavelength,zslice,timepoint,i,j,position);
     }
@@ -300,9 +345,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.min(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -313,9 +358,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.max(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -326,9 +371,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.argmax(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -339,9 +384,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.mean(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -352,9 +397,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.median(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -365,9 +410,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.percentile(frac,wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -378,9 +423,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.std(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -391,9 +436,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.mode(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }
@@ -404,9 +449,9 @@ public class ImagePanel extends JPanel
 	int x2 = displayRegion[0]+displayRegion[2];
 	int y1 = displayRegion[1];
 	int y2 = displayRegion[1]+displayRegion[3];
-	if(imMask != null){
-	    if(maskIn) return ndim.getDistribution(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask);
-	    else return ndim.getDistribution(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMask.getInverse());
+	if(imMasks.size() > 0){
+	    if(maskIn) return ndim.getDistribution(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0));
+	    else return ndim.getDistribution(wavelength,zslice,timepoint,position,x1,x2,y1,y2,imMasks.elementAt(0).getInverse());
 	}
 	return ndim.getDistribution(wavelength,zslice,timepoint,position,x1,x2,y1,y2);
     }

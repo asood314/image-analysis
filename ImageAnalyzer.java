@@ -566,21 +566,24 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             if(cmd.equals("vm signal")){
                 ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(r != null){
-                    imPanel.setMask(r.getSignalMask(imPanel.getWavelength()));
+                    //imPanel.setMask(r.getSignalMask(imPanel.getWavelength()));
+		    imPanel.toggleMask(r.getSignalMask(imPanel.getWavelength()));
                     imPanel.repaint();
                 }
             }
 	    else if(cmd.equals("vm bkgd")){
                 ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(r != null){
-                    imPanel.setMask(r.getUtilityMask(imPanel.getWavelength()));
+                    //imPanel.setMask(r.getUtilityMask(imPanel.getWavelength()));
+		    imPanel.toggleMask(r.getUtilityMask(imPanel.getWavelength()));
                     imPanel.repaint();
                 }
             }
             else if(cmd.equals("vm outlier")){
                 ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(r != null){
-                    imPanel.setMask(r.getOutlierMask(imPanel.getWavelength()).getInverse());
+                    //imPanel.setMask(r.getOutlierMask(imPanel.getWavelength()).getInverse());
+		    imPanel.toggleMask(r.getOutlierMask(imPanel.getWavelength()).getInverse());
                     imPanel.repaint();
                 }
             }
@@ -593,12 +596,13 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                         int yOffset = ((w+1) / 2) * ndim.getHeight();
                         m.add(r.getPunctaMask(w),xOffset,yOffset);
                     }
-                    imPanel.setMask(m);
+                    //imPanel.setMask(m);
+		    imPanel.toggleMask(m);
                     repaint();
                 }
                 else{
                     //imPanel.setMask(circlePuncta(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint()));
-                    imPanel.setMask(r.getPunctaMask(imPanel.getWavelength()));
+                    imPanel.toggleMask(r.getPunctaMask(imPanel.getWavelength()));
                     repaint();
                 }
             }
@@ -612,16 +616,19 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                         int yOffset = ((w+1) / 2) * ndim.getHeight();
                         m.add(r.getPunctaMask(w),xOffset,yOffset);
                     }
-                    imPanel.setMask(m);
+                    //imPanel.setMask(m);
+		    imPanel.toggleMask(m);
                     repaint();
                 }
                 else{
-                    imPanel.setMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
+                    //imPanel.setMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
+		    imPanel.toggleMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
                     repaint();
                 }
             }
             else if(cmd.equals("vm none")){
-                imPanel.setMask((Mask)null);
+                //imPanel.setMask((Mask)null);
+		imPanel.clearMasks();
                 imPanel.repaint();
             }
         }
@@ -749,11 +756,26 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             Cluster c = r.selectPunctum(p);
 	    p = c.getPixel(0);
             System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size() + ", Peak Location: " + p.toString() + ", Peak Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),p.x,p.y,imPanel.getPosition()));
+	    Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+	    for(int i = 0; i < c.size(); i++){
+		p = c.getPixel(i);
+		m.setValue(p.x,p.y,1);
+	    }
+	    imPanel.toggleMask(m);
         }
         else if(synapseSelectorTool){
             Point p = new Point(trueX,trueY);
             Synapse s = r.selectSynapse(p);
             System.out.println("Center: " + s.getCenter().toString() + ", Overlap: " + s.getOverlap());
+	    for(int j = 0; j < s.getNPuncta(); j++){
+		Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+		Cluster c = s.getPunctum(j);
+		for(int i = 0; i < c.size(); i++){
+		    p = c.getPixel(i);
+		    m.setValue(p.x,p.y,1);
+		}
+		imPanel.toggleMask(m);
+	    }
         }
 	else if(pixelSelectorTool){
 	    System.out.println("Location: (" + trueX + "," + trueY + ") Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),trueX,trueY,imPanel.getPosition()));

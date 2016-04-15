@@ -47,6 +47,18 @@ public class Mask
 	    }
 	}
     }
+
+    public boolean equals(Mask m)
+    {
+	if(width != m.getWidth()) return false;
+	if(height != m.getHeight()) return false;
+	for(int i = 0; i < width; i++){
+	    for(int j = 0; j < height; j++){
+		if(mask[i][j] != m.getValue(i,j)) return false;
+	    }
+	}
+	return true;
+    }
     
     public int getWidth(){ return width; }
     

@@ -37,6 +37,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
 		if(n == 0) break;
 	    }
+	    resolveOverlaps(w,z,t,p);
 	}
 	//System.out.println("Done puncta finding.");
         //int[] sc = {0,1};
@@ -108,7 +109,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    lmedian++;
 		    sum += dist[lmedian];
 		}
-		if(lmedian < 3*mode) m.setValue(i,j,1);
+		if(lmedian < 1.5*mode) m.setValue(i,j,1);
 		//double lmode = ndim.mode(w,z,t,p,i-20,i+20,j-20,j+20);
 		//if(lmode/mode > 2) continue;
 		//double lmedian = ndim.median(w,z,t,p,i-20,i+20,j-20,j+20);
@@ -284,6 +285,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         for(int s = 0; s < localMaxima.size(); s++){
             //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
             Point lm = localMaxima.elementAt(s);
+	    //if(used.getValue(lm.x,lm.y) == 0) continue;
             Point ul = upperLeft.elementAt(s);
             Point lr = lowerRight.elementAt(s);
             int Imax = ndim.getPixel(w,z,t,lm.x,lm.y,p);
@@ -395,7 +397,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 continue;
             }
 	    */
-	    if(c.size() < 50){
+	    if(c.size() < 10){
 		for(int i = c.size()-1; i >=0; i--){
 		    Point pt = c.getPixel(i);
 		    used.setValue(pt.x,pt.y,1);
@@ -434,6 +436,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             //maxXY = argmax(zscores);
         }
 	return nPuncta;
+    }
+
+    public void resolveOverlaps(int w, int z, int t, int p)
+    {
+	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
+	int resolutionWindow = 150;
+	Point[] centers = new Point[r.getNPuncta(w)];
+	for(int i = 0; i < centers.length; i++){
+	    centers[i] = r.getPunctum(w,i).getCentroid();
+	}
     }
     
     private int[] argmax(double[][] arr)
