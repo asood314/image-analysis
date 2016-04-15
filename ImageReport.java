@@ -8,6 +8,7 @@ public class ImageReport
     private Mask[] outlierMasks;
     private Mask[] signalMasks;
     private Mask[] utilityMasks;
+    private Mask regionOfInterest;
     private Vector<Vector<Cluster>> puncta;
     private Vector<Synapse> synapses;
     private int nChannels;
@@ -36,6 +37,10 @@ public class ImageReport
     public Mask getSignalMask(int chan){ return signalMasks[chan]; }
 
     public Mask getUtilityMask(int chan){ return utilityMasks[chan]; }
+
+    public void setROI(Mask m){ regionOfInterest = m; }
+
+    public Mask getROI(){ return regionOfInterest; }
     
     public void addPunctum(int chan, Cluster c){ puncta.elementAt(chan).add(c); }
     
@@ -109,6 +114,23 @@ public class ImageReport
             }
         }
         return m;
+    }
+
+    public void getSynapseDensity(int postChan)
+    {
+	int area = 0;
+	for(int i = 0; i < regionOfInterest.getWidth(); i++){
+	    for(int j = 0; j < regionOfInterest.getHeight(); j++){
+		area += regionOfInterest.getValue(i,j) * signalMasks[postChan].getValue(i,j);
+	    }
+	}
+	int nSynapses = 0;
+        for(int i = 0; i < synapses.size(); i++){
+	    Point p = synapses.elementAt(i).getCenter();
+	    if(regionOfInterest.getValue(p.x,p.y) > 0) nSynapses++;
+	}
+	double density = ((double)nSynapses) / area;
+	System.out.println("Number of synapes: "+nSynapses+", Dendrite area: "+area+", Synapse density: "+density);
     }
     
     public void write(RandomAccessFile fout) throws IOException
