@@ -442,9 +442,17 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     {
 	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	int resolutionWindow = 150;
-	Point[] centers = new Point[r.getNPuncta(w)];
-	for(int i = 0; i < centers.length; i++){
-	    centers[i] = r.getPunctum(w,i).getCentroid();
+	int np = r.getNPuncta(w);
+	Point[] centers = new Point[np];
+	Function[] fs = new Function[np];
+	Cluster[] clusters = new Cluster[np];
+	for(int i = 0; i < np; i++){
+	    Cluster c = r.getPunctum(w,i);
+	    centers[i] = c.getCentroid();
+	    clusters[i] = new Cluster();
+	    clusters[i].addPixel(centers[i]);
+	    fs[i] = Functions.gaussian2D();
+	    double[] param = {centers[i].x,centers[i].y};
 	}
     }
     
