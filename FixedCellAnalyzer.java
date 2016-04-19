@@ -443,16 +443,121 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	int resolutionWindow = 150;
 	int np = r.getNPuncta(w);
-	Point[] centers = new Point[np];
-	Function[] fs = new Function[np];
+	Point[] peaks = new Point[np];
+	Point[] troughs = new Point[np];
+	Function2D[] fs = new Function2D[np];
 	Cluster[] clusters = new Cluster[np];
 	for(int i = 0; i < np; i++){
 	    Cluster c = r.getPunctum(w,i);
-	    centers[i] = c.getCentroid();
+	    int imax = 0;
+	    int imin = 65536;
+	    for(int j = 0; j < c.size(); j++){
+		Point pt = c.getPixel(j);
+		int value = ndim.getPixel(w,z,t,pt.x,pt.y,p);
+		if(value > imax){
+		    imax = value;
+		    peaks[i] = pt;
+		}
+		if(value < imin){
+		    imin = value;
+		    troughs[i] = pt;
+		}
+	    }
 	    clusters[i] = new Cluster();
-	    clusters[i].addPixel(centers[i]);
+	    clusters[i].addPixel(peaks[i]);
 	    fs[i] = Functions.gaussian2D();
-	    double[] param = {centers[i].x,centers[i].y};
+	    double[] param = {imax,peaks[i].x,peaks[i].y,-0.5*(c.size()/Math.PI)/Math.log(((double)imin)/imax)};
+	    fs[i].setParameters(param);
+	}
+	Mask m = r.getPunctaMask(w);
+	for(int i = 0; i < ndim.getWidth(); i++){
+	    //int x1 = Math.max(0,i-resolutionWindow);
+	    //int x2 = Math.min(ndim.getWidth(),i+resolutionWindow);
+	    for(int j = 0; j < ndim.getHeight(); j++){
+		if(m.getValue(i,j) < 1) continue;
+		//int y1 = Math.max(0,j-resolutionWindow);
+		//int y2 = Math.min(ndim.getHeight(),j+resolutionWindow);
+		/*
+		int value = ndim.getPixel(w,z,t,i,j,p);
+		for(int k = 0; k < np; k++){
+		    double kDiff = Math.abs(fs[k].calculate((double)i,(double)j)/value - 1.0);
+		    if(kDiff < minDiff){
+			minDiff = kDiff;
+			minK = k;
+		    }
+		}
+		*/
+		int value = ndim.getPixel(w,z,t,i,j,p);
+		double maxDiff = -1.0;
+		int maxK = -1;
+		double minDiff = 10.0;
+		int minK = -1;
+		boolean isPeak = false;
+		for(int k = 0; k < np; k++){
+		    if(i == peaks[k].x && j == peaks[k].y){
+			isPeak = true;
+			break;
+		    }
+		    double kDiff = fs[k].calculate((double)i,(double)j)/value - 1.0;
+		    //double abs = Math.abs(kDiff);
+		    if(kDiff > maxDiff){
+			maxDiff = kDiff;
+			maxK = k;
+		    }
+		    if(Math.abs(kDiff) < Math.abs(minDiff)){
+			minDiff = kDiff;
+			minK = k;
+		    }
+		}
+		if(isPeak) continue;
+		if(minDiff > -0.1) clusters[minK].addPixel(new Point(i,j));
+		else if(maxDiff > -0.1) clusters[maxK].addPixel(new Point(i,j));
+	    }
+	}
+	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
+	int[] diArr = {-1,0,1,-1,1,-1,0,1};
+        int[] djArr = {-1,-1,-1,0,0,1,1,1};
+	Vector<Integer> borderX = new Vector<Integer>();
+	Vector<Integer> borderY = new Vector<Integer>();
+	for(int l = 0; l < np; l++){
+	    Cluster rc = new Cluster();
+	    for(int n = 0; n < clusters[l].size(); n++){
+		Point pt = clusters[l].getPixel(n);
+		m.setValue(pt.x,pt.y,1);
+	    }
+	    borderX.addElement(peaks[l].x);
+	    borderY.addElement(peaks[l].y);
+	    while(borderX.size() > 0){
+		int nborder = borderX.size();
+		for(int b = 0; b < nborder; b++){
+		    int bi = borderX.elementAt(0);
+		    int bj = borderY.elementAt(0);
+		    rc.addPixel(bi,bj);
+		    for(int k = 0; k < 8; k++){
+			int i = bi+diArr[k];
+			int j = bj+djArr[k];
+			try{
+			    if(m.getValue(i,j) > 0){
+				m.setValue(i,j,0);
+				borderX.addElement(i);
+				borderY.addElement(j);
+			    }
+			}
+			catch(ArrayIndexOutOfBoundsException e){ continue; }
+		    }
+		    borderX.remove(0);
+		    borderY.remove(0);
+		}
+	    }
+	    for(int n = 0; n < clusters[l].size(); n++){
+		Point pt = clusters[l].getPixel(n);
+		m.setValue(pt.x,pt.y,0);
+	    }
+	    clusters[l] = rc;
+	}
+	r.clearPuncta(w);
+	for(int i = 0; i < np; i++){
+	    if(clusters[i].size() > 50) r.addPunctum(w,clusters[i]);
 	}
     }
     

@@ -53,6 +53,25 @@ public class Functions
             }
         };
     }
+
+    public static Function2D gaussian2D()
+    {
+        return new Function2D(){
+            private double[] parameters = new double[4];// 4 parameters - norm, mean (x,y), variance
+            public void setParameters(double[] param){ parameters = param; }
+            public double[] getParameters(){ return parameters; }
+            public double calculate(double x, double y){
+                return parameters[0] * Math.exp(-((x-parameters[1])*(x-parameters[1])+(y-parameters[2])*(y-parameters[2]))/(2*parameters[3]));
+            }
+            public double integral(double x1, double x2, double y1, double y2){
+                double sum = 0;
+                for(double x = x1; x < x2; x += 1.0){
+		    for(double y = y1; y < y2; y += 1.0) sum += calculate(x,y);
+		}
+                return sum;
+            }
+        };
+    }
     
     public static Function gamma()
     {

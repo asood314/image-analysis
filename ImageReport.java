@@ -45,6 +45,8 @@ public class ImageReport
     public void addPunctum(int chan, Cluster c){ puncta.elementAt(chan).add(c); }
     
     public void removePunctum(int chan, int index){ puncta.elementAt(chan).remove(index); }
+
+    public void clearPuncta(int chan){ puncta.elementAt(chan).clear(); }
     
     public void addSynapse(Synapse s){ synapses.add(s); }
     
