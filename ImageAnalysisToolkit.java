@@ -8,9 +8,17 @@ import java.util.Vector;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public abstract class ImageAnalysisToolkit
 {
+
+    public static final Lock threadPoolLock = new ReentrantLock();
+    public static final Condition ready = threadPoolLock.newCondition();
+    public static ExecutorService executor;
+
     public class BatchThread implements Runnable
     {
         private ImageAnalysisToolkit analyzer;
@@ -27,7 +35,8 @@ public abstract class ImageAnalysisToolkit
         public void run()
         {
             analyzer.standardAnalysis(zslice,timepoint,position);
-            //analyzer.threadFinished();
+            analyzer.threadFinished();
+	    ready.signal();
         }
     }
     
@@ -52,25 +61,45 @@ public abstract class ImageAnalysisToolkit
     public void setChannelName(int w, String name){ channelNames[w] = name; }
 
     public void setPost(int w, boolean tf){ isPost[w] = tf; }
+
+    public static void setExecutor(ExecutorService ex){ executor = ex; }
     
-    public void batchProcess(ExecutorService executor, String outname) throws InterruptedException
+    public void batchProcess(int maxThreads) throws InterruptedException
     {
-	//ExecutorService executor = Executors.newFixedThreadPool(ndim.getNZ()*ndim.getNT()*ndim.getNPos());
-        for(int i = 0; i < ndim.getNZ(); i++){
-            for(int j = 0; j < ndim.getNT(); j++){
-                for(int k = 0; k < ndim.getNPos(); k++){
-                    BatchThread bt = new BatchThread(this,i,j,k);
-                    //addThread();
-		    //bt.run();
-		    executor.execute(bt);
-                    System.out.println("Thread launched");
-                }
-            }
-        }
-	executor.shutdown();
 	Robot bot = null;
 	try{ bot = new Robot(); }
 	catch(AWTException e){ e.printStackTrace(); }
+        for(int i = 0; i < ndim.getNZ(); i++){
+            for(int j = 0; j < ndim.getNT(); j++){
+                for(int k = 0; k < ndim.getNPos(); k++){
+		    threadPoolLock.lock();
+		    try{
+			while(activeThreads == maxThreads){
+			    ready.await(8,TimeUnit.MINUTES);
+			    if(bot != null){
+				Point mouseLocation = MouseInfo.getPointerInfo().getLocation();
+				bot.mouseMove(mouseLocation.x + 1, mouseLocation.y);
+				bot.mouseMove(mouseLocation.x - 1, mouseLocation.y);
+				bot.mouseMove(mouseLocation.x, mouseLocation.y);
+			    }
+			}
+			BatchThread bt = new BatchThread(this,i,j,k);
+			addThread();
+			executor.execute(bt);
+			System.out.println("Thread launched");
+		    }
+		    finally{ threadPoolLock.unlock(); }
+                }
+            }
+        }
+    }
+
+    public static void finishBatchJobs() throws InterruptedException
+    {
+	Robot bot = null;
+	try{ bot = new Robot(); }
+	catch(AWTException e){ e.printStackTrace(); }
+	executor.shutdown();
         while(!executor.awaitTermination(8,TimeUnit.MINUTES)){
 	    if(bot != null){
 		Point mouseLocation = MouseInfo.getPointerInfo().getLocation();
@@ -79,7 +108,6 @@ public abstract class ImageAnalysisToolkit
 		bot.mouseMove(mouseLocation.x, mouseLocation.y);
 	    }
         }
-        saveImageReports(outname);
     }
     
     public synchronized void threadFinished(){ activeThreads--; }

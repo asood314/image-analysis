@@ -135,6 +135,7 @@ public class ImageReport
     public void getSynapseDensity(int postChan)
     {
 	int area = 0;
+	int perimeter = 0;
 	int[] di = {-1,0,1,-1,1,-1,0,1};
 	int[] dj = {-1,-1,-1,0,0,1,1,1};
 	for(int i = 1; i < regionOfInterest.getWidth()-1; i++){
@@ -142,7 +143,7 @@ public class ImageReport
 		if(regionOfInterest.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
 		    area++;
 		    int sum = 0;
-		    for(int k = 0; k < di.length; k++) sum += signalMasks[postChan].getValue(i+di,j+dj);
+		    for(int k = 0; k < di.length; k++) sum += signalMasks[postChan].getValue(i+di[k],j+dj[k]);
 		    if(sum < 8) perimeter++;
 		}
 	    }
