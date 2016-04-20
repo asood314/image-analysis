@@ -75,6 +75,20 @@ public class ImageReport
         }
         return closest;
     }
+
+    public Cluster selectPunctum(Point p, int chan){
+        double minDist = 999999;
+        Cluster closest = null;
+	Vector<Cluster> channel = puncta.elementAt(chan);
+	for(int j = 0; j < channel.size(); j++){
+	    double dist = channel.elementAt(j).distanceTo(p);
+	    if(dist < minDist){
+		minDist = dist;
+		closest = channel.elementAt(j);
+	    }
+	}
+        return closest;
+    }
     
     public Synapse selectSynapse(Point p){
         double minDist = 999999;
@@ -121,9 +135,16 @@ public class ImageReport
     public void getSynapseDensity(int postChan)
     {
 	int area = 0;
-	for(int i = 0; i < regionOfInterest.getWidth(); i++){
-	    for(int j = 0; j < regionOfInterest.getHeight(); j++){
-		area += regionOfInterest.getValue(i,j) * signalMasks[postChan].getValue(i,j);
+	int[] di = {-1,0,1,-1,1,-1,0,1};
+	int[] dj = {-1,-1,-1,0,0,1,1,1};
+	for(int i = 1; i < regionOfInterest.getWidth()-1; i++){
+	    for(int j = 1; j < regionOfInterest.getHeight()-1; j++){
+		if(regionOfInterest.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
+		    area++;
+		    int sum = 0;
+		    for(int k = 0; k < di.length; k++) sum += signalMasks[postChan].getValue(i+di,j+dj);
+		    if(sum < 8) perimeter++;
+		}
 	    }
 	}
 	int nSynapses = 0;
@@ -132,7 +153,7 @@ public class ImageReport
 	    if(regionOfInterest.getValue(p.x,p.y) > 0) nSynapses++;
 	}
 	double density = ((double)nSynapses) / area;
-	System.out.println("Number of synapes: "+nSynapses+", Dendrite area: "+area+", Synapse density: "+density);
+	System.out.println("Number of synapes: "+nSynapses+", Dendrite area: "+area+", Dendrite perimeter: "+perimeter+", Synapse density: "+density);
     }
     
     public void write(RandomAccessFile fout) throws IOException

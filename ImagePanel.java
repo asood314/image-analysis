@@ -173,7 +173,7 @@ public class ImagePanel extends JPanel
 		    for(int j = 0; j < bim.getHeight(); j++){
 			int color = 0x00000000;
 			for(int k = 0; k < imMasks.size(); k++){
-			    if(imMasks.elementAt(k).getValue(i,j) > 0) color = color | maskColors.elementAt(k);
+			    if(imMasks.elementAt(k).getValue(i,j) > 0) color = color | maskColors.elementAt(k % maskColors.size());
 			}
 			if(color != 0) bim.setRGB(i,j,color);
 		    }

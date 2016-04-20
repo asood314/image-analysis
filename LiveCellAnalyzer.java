@@ -7,8 +7,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
     
     public LiveCellAnalyzer(NDImage im, ImageReport[] r)
     {
-        ndim = im;
-        reports = r;
+        init(im,r);
         activeThreads = 0;
         signalDetectionWindow = 40*(ndim.getWidth()/1000);
         punctaDetectionWindow = 20*(ndim.getWidth()/1000);

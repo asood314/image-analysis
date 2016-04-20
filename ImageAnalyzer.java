@@ -753,7 +753,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
         if(punctaSelectorTool){
             Point p = new Point(trueX,trueY);
-            Cluster c = r.selectPunctum(p);
+            Cluster c = null;
+	    if(imPanel.getMode() != ImagePanel.GRAY_8) c = r.selectPunctum(p);
+	    else c = r.selectPunctum(p,imPanel.getWavelength());
+	    if(c == null) return;
 	    p = c.getPixel(0);
             System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size() + ", Peak Location: " + p.toString() + ", Peak Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),p.x,p.y,imPanel.getPosition()));
 	    Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
@@ -804,6 +807,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 		}
 		r.setROI(m);
 		r.setUtilityMask(imPanel.getWavelength(),m);
+		imPanel.toggleMask(m);
 		xpoints.clear();
 		ypoints.clear();
 		prevX = -1;

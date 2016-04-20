@@ -9,8 +9,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     
     public FixedCellAnalyzer(NDImage im, ImageReport[] r)
     {
-        ndim = im;
-        reports = r;
+	init(im,r);
         activeThreads = 0;
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
@@ -40,8 +39,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    resolveOverlaps(w,z,t,p);
 	}
 	//System.out.println("Done puncta finding.");
-        //int[] sc = {0,1};
-        findSynapses(z,t,p);
+        int[] sc = {1,0};
+        findSynapses(z,t,p,sc);
     }
     
     public Mask findOutlierMask(int w, int z, int t, int p)
@@ -608,21 +607,34 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         int[] np = new int[chan.length];
         int maxIndex = 1;
-        for(int i = 0; i < chan.length; i++){
-            np[i] = r.getNPuncta(chan[i]);
-            maxIndex *= np[i];
+	int nSynapses = 0;
+        for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
+	for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
+        for(int j = 0; j < np[0]; j++){
+	    Synapse best = null;
+	    int bestScore = -999;
+	    for(int l = 0; l < maxIndex; l++){
+		Synapse s = new Synapse(chan);
+		s.addPunctum(r.getPunctum(chan[0],j),j);
+		for(int i = 1; i < np.length; i++){
+		    int index = l;
+		    for(int k = 1; k < i; k++) index = index / np[k];
+		    index = index % np[i];
+		    s.addPunctum(r.getPunctum(chan[i],index),index);
+		}
+		int score = s.getColocalizationScore();
+		if(score > bestScore){
+		    bestScore = score;
+		    best = s;
+		}
+	    }
+	    if(best != null){
+		r.addSynapse(best);
+		nSynapses++;
+	    }
         }
-        for(int j = 0; j < maxIndex; j++){
-            Synapse s = new Synapse(chan);
-            for(int i = 0; i < np.length; i++){
-                int index = j;
-                for(int k = 0; k < i; k++) index = index / np[k];
-                index = index % np[i];
-                s.addPunctum(r.getPunctum(chan[i],index),index);
-            }
-            if(s.isColocalized()) r.addSynapse(s);
-        }
-    }    
+	System.out.println("Found " + nSynapses + " synapses.");
+    }
 }
 
 	/*

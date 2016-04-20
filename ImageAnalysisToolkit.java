@@ -33,11 +33,25 @@ public abstract class ImageAnalysisToolkit
     
     protected NDImage ndim;
     protected ImageReport[] reports;
+    protected String[] channelNames;
+    protected boolean[] isPost;
     protected int activeThreads;
+
+    protected void init(NDImage im, ImageReport[] r)
+    {
+	ndim = im;
+        reports = r;
+	channelNames = new String[ndim.getNWavelengths()];
+	isPost = new boolean[channelNames.length];
+    }
     
     public void setImage(NDImage im){ ndim = im; }
     
     public void setImageReports(ImageReport [] reps){ reports = reps; }
+
+    public void setChannelName(int w, String name){ channelNames[w] = name; }
+
+    public void setPost(int w, boolean tf){ isPost[w] = tf; }
     
     public void batchProcess(ExecutorService executor, String outname) throws InterruptedException
     {
@@ -93,7 +107,20 @@ public abstract class ImageAnalysisToolkit
     {
         try{
             RandomAccessFile raf = new RandomAccessFile(phil,"rw");
-            byte[] buf = new byte[10];
+            byte[] buf = new byte[100];
+	    int nchan = ndim.getNWavelengths();
+	    buf[0] = (byte)nchan;
+	    for(int i = 0; i < nchan; i++){
+		if(isPost[i]) buf[i+1] = 1;
+		else buf[i+1] = 0;
+	    }
+	    raf.write(buf,0,1+nchan);
+	    for(int i = 0; i < nchan; i++){
+		byte[] nameBytes = channelNames[i].getBytes();
+		ImageReport.writeIntToBuffer(buf,0,nameBytes.length);
+		raf.write(buf,0,4);
+		raf.write(nameBytes);
+	    }
             for(int i = 0; i < reports.length; i++){
                 if(reports[i] == null){
                     buf[0] = (byte)(0x000000ff);
@@ -111,6 +138,21 @@ public abstract class ImageAnalysisToolkit
     {
         try{
             RandomAccessFile raf = new RandomAccessFile(phil,"r");
+	    byte[] buf = new byte[100];
+	    raf.read(buf,0,1);
+	    int nchan = (int)buf[0];
+	    raf.read(buf,0,nchan);
+	    for(int i = 0; i < nchan; i++){
+		if(buf[i] > 0) isPost[i] = true;
+		else isPost[i] = false;
+	    }
+	    for(int i = 0; i < nchan; i++){
+		raf.read(buf,0,4);
+		int length = ImageReport.readIntFromBuffer(buf,0);
+		byte[] nameBytes = new byte[length];
+		raf.read(nameBytes,0,length);
+		channelNames[i] = new String(nameBytes);
+	    }
             for(int i = 0; i < reports.length; i++){
                 reports[i] = ImageReport.read(raf);
             }

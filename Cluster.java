@@ -42,7 +42,16 @@ public class Cluster
 	}
     }
     
-    public boolean contains(Point p){ return pixels.contains(p); }
+    public boolean contains(Point p)
+    {
+	for(int i = 0; i < pixels.size(); i++){
+	    Point p2 = pixels.elementAt(i);
+	    if(p2.x == p.x && p2.y == p.y){
+		return true;
+	    }
+	}
+	return false;
+    }
     
     public int size(){ return pixels.size(); }
     
@@ -80,7 +89,8 @@ public class Cluster
         for(int i = 0; i < pixels.size(); i++){
             Point p = pixels.elementAt(i);
             for(int j = 0; j < c2.size(); j++){
-                if(p.equals(c2.getPixel(j))){
+		Point p2 = c2.getPixel(j);
+                if(p.x == p2.x && p.y == p2.y){
                     overlap++;
                     break;
                 }

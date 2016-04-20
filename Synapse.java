@@ -65,13 +65,14 @@ public class Synapse
         if(index1 >= puncta.size() || index2 >= puncta.size()) return -1;
         return puncta.elementAt(index1).getOverlap(puncta.elementAt(index2));
     }
+
     public int getOverlap()
     {
         Cluster[] c = new Cluster[puncta.size()-1];
         for(int i = 1; i < puncta.size(); i++) c[i-1] = puncta.elementAt(i);
         return puncta.elementAt(0).getOverlap(c);
     }
-    
+
     public double getDistance(int index1, int index2)
     {
         if(index1 >= puncta.size() || index2 >= puncta.size()) return -1;
@@ -132,5 +133,51 @@ public class Synapse
             return true;
         }
         return false;
+    }
+
+    public int getColocalizationScore(int index1, int index2)
+    {
+        if(index1 >= puncta.size() || index2 >= puncta.size()) return -999;
+        if(useOverlapThreshold){
+	    int over = getOverlap(index1,index2);
+	    if(over > overlapThreshold) return over;
+	    return -99999;
+	}
+        if(useDistanceThreshold){
+	    int dist = (int)getDistance(index1,index2);
+	    if(dist >= distanceThreshold) return -999;
+	    return dist;
+	}
+        return -99999;
+    }
+
+    public int getColocalizationScore()
+    {
+	if(usePairwiseMeasure){
+	    int score = 0;
+            for(int i = 0; i < puncta.size(); i++){
+                for(int j = i+1; j < puncta.size(); j++){
+                    score += getColocalizationScore(i,j);
+                }
+            }
+            return score;
+        }
+        if(useOverlapThreshold){
+            //System.out.println(getOverlap());
+            int over = getOverlap();
+	    if(over > overlapThreshold) return over;
+	    return -999;
+        }
+        if(useDistanceThreshold){
+            Point c = getCenter();
+	    int score = 0;
+            for(int i = 0; i < puncta.size(); i++){
+                int dist = (int)puncta.elementAt(i).distanceTo(c);
+		if(dist >= distanceThreshold) return -999;
+		score -= dist;
+            }
+            return score;
+        }
+        return -999;
     }
 }
