@@ -16,8 +16,10 @@ public abstract class ImageAnalysisToolkit
 {
 
     public static final Lock threadPoolLock = new ReentrantLock();
+    public static final Lock threadCounterLock = new ReentrantLock();
     public static final Condition ready = threadPoolLock.newCondition();
     public static ExecutorService executor;
+    protected static int activeThreads;
 
     public class BatchThread implements Runnable
     {
@@ -36,7 +38,9 @@ public abstract class ImageAnalysisToolkit
         {
             analyzer.standardAnalysis(zslice,timepoint,position);
             analyzer.threadFinished();
-	    ready.signal();
+	    threadPoolLock.lock();
+	    try{ ready.signal(); }
+	    finally{ threadPoolLock.unlock(); }
         }
     }
     
@@ -44,7 +48,6 @@ public abstract class ImageAnalysisToolkit
     protected ImageReport[] reports;
     protected String[] channelNames;
     protected boolean[] isPost;
-    protected int activeThreads;
 
     protected void init(NDImage im, ImageReport[] r)
     {
@@ -59,6 +62,8 @@ public abstract class ImageAnalysisToolkit
     public void setImageReports(ImageReport [] reps){ reports = reps; }
 
     public void setChannelName(int w, String name){ channelNames[w] = name; }
+
+    public String[] getChannelNames(){ return channelNames; }
 
     public void setPost(int w, boolean tf){ isPost[w] = tf; }
 
@@ -86,7 +91,7 @@ public abstract class ImageAnalysisToolkit
 			BatchThread bt = new BatchThread(this,i,j,k);
 			addThread();
 			executor.execute(bt);
-			System.out.println("Thread launched");
+			System.out.println("Thread launched " + activeThreads);
 		    }
 		    finally{ threadPoolLock.unlock(); }
                 }
@@ -110,11 +115,25 @@ public abstract class ImageAnalysisToolkit
         }
     }
     
-    public synchronized void threadFinished(){ activeThreads--; }
-    
-    public synchronized void addThread()
+    public void threadFinished()
     {
-        activeThreads++;
+	threadCounterLock.lock();
+	try{ activeThreads--; }
+	finally{ threadCounterLock.unlock(); }
+    }
+    
+    public void addThread()
+    {
+	threadCounterLock.lock();
+        try{ activeThreads++; }
+	finally{ threadCounterLock.unlock(); }
+    }
+
+    public static void resetActiveThreads()
+    {
+	threadCounterLock.lock();
+        try{ activeThreads = 0; }
+	finally{ threadCounterLock.unlock(); }
     }
     
     public abstract void standardAnalysis(int z, int t, int p);
@@ -149,6 +168,8 @@ public abstract class ImageAnalysisToolkit
 		raf.write(buf,0,4);
 		raf.write(nameBytes);
 	    }
+	    ImageReport.writeIntToBuffer(buf,0,reports.length);
+	    raf.write(buf,0,4);
             for(int i = 0; i < reports.length; i++){
                 if(reports[i] == null){
                     buf[0] = (byte)(0x000000ff);
@@ -181,11 +202,48 @@ public abstract class ImageAnalysisToolkit
 		raf.read(nameBytes,0,length);
 		channelNames[i] = new String(nameBytes);
 	    }
+	    raf.read(buf,0,4);
+	    int nReports = ImageReport.readIntFromBuffer(buf,0);
+	    if(nReports != reports.length){
+		System.out.println("WARNING: Number of image analysis records does not match number of images loaded. Proceeding anyway...");
+		reports = new ImageReport[nReports];
+	    }
             for(int i = 0; i < reports.length; i++){
                 reports[i] = ImageReport.read(raf);
             }
             raf.close();
         }
         catch(IOException e){ e.printStackTrace(); }
+    }
+
+    public static ImageReport[] readImageReports(String phil)
+    {
+	ImageReport[] r;
+        try{
+            RandomAccessFile raf = new RandomAccessFile(phil,"r");
+	    byte[] buf = new byte[100];
+	    raf.read(buf,0,1);
+	    int nchan = (int)buf[0];
+	    raf.read(buf,0,nchan);
+	    for(int i = 0; i < nchan; i++){
+		raf.read(buf,0,4);
+		int length = ImageReport.readIntFromBuffer(buf,0);
+		byte[] nameBytes = new byte[length];
+		raf.read(nameBytes,0,length);
+		System.out.println("Channel " + i + ": " + new String(nameBytes));
+	    }
+	    raf.read(buf,0,4);
+	    int nReports = ImageReport.readIntFromBuffer(buf,0);
+	    r = new ImageReport[nReports];
+            for(int i = 0; i < r.length; i++){
+                r[i] = ImageReport.read(raf);
+            }
+            raf.close();
+        }
+        catch(IOException e){
+	    e.printStackTrace();
+	    r = null;
+	}
+	return r;
     }
 }

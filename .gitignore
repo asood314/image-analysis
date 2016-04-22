@@ -1,4 +1,5 @@
-#Ignore java class files
+#Ignore java class files, auto-saves, and test scripts
 *.class
 *~
 MainClass.*
+My*.java

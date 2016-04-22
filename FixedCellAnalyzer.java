@@ -10,7 +10,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     public FixedCellAnalyzer(NDImage im, ImageReport[] r)
     {
 	init(im,r);
-        activeThreads = 0;
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
 	punctaFindingIterations = 10;
@@ -23,20 +22,21 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     public void standardAnalysis(int z, int t, int p)
     {
         int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
-        reports[index] = new ImageReport(ndim.getNWavelengths());
+        reports[index] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
         for(int w = 0; w < ndim.getNWavelengths(); w++){
             Mask m = findBackgroundMask(w,z,t,p);//findOutlierMask(w,z,t,p);
             reports[index].setOutlierMask(w,m.getInverse());
             reports[index].setSignalMask(w,findSignalMask(w,z,t,p,m));
         }
-	System.out.println("Done signal finding.");
+	//System.out.println("Done signal finding.");
 	for(int w = 0; w < ndim.getNWavelengths(); w++){
 	    for(int i = 0; i < punctaFindingIterations; i++){
 		int n = findPuncta(w,z,t,p);
-		System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
+		//System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
 		if(n == 0) break;
 	    }
 	    resolveOverlaps(w,z,t,p);
+	    System.out.println("Found " + reports[index].getNPuncta(w) + " puncta in channel " + w + ".");
 	}
 	//System.out.println("Done puncta finding.");
         int[] sc = {1,0};

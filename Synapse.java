@@ -73,6 +73,12 @@ public class Synapse
         return puncta.elementAt(0).getOverlap(c);
     }
 
+    public int size(){
+	int sum = 0;
+	for(int i = 0; i < puncta.size(); i++) sum += puncta.elementAt(i).size();
+	return sum;
+    }
+
     public double getDistance(int index1, int index2)
     {
         if(index1 >= puncta.size() || index2 >= puncta.size()) return -1;

@@ -8,20 +8,25 @@ public class ImageReport
     private Mask[] outlierMasks;
     private Mask[] signalMasks;
     private Mask[] utilityMasks;
-    private Mask regionOfInterest;
+    private Vector<Mask> regionsOfInterest;
     private Vector<Vector<Cluster>> puncta;
     private Vector<Synapse> synapses;
-    private int nChannels;
+    private int nChannels, imWidth, imHeight;
+    private double resolutionXY;
     
-    public ImageReport(int nchan)
+    public ImageReport(int nchan, int w, int h)
     {
         nChannels = nchan;
+	imWidth = w;
+	imHeight = h;
         outlierMasks = new Mask[nChannels];
         signalMasks = new Mask[nChannels];
 	utilityMasks = new Mask[nChannels];
+	regionsOfInterest = new Vector<Mask>();
         puncta = new Vector<Vector<Cluster>>();
         for(int i = 0; i < nchan; i++) puncta.add(new Vector<Cluster>());
         synapses = new Vector<Synapse>();
+	resolutionXY = 0.046;
     }
     
     public int getNChannels(){ return nChannels; }
@@ -38,9 +43,11 @@ public class ImageReport
 
     public Mask getUtilityMask(int chan){ return utilityMasks[chan]; }
 
-    public void setROI(Mask m){ regionOfInterest = m; }
+    public void addROI(Mask m){ regionsOfInterest.addElement(m); }
 
-    public Mask getROI(){ return regionOfInterest; }
+    public Mask getROI(int index){ return regionsOfInterest.elementAt(index); }
+
+    public int getNROI(){ return regionsOfInterest.size(); }
     
     public void addPunctum(int chan, Cluster c){ puncta.elementAt(chan).add(c); }
     
@@ -132,49 +139,104 @@ public class ImageReport
         return m;
     }
 
-    public void getSynapseDensity(int postChan)
+    public String getSynapseDensity(int postChan, String[] chanNames)
     {
-	int area = 0;
-	int perimeter = 0;
+	String msg = "";
 	int[] di = {-1,0,1,-1,1,-1,0,1};
 	int[] dj = {-1,-1,-1,0,0,1,1,1};
-	for(int i = 1; i < regionOfInterest.getWidth()-1; i++){
-	    for(int j = 1; j < regionOfInterest.getHeight()-1; j++){
-		if(regionOfInterest.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
-		    area++;
-		    int sum = 0;
-		    for(int k = 0; k < di.length; k++) sum += signalMasks[postChan].getValue(i+di[k],j+dj[k]);
-		    if(sum < 8) perimeter++;
+	for(int r = 0; r < regionsOfInterest.size(); r++){
+	    Mask roi = regionsOfInterest.elementAt(r);
+	    double area = 0;
+	    double perimeter = 0;
+	    msg += "Region "+r+":\n---------------------\n";
+	    for(int i = 1; i < roi.getWidth()-1; i++){
+		for(int j = 1; j < roi.getHeight()-1; j++){
+		    if(roi.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
+			area += 1.0;
+			int sum = 0;
+			for(int k = 0; k < di.length; k++) sum += signalMasks[postChan].getValue(i+di[k],j+dj[k]);
+			if(sum < 8) perimeter += 1.0;
+		    }
 		}
 	    }
+	    area *= resolutionXY*resolutionXY;
+	    perimeter *= resolutionXY;
+	    double lengthEstimate = perimeter / 2.0;
+	    int nSynapses = 0;
+	    int sumOverlap = 0;
+	    int sumSize = 0;
+	    for(int i = 0; i < synapses.size(); i++){
+		Synapse s = synapses.elementAt(i);
+		Point p = s.getCenter();
+		if(roi.getValue(p.x,p.y) > 0){
+		    nSynapses++;
+		    sumSize += s.size();
+		    sumOverlap += s.getOverlap();
+		}
+	    }
+	    double densityA = nSynapses/area;
+	    double densityL = nSynapses/lengthEstimate;
+	    double avgSize = ((double)sumSize)/nSynapses;
+	    double avgOverlap = ((double)sumOverlap)/nSynapses;
+	    msg += "Number of synapes: "+nSynapses+"\nAverage synapse size (pixels): "+avgSize+"\nAverage area of overlap (pixels): "+avgOverlap+"\nDendrite area (um^2): "+area+"\nDendrite perimeter (um): "+perimeter+"\nSynapse area density (um^-2): "+densityA+"\nSynapse length density (um^-1):"+densityL+"\n";
+	    for(int chan = 0; chan < puncta.size(); chan++){
+		Vector<Cluster> clusters = puncta.elementAt(chan);
+		int nPuncta = 0;
+		sumSize = 0;
+		for(int i = 0; i < clusters.size(); i++){
+		    Point p = clusters.elementAt(i).getCentroid();
+		    if(roi.getValue(p.x,p.y) > 0){
+			nPuncta++;
+			sumSize += clusters.elementAt(i).size();
+		    }
+		}
+		densityA = nPuncta/area;
+		densityL = nPuncta/lengthEstimate;
+		avgSize = ((double)sumSize)/nPuncta;
+		msg += "Number of "+chanNames[chan]+" puncta: "+nPuncta+"\nArea density (um^-2): "+densityA+"\nLength density (um^-1): "+densityL+"\nAverage puncta size (pixels): "+avgSize+"\n";
+	    }
 	}
-	int nSynapses = 0;
-        for(int i = 0; i < synapses.size(); i++){
-	    Point p = synapses.elementAt(i).getCenter();
-	    if(regionOfInterest.getValue(p.x,p.y) > 0) nSynapses++;
-	}
-	double density = ((double)nSynapses) / area;
-	System.out.println("Number of synapes: "+nSynapses+", Dendrite area: "+area+", Dendrite perimeter: "+perimeter+", Synapse density: "+density);
+	return msg;
     }
     
     public void write(RandomAccessFile fout) throws IOException
     {
         byte[] buf = new byte[400000];
-        int width = outlierMasks[0].getWidth();
-        int height = outlierMasks[0].getHeight();
+        int width = imWidth;
+        int height = imHeight;
         buf[0] = (byte)(nChannels & 0x000000ff);
         writeIntToBuffer(buf,1,width);
         writeIntToBuffer(buf,5,height);
         fout.write(buf,0,9);
         for(int c = 0; c < nChannels; c++){
-            for(int j = 0; j < height; j++){
-                for(int i = 0; i < width; i++){
-                    buf[i] = (byte)(outlierMasks[c].getValue(i,j) & 0x000000ff);
-                    buf[width+i] = (byte)(signalMasks[c].getValue(i,j) & 0x000000ff);
-		    //buf[2*width+i] = (byte)(utilityMasks[c].getValue(i,j) & 0x000000ff);
-                }
-                fout.write(buf,0,2*width);
-            }
+	    if(outlierMasks[c] != null){
+		buf[0] = 1;
+		fout.write(buf,0,1);
+		for(int j = 0; j < height; j++){
+		    for(int i = 0; i < width; i++){
+			buf[i] = (byte)(outlierMasks[c].getValue(i,j) & 0x000000ff);
+		    }
+		    fout.write(buf,0,width);
+		}
+	    }
+	    else{
+		buf[0] = 0;
+		fout.write(buf,0,1);
+	    }
+	    if(signalMasks[c] != null){
+		buf[0] = 1;
+		fout.write(buf,0,1);
+		for(int j = 0; j < height; j++){
+		    for(int i = 0; i < width; i++){
+			buf[i] = (byte)(signalMasks[c].getValue(i,j) & 0x000000ff);
+		    }
+		    fout.write(buf,0,width);
+		}
+	    }
+	    else{
+		buf[0] = 0;
+		fout.write(buf,0,1);
+	    }
             writeShortToBuffer(buf,0,(short)getNPuncta(c));
             fout.write(buf,0,2);
             for(int i = 0; i < getNPuncta(c); i++){
@@ -201,6 +263,17 @@ public class ImageReport
             }
         }
         fout.write(buf,0,offset);
+	int nROI = regionsOfInterest.size();
+	buf[0] = (byte)nROI;
+	fout.write(buf,0,1);
+	for(int j = 0; j < height; j++){
+	    for(int i = 0; i < width; i++){
+		for(int k = 0; k < nROI; k++){
+		    buf[k*width+i] = (byte)(regionsOfInterest.elementAt(k).getValue(i,j) & 0x000000ff);
+		}
+	    }
+	    fout.write(buf,0,nROI*width);
+	}
     }
     
     public static void writeIntToBuffer(byte[] buffer, int offset, int data)
@@ -223,24 +296,32 @@ public class ImageReport
         fin.read(buf,0,9);
         int nc = (int)buf[0];
         if((nc & 0x000000ff) == 0x000000ff) return null;
-        ImageReport r = new ImageReport(nc);
         int width = readIntFromBuffer(buf,1);
         int height = readIntFromBuffer(buf,5);
+	ImageReport r = new ImageReport(nc,width,height);
         for(int c = 0; c < nc; c++){
-            Mask om = new Mask(width,height);
-            Mask sm = new Mask(width,height);
-	    //Mask um = new Mask(width,height);
-            for(int j = 0; j < height; j++){
-                fin.read(buf,0,2*width);
-                for(int i = 0; i < width; i++){
-                    om.setValue(i,j,(int)buf[i]);
-                    sm.setValue(i,j,(int)buf[width+i]);
-		    //um.setValue(i,j,(int)buf[2*width+i]);
-                }
-            }
-            r.setOutlierMask(c,om);
-            r.setSignalMask(c,sm);
-	    //r.setUtilityMask(c,sm);
+	    fin.read(buf,0,1);
+	    if(buf[0] > 0){
+		Mask om = new Mask(width,height);
+		for(int j = 0; j < height; j++){
+		    fin.read(buf,0,width);
+		    for(int i = 0; i < width; i++){
+			om.setValue(i,j,(int)buf[i]);
+		    }
+		}
+		r.setOutlierMask(c,om);
+	    }
+	    fin.read(buf,0,1);
+	    if(buf[0] > 0){
+		Mask sm = new Mask(width,height);
+		for(int j = 0; j < height; j++){
+		    fin.read(buf,0,width);
+		    for(int i = 0; i < width; i++){
+			sm.setValue(i,j,(int)buf[i]);
+		    }
+		}
+		r.setSignalMask(c,sm);
+	    }
             fin.read(buf,0,2);
             int np = readShortFromBuffer(buf,0);
             for(int i = 0; i < np; i++){
@@ -270,6 +351,18 @@ public class ImageReport
             for(int j = 0; j < nchan; j++) s.addPunctum(r.getPunctum(chans[j],ids[j]),ids[j]);
             r.addSynapse(s);
         }
+	fin.read(buf,0,1);
+	Mask[] rois = new Mask[buf[0]];
+	for(int k = 0; k < rois.length; k++) rois[k] = new Mask(width,height);
+	for(int j = 0; j < height; j++){
+	    fin.read(buf,0,rois.length*width);
+	    for(int i = 0; i < width; i++){
+		for(int k = 0; k < rois.length; k++){
+		    rois[k].setValue(i,j,(int)buf[k*width+i]);
+		}
+	    }
+	}
+	for(int k = 0; k < rois.length; k++) r.addROI(rois[k]);
         return r;
     }
     

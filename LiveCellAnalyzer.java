@@ -20,7 +20,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
     public void standardAnalysis(int z, int t, int p)
     {
         int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
-        reports[index] = new ImageReport(ndim.getNWavelengths());
+        reports[index] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
         for(int w = 0; w < ndim.getNWavelengths(); w++){
             Mask m = findOutlierMask(w,z,t,p);
             reports[index].setOutlierMask(w,m);

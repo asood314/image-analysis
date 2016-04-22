@@ -82,7 +82,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         ndim = im;
         imName = name;
         reports = new ImageReport[im.getNZ()*im.getNT()*im.getNPos()];
-        for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths());
+        for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
         //analysisTools = new FixedCellAnalyzer(ndim,reports);
         stats = null;
         punctaSelectorTool = false;
@@ -278,6 +278,11 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm synapses");
         menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        maskMenu.add(menuItem);
+	menuItem = new JMenuItem("ROIs");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("vm rois");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
         menuItem = new JMenuItem("Stats");
         menuItem.addActionListener(this);
@@ -626,6 +631,13 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     repaint();
                 }
             }
+	    else if(cmd.equals("vm rois")){
+                ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
+                if(r != null){
+                    for(int i = 0; i < r.getNROI(); i++) imPanel.toggleMask(r.getROI(i));
+                    imPanel.repaint();
+                }
+            }
             else if(cmd.equals("vm none")){
                 //imPanel.setMask((Mask)null);
 		imPanel.clearMasks();
@@ -715,7 +727,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int t = imPanel.getTimepoint();
             int p = imPanel.getPosition();
 	    ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-	    r.getSynapseDensity(1);
+	    System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames()));
             System.out.println("Done.");
         }
         else if(cmd.equals("zback")){
@@ -785,6 +797,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	}
 	else if(roiSelectorTool){
 	    if(e.getX() != prevX && e.getY() != prevY){
+		System.out.println("Location: (" + trueX + "," + trueY + ")");
 		xpoints.addElement(trueX);
 		ypoints.addElement(trueY);
 		prevX = e.getX();
@@ -805,7 +818,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 			if(p.contains(i,j)) m.setValue(i,j,1);
 		    }
 		}
-		r.setROI(m);
+		r.addROI(m);
 		r.setUtilityMask(imPanel.getWavelength(),m);
 		imPanel.toggleMask(m);
 		xpoints.clear();
