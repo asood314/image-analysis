@@ -1,6 +1,10 @@
 import java.awt.Point;
+import java.awt.Polygon;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.util.StringTokenizer;
 import java.util.Vector;
 
 public class ImageReport
@@ -28,6 +32,10 @@ public class ImageReport
         synapses = new Vector<Synapse>();
 	resolutionXY = 0.046;
     }
+
+    public void setResolutionXY(double res){ resolutionXY = res; }
+
+    public double getResolutionXY(){ return resolutionXY; }
     
     public int getNChannels(){ return nChannels; }
     
@@ -374,5 +382,40 @@ public class ImageReport
     public static int readShortFromBuffer(byte[] buffer, int offset)
     {
         return ((buffer[offset+1] & 0xff) << 8) | (buffer[offset] & 0xff);
+    }
+
+    public void loadMetaMorphRegions(String phil)
+    {
+	try{
+	    BufferedReader fin = new BufferedReader(new FileReader(phil));
+	    String line = fin.readLine();
+	    while(line != null){
+		StringTokenizer st = new StringTokenizer(line,",");
+		for(int i = 0; i < 7; i++) line = st.nextToken();
+		st = new StringTokenizer(line," ");
+		if(Integer.parseInt(st.nextToken()) != 6){
+		    System.out.println("Something's wrong.");
+		    return;
+		}
+		int nv = Integer.parseInt(st.nextToken());
+		int[] xpoints = new int[nv];
+		int[] ypoints = new int[nv];
+		for(int i = 0; i < nv; i++){
+		    xpoints[i] = Integer.parseInt(st.nextToken());
+		    ypoints[i] = Integer.parseInt(st.nextToken());
+		}
+		Polygon p = new Polygon(xpoints,ypoints,nv);
+		Mask m = new Mask(imWidth,imHeight);
+		for(int i = 0; i < imWidth; i++){
+		    for(int j = 0; j < imHeight; j++){
+			if(p.contains(i,j)) m.setValue(i,j,1);
+		    }
+		}
+		addROI(m);
+		line = fin.readLine();
+	    }
+	    fin.close();
+	}
+	catch(IOException e){ e.printStackTrace(); }
     }
 }

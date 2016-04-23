@@ -48,6 +48,7 @@ public abstract class ImageAnalysisToolkit
     protected ImageReport[] reports;
     protected String[] channelNames;
     protected boolean[] isPost;
+    protected double resolutionXY;
 
     protected void init(NDImage im, ImageReport[] r)
     {
@@ -55,6 +56,7 @@ public abstract class ImageAnalysisToolkit
         reports = r;
 	channelNames = new String[ndim.getNWavelengths()];
 	isPost = new boolean[channelNames.length];
+	resolutionXY = 0.046;
     }
     
     public void setImage(NDImage im){ ndim = im; }
@@ -66,6 +68,10 @@ public abstract class ImageAnalysisToolkit
     public String[] getChannelNames(){ return channelNames; }
 
     public void setPost(int w, boolean tf){ isPost[w] = tf; }
+
+    public void setResolutionXY(double res){ resolutionXY = res; }
+
+    public double getResolutionXY(){ return resolutionXY; }
 
     public static void setExecutor(ExecutorService ex){ executor = ex; }
     

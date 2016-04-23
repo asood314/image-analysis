@@ -187,6 +187,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("loadReps");
         fileMenu.add(menuItem);
+	menuItem = new JMenuItem("Load MetaMorph Regions");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("loadMMR");
+        fileMenu.add(menuItem);
         menuItem = new JMenuItem("Z-project");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("zproj");
@@ -465,7 +469,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.X_AXIS));
             loadField.setText("Enter file name");
             loadField.setActionCommand("simrep");
-            JButton button = new JButton("Load");
+            JButton button = new JButton("Save");
             button.addActionListener(this);
             button.setActionCommand("simrep");
             jd.getContentPane().add(loadField);
@@ -492,8 +496,27 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             jd.pack();
             jd.setVisible(true);
         }
-        else if(cmd.equals("limrep")){
+	else if(cmd.equals("limrep")){
             analysisTools.loadImageReports(loadField.getText());
+            jd.dispose();
+        }
+	else if(cmd.equals("loadMMR")){
+            jd = new JDialog(this);
+            jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.X_AXIS));
+            loadField.setText("Enter file name");
+            loadField.setActionCommand("lmmr");
+            JButton button = new JButton("Load");
+            button.addActionListener(this);
+            button.setActionCommand("lmmr");
+            jd.getContentPane().add(loadField);
+            jd.getContentPane().add(button);
+            jd.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            jd.pack();
+            jd.setVisible(true);
+        }
+	else if(cmd.equals("lmmr")){
+	    ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
+	    r.loadMetaMorphRegions(loadField.getText());
             jd.dispose();
         }
         else if(cmd.equals("zproj")){
@@ -881,6 +904,11 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
     {
         ndim = im;
         reports = irs;
+    }
+
+    public void loadReports(String phil)
+    {
+	analysisTools.loadImageReports(phil);
     }
     
     public Mask circleSynapses(int z, int t, int p)

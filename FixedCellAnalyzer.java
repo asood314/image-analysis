@@ -6,6 +6,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     private int signalDetectionWindow;
     private int punctaDetectionWindow;
     private int punctaFindingIterations;
+    private int[] synapseChannels;
+    private int masterChannel;
     
     public FixedCellAnalyzer(NDImage im, ImageReport[] r)
     {
@@ -13,22 +15,43 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
 	punctaFindingIterations = 10;
+	synapseChannels = null;
+	masterChannel = -1;
     }
     
     public void setSignalDetectionWindow(int sdt){ signalDetectionWindow = sdt; }
     
     public void setPunctaDetectionWindow(int pdt){ punctaDetectionWindow = pdt; }
 
+    public void setSynapseChannels(int[] sc){ synapseChannels = sc; }
+
+    public void setMasterChannel(int chan){ masterChannel = chan; }
+
     public void standardAnalysis(int z, int t, int p)
     {
+	//System.out.println("Start.");
         int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
-        reports[index] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
-        for(int w = 0; w < ndim.getNWavelengths(); w++){
-            Mask m = findBackgroundMask(w,z,t,p);//findOutlierMask(w,z,t,p);
-            reports[index].setOutlierMask(w,m.getInverse());
-            reports[index].setSignalMask(w,findSignalMask(w,z,t,p,m));
-        }
-	//System.out.println("Done signal finding.");
+        if(reports[index] == null){
+	    reports[index] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
+	    reports[index].setResolutionXY(resolutionXY);
+	}
+	if(masterChannel < 0){
+	    for(int w = 0; w < ndim.getNWavelengths(); w++){
+		Mask m = findBackgroundMask(w,z,t,p);
+		reports[index].setOutlierMask(w,m.getInverse());
+		reports[index].setSignalMask(w,findSignalMask(w,z,t,p,m));
+	    }
+	}
+	else{
+	    Mask m = findBackgroundMask(masterChannel,z,t,p);
+	    Mask m2 = findSignalMask(masterChannel,z,t,p,m);
+	    m = m.getInverse();
+	    for(int w = 0; w < ndim.getNWavelengths(); w++){
+		reports[index].setOutlierMask(w,m);
+		reports[index].setSignalMask(w,m2);
+	    }
+	}
+	System.out.println("Done signal finding.");
 	for(int w = 0; w < ndim.getNWavelengths(); w++){
 	    for(int i = 0; i < punctaFindingIterations; i++){
 		int n = findPuncta(w,z,t,p);
@@ -39,8 +62,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    System.out.println("Found " + reports[index].getNPuncta(w) + " puncta in channel " + w + ".");
 	}
 	//System.out.println("Done puncta finding.");
-        int[] sc = {1,0};
-        findSynapses(z,t,p,sc);
+        if(synapseChannels != null) findSynapses(z,t,p,synapseChannels);
+	else findSynapses(z,t,p);
     }
     
     public Mask findOutlierMask(int w, int z, int t, int p)
@@ -69,6 +92,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     public Mask findBackgroundMask(int w, int z, int t, int p)
     {
 	double mode = ndim.mode(w,z,t,p);
+	double median = ndim.median(w,z,t,p);
+	double mean = ndim.mean(w,z,t,p);
+	double threshold = Math.min(1.5 * mode,(mode + median) / 2);
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	int[] dist = new int[65536];
 	for(int i = 20; i < ndim.getWidth()-20; i++){
@@ -88,7 +114,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    int index;
 	    for(index = 0; sum < target; index++) sum += dist[index];
 	    int lmedian = index-1;
-	    if(lmedian < 3*mode) m.setValue(i,19,1);
+	    if(lmedian < 1.5*threshold) m.setValue(i,19,1);
 	    for(int j = 20; j < ndim.getHeight()-20; j++){
 		int y1 = j-20;
 		int y2 = j+20;
@@ -108,7 +134,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    lmedian++;
 		    sum += dist[lmedian];
 		}
-		if(lmedian < 1.5*mode) m.setValue(i,j,1);
+		if(lmedian < threshold) m.setValue(i,j,1);
 		//double lmode = ndim.mode(w,z,t,p,i-20,i+20,j-20,j+20);
 		//if(lmode/mode > 2) continue;
 		//double lmedian = ndim.median(w,z,t,p,i-20,i+20,j-20,j+20);
@@ -124,7 +150,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	//Mask m2 = new Mask(ndim.getWidth(),ndim.getHeight());
 	double stdBkg = ndim.std(w,z,t,p,bkgdMask);
 	//double thresholdSig = ndim.max(w,z,t,p,bkgdMask);
+	//double mode = ndim.mode(w,z,t,p);
+	//double stdBkg = mode;
+	//if(ndim.mean(w,z,t,p) < 10*mode) stdBkg = Math.sqrt(stdBkg);
 	double globalThreshold = ndim.mean(w,z,t,p,bkgdMask) + 5*stdBkg;
+	//double globalThreshold = mode + 5*stdBkg;
+	System.out.println(globalThreshold);
 	//int[] dist = new int[8192];
 	//for(int i = 0; i < 8192; i++) dist[i] = 0;
 	for(int i = 0; i < ndim.getWidth(); i++){
@@ -162,6 +193,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	}
 	System.out.println(outlierThreshold);
 	*/
+	//System.out.println("Ready to cluster.");
 	Vector<Integer> borderX = new Vector<Integer>(10);
         Vector<Integer> borderY = new Vector<Integer>(10);
         for(int i = 0; i < ndim.getWidth(); i++){
@@ -194,9 +226,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 }
                 subMask.multiply(size);
                 m.add(subMask);
+		//System.out.println("Added cluster: " + i + "," + j+", " + size);
             }
         }
-        m.threshold(100);
+	//System.out.println("Thresholding");
+        m.threshold((int)(0.25/Math.pow(resolutionXY,2)));
+	//System.out.println("Filling in blanks");
         for(int i = 1; i < ndim.getWidth()-1; i++){
             for(int j = 1; j < ndim.getHeight()-1; j++){
                 int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
@@ -396,7 +431,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 continue;
             }
 	    */
-	    if(c.size() < 10){
+	    if(c.size() < 2){
 		for(int i = c.size()-1; i >=0; i--){
 		    Point pt = c.getPixel(i);
 		    used.setValue(pt.x,pt.y,1);
@@ -415,7 +450,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    }
 		}
 		*/
-		if(c.size() > 5000){
+		if(c.size() > 10.6/Math.pow(resolutionXY,2)){
 		    Point seed = c.getPixel(0);
 		    System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");
 		    //maxXY = argmax(zscores);
@@ -556,7 +591,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	}
 	r.clearPuncta(w);
 	for(int i = 0; i < np; i++){
-	    if(clusters[i].size() > 50) r.addPunctum(w,clusters[i]);
+	    if(clusters[i].size() > 0.1/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
 	}
     }
     
@@ -578,28 +613,20 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     
     public void findSynapses(int z, int t, int p)
     {
-        ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-        int[] np = new int[r.getNChannels()];
-        int[] chan = new int[r.getNChannels()];
-        int maxIndex = 1;
-        for(int i = 0; i < r.getNChannels(); i++){
-            np[i] = r.getNPuncta(i);
-            chan[i] = i;
-            //System.out.println(np[i]);
-            maxIndex *= np[i];
-        }
-        for(int j = 0; j < maxIndex; j++){
-            Synapse s = new Synapse(chan);
-            //System.out.println("Potential syanpse " + j);
-            for(int i = 0; i < np.length; i++){
-                int index = j;
-                for(int k = 0; k < i; k++) index = index / np[k];
-                index = index % np[i];
-                //System.out.println("Puncta " + i + " center: " + r.getPunctum(i,index).getCentroid().toString());
-                s.addPunctum(r.getPunctum(i,index),index);
-            }
-            if(s.isColocalized()) r.addSynapse(s);
-        }
+	int[] sc = new int[ndim.getNWavelengths()];
+	for(int i = 0; i < sc.length; i++) sc[i] = i;
+	for(int i = 0; i < sc.length; i++){
+	    if(isPost[sc[i]]) continue;
+	    for(int j = i+1; j < sc.length; j++){
+		if(isPost[sc[j]]){
+		    int tmp = sc[i];
+		    sc[i] = sc[j];
+		    sc[j] = tmp;
+		    break;
+		}
+	    }
+	}
+	findSynapses(z,t,p,sc);
     }
     
     public void findSynapses(int z, int t, int p, int[] chan)
