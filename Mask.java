@@ -146,6 +146,8 @@ public class Mask
             }
         }
     }
+
+    public int sum(){ return sum(0,width,0,height); }
     
     public int sum(int x1, int x2, int y1, int y2)
     {

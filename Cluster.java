@@ -29,6 +29,8 @@ public class Cluster
     
     public Point getPixel(int index){ return pixels.elementAt(index); }
 
+    public void setPixel(int index, Point p){ pixels.setElementAt(p,index); }
+
     public void removePixel(int index){ pixels.remove(index); }
 
     public void removePixel(Point p)
@@ -51,6 +53,17 @@ public class Cluster
 	    }
 	}
 	return false;
+    }
+
+    public int indexOf(Point p)
+    {
+	for(int i = 0; i < pixels.size(); i++){
+	    Point p2 = pixels.elementAt(i);
+	    if(p2.x == p.x && p2.y == p.y){
+		return i;
+	    }
+	}
+	return -1;
     }
     
     public int size(){ return pixels.size(); }
