@@ -492,7 +492,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 
     public void findSaturatedPuncta(int w, int z, int t, int p)
     {
-	int saturationThreshold = 4000;
+	//int saturationThreshold = 4000;
 	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	Mask m = r.getSignalMask(w);
 	Mask used = new Mask(m);
@@ -635,7 +635,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     public void resolveOverlaps(int w, int z, int t, int p)
     {
 	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-	int saturationThreshold = 4000;
+	//int saturationThreshold = 4000;
 	int np = r.getNPuncta(w);
 	Point[] peaks = new Point[np];
 	Point[] troughs = new Point[np];
