@@ -49,6 +49,7 @@ public abstract class ImageAnalysisToolkit
     protected String[] channelNames;
     protected boolean[] isPost;
     protected double resolutionXY;
+    protected int saturationThreshold;
 
     protected void init(NDImage im, ImageReport[] r)
     {
@@ -57,6 +58,7 @@ public abstract class ImageAnalysisToolkit
 	channelNames = new String[ndim.getNWavelengths()];
 	isPost = new boolean[channelNames.length];
 	resolutionXY = 0.046;
+	saturationThreshold = 30000;
     }
     
     public void setImage(NDImage im){ ndim = im; }
@@ -69,9 +71,15 @@ public abstract class ImageAnalysisToolkit
 
     public void setPost(int w, boolean tf){ isPost[w] = tf; }
 
-    public void setResolutionXY(double res){ resolutionXY = res; }
+    public void setResolutionXY(double res)
+    {
+	resolutionXY = res;
+	//for(int i = 0; i < reports.length; i++) reports[i].setResolutionXY(res);
+    }
 
     public double getResolutionXY(){ return resolutionXY; }
+
+    public void setSaturationThreshold(int st){ saturationThreshold = st; }
 
     public static void setExecutor(ExecutorService ex){ executor = ex; }
     
@@ -97,7 +105,7 @@ public abstract class ImageAnalysisToolkit
 			BatchThread bt = new BatchThread(this,i,j,k);
 			addThread();
 			executor.execute(bt);
-			System.out.println("Thread launched " + activeThreads);
+			//System.out.println("Thread launched " + activeThreads);
 		    }
 		    finally{ threadPoolLock.unlock(); }
                 }

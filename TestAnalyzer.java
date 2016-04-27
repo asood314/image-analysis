@@ -21,6 +21,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 
     public int findPuncta(int w, int z, int t, int p)
     {
+	findSaturatedPuncta(w,z,t,p);
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         Mask m = new Mask(r.getSignalMask(w));
         Mask m2 = r.getPunctaMask(w);
@@ -135,6 +136,158 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	}
 	System.out.println("Weird shape.");
 	return 0;
+    }
+
+    public void findSaturatedPuncta(int w, int z, int t, int p)
+    {
+	System.out.println("Start.");
+	int saturationThreshold = 4000;
+	int punctaDetectionWindow = 10;
+	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
+	r.clearPuncta(w);
+	Mask m = r.getSignalMask(w);
+	Mask used = new Mask(ndim.getWidth(),ndim.getHeight(),false);
+	Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
+	Vector<Integer> borderSatX = new Vector<Integer>();
+	Vector<Integer> borderSatY = new Vector<Integer>();
+	Vector<Integer> borderUnsatX = new Vector<Integer>();
+	Vector<Integer> borderUnsatY = new Vector<Integer>();
+	Vector<Integer> borderVal = new Vector<Integer>();
+	int[] diArr = {-1,0,1,-1,1,-1,0,1};
+        int[] djArr = {-1,-1,-1,0,0,1,1,1};
+	int minSignal = (int)Math.min(20.0 / Math.pow(resolutionXY,2),m.sum());
+	for(int i = 0; i < ndim.getWidth(); i++){
+	    for(int j = 0; j < ndim.getHeight(); j++){
+		if(used.getValue(i,j)*ndim.getPixel(w,z,t,i,j,p) < saturationThreshold) continue;
+		System.out.println("Starting new cluster");
+		Cluster c = new Cluster();
+		c.addPixel(i,j);
+		used.setValue(i,j,0);
+		cMask.setValue(i,j,1);
+		borderSatX.addElement(i);
+		borderSatY.addElement(j);
+		while(borderSatX.size() > 0){
+		    for(int k = 0; k < 8; k++){
+			try{
+			    int x = borderSatX.elementAt(0) + diArr[k];
+			    int y = borderSatY.elementAt(0) + djArr[k];
+			    int value = ndim.getPixel(w,z,t,x,y,p);
+			    if(used.getValue(x,y) > 0){
+				if(value > saturationThreshold){
+				    borderSatX.addElement(x);
+				    borderSatY.addElement(y);
+				}
+				else{
+				    borderUnsatX.addElement(x);
+				    borderUnsatY.addElement(y);
+				    borderVal.addElement(value);
+				}
+				c.addPixel(x,y);
+				used.setValue(x,y,0);
+				cMask.setValue(x,y,1);
+			    }
+			}
+			catch(ArrayIndexOutOfBoundsException e){ continue; }
+		    }
+		    borderSatX.remove(0);
+		    borderSatY.remove(0);
+		}
+		System.out.println("Done saturated cluster.");
+		Point center = c.getCentroid();
+		int x1 = Math.max(center.x-punctaDetectionWindow,0);
+                int x2 = Math.min(ndim.getWidth(),center.x+punctaDetectionWindow);
+                int y1 = Math.max(center.y-punctaDetectionWindow,0);
+                int y2 = Math.min(ndim.getHeight(),center.y+punctaDetectionWindow);
+                int nSignal = m.sum(x1,x2,y1,y2);
+                while(nSignal < minSignal){
+                    x1 = Math.max(x1-punctaDetectionWindow,0);
+                    x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
+                    y1 = Math.max(y1-punctaDetectionWindow,0);
+                    y2 = Math.min(ndim.getHeight(),y2+punctaDetectionWindow);
+                    nSignal = m.sum(x1,x2,y1,y2);
+		    //if(x2 - x1 == ndim.getWidth()) break;
+                }
+		System.out.println("Got local window");
+		int Imax = saturationThreshold;
+		double localMedian = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
+		double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
+		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2*localStd);
+		while(borderUnsatX.size() > 0){
+		    int upperLimit = borderVal.elementAt(0);
+		    for(int k = 0; k < 8; k++){
+			try{
+			    int x = borderUnsatX.elementAt(0) + diArr[k];
+			    int y = borderUnsatY.elementAt(0) + djArr[k];
+			    int pixelValue = ndim.getPixel(w,z,t,x,y,p);
+			    double val = used.getValue(i,j)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
+			    if(val < 0.001 || val > 1.0) continue;
+			    borderUnsatX.addElement(x);
+			    borderUnsatY.addElement(y);
+			    borderVal.addElement(pixelValue);
+			    c.addPixel(x,y);
+			    used.setValue(x,y,0);
+			    cMask.setValue(x,y,1);
+			}
+			catch(ArrayIndexOutOfBoundsException e){ continue; }
+		    }
+		    borderUnsatX.remove(0);
+		    borderUnsatY.remove(0);
+		    borderVal.remove(0);
+		}
+		System.out.println("Done unsaturated cluster");
+		for(int x = x1+1; x < x2-1; x++){
+		    for(int y = y1+1; y < y2-1; y++){
+			int sum = cMask.getValue(x-1,y-1) + cMask.getValue(x,y-1) + cMask.getValue(x+1,y-1) + cMask.getValue(x-1,y) + cMask.getValue(x+1,y) + cMask.getValue(x-1,y+1) + cMask.getValue(x,y+1) + cMask.getValue(x+1,y+1);
+			if(sum > 4){
+			    cMask.setValue(x,y,1);
+			    c.addPixel(x,y);
+			}
+			else if(sum < 3){
+			    cMask.setValue(x,y,0);
+			    c.removePixel(new Point(x,y));
+			}
+		    }
+		}
+		if(c.size() < 2){
+		    System.out.println("Too small");
+		    for(int x = c.size()-1; x >=0; x--){
+			Point pt = c.getPixel(x);
+			used.setValue(pt.x,pt.y,1);
+		    }
+		    cMask.clear(x1,x2,y1,y2);
+		    continue;
+		}
+		center = c.getCentroid();
+		int index = c.indexOf(center);
+		if(!(index < 0)){
+		    if(c.size() > 10.6/Math.pow(resolutionXY,2)){
+			Point seed = c.getPixel(0);
+			System.out.println("Found ridiculously large punctum of size " + c.size() + " seeded at (" + seed.x + "," + seed.y + ")");
+			cMask.clear(x1,x2,y1,y2);
+			continue;
+		    }
+		    System.out.println("Adding cluster");
+		    Point tmp = c.getPixel(0);
+		    c.setPixel(0,c.getPixel(index));
+		    c.setPixel(index,tmp);
+		    r.addPunctum(w,c);
+		}
+		else{
+		    System.out.println("Weird shape");
+		    for(int x = c.size()-1; x >=0; x--){
+			Point pt = c.getPixel(x);
+			used.setValue(pt.x,pt.y,1);
+		    }
+		}
+		cMask.clear(x1,x2,y1,y2);
+		borderSatX.clear();
+		borderSatY.clear();
+		borderUnsatX.clear();
+		borderUnsatY.clear();
+		borderVal.clear();
+	    }
+	}
+	System.out.println("Done");
     }
     
     public void findSynapses(int z, int t, int p)
