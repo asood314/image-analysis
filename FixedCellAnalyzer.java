@@ -36,6 +36,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    reports[index].setResolutionXY(resolutionXY);
 	}
 	long t1 = System.currentTimeMillis();
+	/*
 	if(masterChannel < 0){
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		Mask m = findBackgroundMask(w,z,t,p);
@@ -52,20 +53,21 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		reports[index].setSignalMask(w,m2);
 	    }
 	}
+	*/
 	long t2 = System.currentTimeMillis();
 	long diff = (t2 - t1) / 1000;
 	System.out.println("Done signal finding in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
 	t1 = t2;
 	for(int w = 0; w < ndim.getNWavelengths(); w++){
-	    //System.out.println("Finding puncta for channel "+w);
+	    System.out.println("Finding puncta for channel "+w);
 	    findSaturatedPuncta(w,z,t,p);
-	    //System.out.println("Done saturated puncta.");
+	    System.out.println("Done saturated puncta.");
 	    for(int i = 0; i < punctaFindingIterations; i++){
 		int n = findPuncta(w,z,t,p);
-		//System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
+		System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
 		if(n == 0) break;
 	    }
-	    //System.out.println("Resolving overlaps");
+	    System.out.println("Resolving overlaps");
 	    resolveOverlaps(w,z,t,p);
 	    t2 = System.currentTimeMillis();
 	    diff = (t2 - t1) / 1000;
@@ -288,6 +290,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                     y1 = Math.max(y1-punctaDetectionWindow,0);
                     y2 = Math.min(ndim.getHeight(),y2+punctaDetectionWindow);
                     nSignal = m.sum(x1,x2,y1,y2);
+		    if(x2 - x1 > 2000){
+			System.out.println("Stuck finding local signal for maximum at ("+localMaxima.elementAt(localMaxima.size()-1).x+","+localMaxima.elementAt(localMaxima.size()-1).y+")");
+			break;
+		    }
                 }
                 upperLeft.add(new Point(x1,y1));
                 lowerRight.add(new Point(x2,y2));
@@ -330,7 +336,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         used.multiply(m);
         Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
         //while(zscores[maxXY[0]][maxXY[1]] > 3){
-	//System.out.println(localMaxima.size());
+	System.out.println("Found local maxima: "+localMaxima.size());
         for(int s = 0; s < localMaxima.size(); s++){
             //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
             Point lm = localMaxima.elementAt(s);
@@ -371,6 +377,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	    double minVal = 1.0;
 	    */
+	    int count = 0;
+	    if(localMaxima.size() == 1161){
+		System.out.println("Initial clustering " + s);
+		if(s == 418){
+		    System.out.println(lm.x+" "+lm.y);
+		    System.out.println(ul.x+" " +ul.y+" "+lr.x+" "+lr.y+" ");
+		    System.out.println(Imax + " " + localMedian + " " + localStd + " " + minThreshold);
+		    System.out.println(ndim.stdDebug(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m));
+		}
+	    }
             while(borderX.size() > 0){
 		//sumI -= removalQueueI.elementAt(0);
 		//npix -= removalQueueN.elementAt(0);
@@ -381,6 +397,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int nborder = borderX.size();
 		//double sumNew = 0.0;
 		//int numNew = 0;
+		if(localMaxima.size() == 1161 && s == 418) System.out.println("Border size: "+nborder);
+		if(count > 1000){
+		    System.out.println("Stuck on puncta at ("+lm.x+","+lm.y+")");
+		    break;
+		}
 		for(int b = 0; b < nborder; b++){
 		    int bi = borderX.elementAt(0);
 		    int bj = borderY.elementAt(0);
@@ -417,17 +438,35 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		//npix += numNew;
 		//removalQueueI.addElement(sumNew);
 		//removalQueueN.addElement(numNew);
-		//count++;
+		count++;
+	    }
+	    if(localMaxima.size() == 1161) System.out.println("Filling in blanks");
+	    boolean unfilled = true;
+	    count = 0;
+	    while(unfilled){
+		unfilled = false;
+		if(count > 100){
+		    Point pt = c.getPixel(0);
+		    System.out.println("Stuck on puncta at ("+pt.x+","+pt.y+")");
+		    break;
+		}
+		for(int i = ul.x+1; i < lr.x-1; i++){
+		    for(int j = ul.y+1; j < lr.y-1; j++){
+			if(cMask.getValue(i,j) > 0) continue;
+			int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
+			if(sum > 4){
+			    cMask.setValue(i,j,1);
+			    c.addPixel(i,j);
+			    unfilled = true;
+			}
+		    }
+		}
+		count++;
 	    }
 	    for(int i = ul.x+1; i < lr.x-1; i++){
 		for(int j = ul.y+1; j < lr.y-1; j++){
-		    //if(cMask.getValue(i,j) > 0) continue;
 		    int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
-		    if(sum > 4){
-			cMask.setValue(i,j,1);
-			c.addPixel(i,j);
-		    }
-		    else if(sum < 3){
+		    if(sum < 3){
 			cMask.setValue(i,j,0);
 			c.removePixel(new Point(i,j));
 		    }
@@ -581,14 +620,32 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    borderUnsatY.remove(0);
 		    borderVal.remove(0);
 		}
+		boolean unfilled = true;
+		int count = 0;
+		while(unfilled){
+		    unfilled = false;
+		    if(count > 100){
+			Point pt = c.getPixel(0);
+			System.out.println("Stuck on puncta at ("+pt.x+","+pt.y+")");
+			break;
+		    }
+		    for(int x = x1+1; x < x2-1; x++){
+			for(int y = y1+1; y < y2-1; y++){
+			    if(cMask.getValue(i,j) > 0) continue;
+			    int sum = cMask.getValue(x-1,y-1) + cMask.getValue(x,y-1) + cMask.getValue(x+1,y-1) + cMask.getValue(x-1,y) + cMask.getValue(x+1,y) + cMask.getValue(x-1,y+1) + cMask.getValue(x,y+1) + cMask.getValue(x+1,y+1);
+			    if(sum > 4){
+				cMask.setValue(x,y,1);
+				c.addPixel(x,y);
+				unfilled = true;
+			    }
+			}
+		    }
+		    count++;
+		}
 		for(int x = x1+1; x < x2-1; x++){
 		    for(int y = y1+1; y < y2-1; y++){
 			int sum = cMask.getValue(x-1,y-1) + cMask.getValue(x,y-1) + cMask.getValue(x+1,y-1) + cMask.getValue(x-1,y) + cMask.getValue(x+1,y) + cMask.getValue(x-1,y+1) + cMask.getValue(x,y+1) + cMask.getValue(x+1,y+1);
-			if(sum > 4){
-			    cMask.setValue(x,y,1);
-			    c.addPixel(x,y);
-			}
-			else if(sum < 3){
+			if(sum < 3){
 			    cMask.setValue(x,y,0);
 			    c.removePixel(new Point(x,y));
 			}
@@ -641,7 +698,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Point[] troughs = new Point[np];
 	Function2D[] fs = new Function2D[np];
 	Cluster[] clusters = new Cluster[np];
-	Vector<Cluster> satClusters = new Vector<Cluster>();
+	//Vector<Cluster> satClusters = new Vector<Cluster>();
 	for(int i = 0; i < np; i++){
 	    Cluster c = r.getPunctum(w,i);
 	    int imax = 0;
@@ -764,7 +821,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	}
 	r.clearPuncta(w);
 	for(int i = 0; i < np; i++){
-	    if(clusters[i].size() > 0.1/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
+	    if(clusters[i].size() > 0.05/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
 	}
     }
     

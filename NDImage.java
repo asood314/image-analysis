@@ -1230,6 +1230,22 @@ public class NDImage
         return Math.sqrt(sum / (npix - 1));
     }
 
+    public double stdDebug(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+        double mean = mean(wl,z,t,p,x1,x2,y1,y2,m);
+        double sum = 0.0;
+        int npix = 0;
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+                int a = m.getValue(i,j);
+                sum += a * Math.pow(image[wl][z][t][i][j][p] - mean,2);
+                npix += a;
+            }
+        }
+	System.out.println(mean + " " + sum + " " + npix);
+        return Math.sqrt(sum / (npix - 1));
+    }
+
     public double mode(int wl, int z, int t, int p)
     {
 	int[] values = new int[65536];
