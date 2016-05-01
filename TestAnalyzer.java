@@ -17,7 +17,68 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 
     public Mask findBackgroundMask(int w, int z, int t, int p){ return null; }
     
-    public Mask findSignalMask(int w, int z, int t, int p, Mask outMask){ return null; }
+    public Mask findSignalMask(int w, int z, int t, int p, Mask bkgdMask)
+    {
+	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+	double stdBkg = ndim.std(w,z,t,p,bkgdMask);
+	double globalThreshold = ndim.mean(w,z,t,p,bkgdMask) + 5*stdBkg;
+	for(int i = 0; i < ndim.getWidth(); i++){
+            for(int j = 0; j < ndim.getHeight(); j++){
+		//if(bkgdMask.getValue(i,j) > 0) continue;
+		int value = ndim.getPixel(w,z,t,i,j,p);
+		if(value > globalThreshold){
+		    m.setValue(i,j,1);
+		    //m2.setValue(i,j,1);
+		    //dist[value/8]++;
+		}
+	    }
+	}
+	Vector<Integer> borderX = new Vector<Integer>(10);
+        Vector<Integer> borderY = new Vector<Integer>(10);
+        for(int i = 0; i < ndim.getWidth(); i++){
+            for(int j = 0; j < ndim.getHeight(); j++){
+                if(m.getValue(i,j) != 1) continue;
+                borderX.addElement(i);
+                borderY.addElement(j);
+                Mask subMask = new Mask(ndim.getWidth(),ndim.getHeight());
+                subMask.setValue(i,j,1);
+                int size = 0;
+                while(borderX.size() > 0){
+                    int bi = borderX.elementAt(0);
+                    int bj = borderY.elementAt(0);
+                    for(int di = -1; di < 2; di++){
+                        for(int dj = -1; dj < 2; dj++){
+                            try{
+                                int val = m.getValue(bi+di,bj+dj);
+                                if(val > 0 && subMask.getValue(bi+di,bj+dj) == 0){
+                                    subMask.setValue(bi+di,bj+dj,1);
+                                    borderX.addElement(bi+di);
+                                    borderY.addElement(bj+dj);
+                                    size++;
+                                }
+                            }
+                            catch(ArrayIndexOutOfBoundsException e){ continue; }
+                        }
+                    }
+                    borderX.remove(0);
+                    borderY.remove(0);
+                }
+                subMask.multiply(size);
+                m.add(subMask);
+		//System.out.println("Added cluster: " + i + "," + j+", " + size);
+            }
+        }
+	//System.out.println("Thresholding");
+        //m.threshold((int)(0.25/Math.pow(resolutionXY,2)));
+	//System.out.println("Filling in blanks");
+        for(int i = 1; i < ndim.getWidth()-1; i++){
+            for(int j = 1; j < ndim.getHeight()-1; j++){
+                int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
+                if(sum > 4) m.setValue(i,j,1);
+            }
+        }
+	return m;
+    }
 
     public int findPuncta(int w, int z, int t, int p)
     {
@@ -146,7 +207,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	r.clearPuncta(w);
 	Mask m = r.getSignalMask(w);
-	Mask used = new Mask(ndim.getWidth(),ndim.getHeight(),false);
+	Mask used = new Mask(m);//ndim.getWidth(),ndim.getHeight(),false);
 	Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
 	Vector<Integer> borderSatX = new Vector<Integer>();
 	Vector<Integer> borderSatY = new Vector<Integer>();

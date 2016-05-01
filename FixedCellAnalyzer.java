@@ -36,7 +36,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    reports[index].setResolutionXY(resolutionXY);
 	}
 	long t1 = System.currentTimeMillis();
-	/*
 	if(masterChannel < 0){
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		Mask m = findBackgroundMask(w,z,t,p);
@@ -49,25 +48,34 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    Mask m2 = findSignalMask(masterChannel,z,t,p,m);
 	    m = m.getInverse();
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
+		double mean = ndim.mean(w,z,t,p,m2);
+		double std = ndim.std(w,z,t,p,m2);
+		double threshold = mean + std;
+		for(int i = 0; i < ndim.getWidth(); i++){
+		    for(int j = 0; j < ndim.getHeight(); j++){
+			if(ndim.getPixel(w,z,t,i,j,p) > threshold) m2.setValue(i,j,1);
+		    }
+		}
+	    }
+	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		reports[index].setOutlierMask(w,m);
 		reports[index].setSignalMask(w,m2);
 	    }
 	}
-	*/
 	long t2 = System.currentTimeMillis();
 	long diff = (t2 - t1) / 1000;
 	System.out.println("Done signal finding in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
 	t1 = t2;
 	for(int w = 0; w < ndim.getNWavelengths(); w++){
-	    System.out.println("Finding puncta for channel "+w);
+	    //System.out.println("Finding puncta for channel "+w);
 	    findSaturatedPuncta(w,z,t,p);
-	    System.out.println("Done saturated puncta.");
+	    //System.out.println("Done saturated puncta.");
 	    for(int i = 0; i < punctaFindingIterations; i++){
 		int n = findPuncta(w,z,t,p);
-		System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
+		//System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
 		if(n == 0) break;
 	    }
-	    System.out.println("Resolving overlaps");
+	    //System.out.println("Resolving overlaps");
 	    resolveOverlaps(w,z,t,p);
 	    t2 = System.currentTimeMillis();
 	    diff = (t2 - t1) / 1000;
@@ -336,7 +344,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         used.multiply(m);
         Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
         //while(zscores[maxXY[0]][maxXY[1]] > 3){
-	System.out.println("Found local maxima: "+localMaxima.size());
+	//System.out.println("Found local maxima: "+localMaxima.size());
         for(int s = 0; s < localMaxima.size(); s++){
             //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
             Point lm = localMaxima.elementAt(s);
@@ -377,16 +385,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	    double minVal = 1.0;
 	    */
-	    int count = 0;
-	    if(localMaxima.size() == 1161){
-		System.out.println("Initial clustering " + s);
-		if(s == 418){
-		    System.out.println(lm.x+" "+lm.y);
-		    System.out.println(ul.x+" " +ul.y+" "+lr.x+" "+lr.y+" ");
-		    System.out.println(Imax + " " + localMedian + " " + localStd + " " + minThreshold);
-		    System.out.println(ndim.stdDebug(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m));
-		}
-	    }
             while(borderX.size() > 0){
 		//sumI -= removalQueueI.elementAt(0);
 		//npix -= removalQueueN.elementAt(0);
@@ -397,11 +395,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int nborder = borderX.size();
 		//double sumNew = 0.0;
 		//int numNew = 0;
-		if(localMaxima.size() == 1161 && s == 418) System.out.println("Border size: "+nborder);
-		if(count > 1000){
-		    System.out.println("Stuck on puncta at ("+lm.x+","+lm.y+")");
-		    break;
-		}
 		for(int b = 0; b < nborder; b++){
 		    int bi = borderX.elementAt(0);
 		    int bj = borderY.elementAt(0);
@@ -438,21 +431,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		//npix += numNew;
 		//removalQueueI.addElement(sumNew);
 		//removalQueueN.addElement(numNew);
-		count++;
 	    }
 	    if(localMaxima.size() == 1161) System.out.println("Filling in blanks");
 	    boolean unfilled = true;
-	    count = 0;
 	    while(unfilled){
 		unfilled = false;
-		if(count > 100){
-		    Point pt = c.getPixel(0);
-		    System.out.println("Stuck on puncta at ("+pt.x+","+pt.y+")");
-		    break;
-		}
 		for(int i = ul.x+1; i < lr.x-1; i++){
 		    for(int j = ul.y+1; j < lr.y-1; j++){
-			if(cMask.getValue(i,j) > 0) continue;
+			if(cMask.getValue(i,j) > 0 || m.getValue(i,j) < 1) continue;
 			int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
 			if(sum > 4){
 			    cMask.setValue(i,j,1);
@@ -461,7 +447,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			}
 		    }
 		}
-		count++;
 	    }
 	    for(int i = ul.x+1; i < lr.x-1; i++){
 		for(int j = ul.y+1; j < lr.y-1; j++){
@@ -621,17 +606,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    borderVal.remove(0);
 		}
 		boolean unfilled = true;
-		int count = 0;
 		while(unfilled){
 		    unfilled = false;
-		    if(count > 100){
-			Point pt = c.getPixel(0);
-			System.out.println("Stuck on puncta at ("+pt.x+","+pt.y+")");
-			break;
-		    }
 		    for(int x = x1+1; x < x2-1; x++){
 			for(int y = y1+1; y < y2-1; y++){
-			    if(cMask.getValue(i,j) > 0) continue;
+			    if(cMask.getValue(i,j) > 0 || m.getValue(i,j) < 1) continue;
 			    int sum = cMask.getValue(x-1,y-1) + cMask.getValue(x,y-1) + cMask.getValue(x+1,y-1) + cMask.getValue(x-1,y) + cMask.getValue(x+1,y) + cMask.getValue(x-1,y+1) + cMask.getValue(x,y+1) + cMask.getValue(x+1,y+1);
 			    if(sum > 4){
 				cMask.setValue(x,y,1);
@@ -640,7 +619,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    }
 			}
 		    }
-		    count++;
 		}
 		for(int x = x1+1; x < x2-1; x++){
 		    for(int y = y1+1; y < y2-1; y++){
@@ -734,6 +712,15 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    fs[i].setParameters(param);
 	}
 	Mask m = r.getPunctaMask(w);
+	/*
+	for(int i = 0; i < satClusters.size(); i++){
+	    Cluster c = satClusters.elementAt(i);
+	    for(int j = 0; j < c.size(); j++){
+		Point pt = c.getPixel(j);
+		m.setValue(pt.x,pt.y,0);
+	    }
+	}
+	*/
 	for(int i = 0; i < ndim.getWidth(); i++){
 	    //int x1 = Math.max(0,i-resolutionWindow);
 	    //int x2 = Math.min(ndim.getWidth(),i+resolutionWindow);
@@ -758,6 +745,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int minK = -1;
 		boolean isPeak = false;
 		for(int k = 0; k < np; k++){
+		    //if(clusters[k] == null) continue;
 		    if(i == peaks[k].x && j == peaks[k].y){
 			isPeak = true;
 			break;
@@ -775,7 +763,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 		if(isPeak) continue;
 		if(minDiff > -0.1) clusters[minK].addPixel(new Point(i,j));
-		else if(maxDiff > -0.1 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
+		else if(maxDiff > -0.2 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
 	    }
 	}
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
@@ -784,6 +772,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Vector<Integer> borderX = new Vector<Integer>();
 	Vector<Integer> borderY = new Vector<Integer>();
 	for(int l = 0; l < np; l++){
+	    //if(clusters[l] == null) continue;
 	    Cluster rc = new Cluster();
 	    for(int n = 0; n < clusters[l].size(); n++){
 		Point pt = clusters[l].getPixel(n);
@@ -820,7 +809,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    clusters[l] = rc;
 	}
 	r.clearPuncta(w);
+	//for(int i = 0; i < satClusters.size(); i++) r.addPunctum(w,satClusters.elementAt(i));
 	for(int i = 0; i < np; i++){
+	    //if(clusters[i] == null) continue;
 	    if(clusters[i].size() > 0.05/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
 	}
     }

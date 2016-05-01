@@ -1238,6 +1238,7 @@ public class NDImage
         for(int i = x1; i < x2; i++){
             for(int j = y1; j < y2; j++){
                 int a = m.getValue(i,j);
+		if(a < 0) System.out.println("Negative value in mask: "+a);
                 sum += a * Math.pow(image[wl][z][t][i][j][p] - mean,2);
                 npix += a;
             }

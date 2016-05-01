@@ -58,7 +58,7 @@ public abstract class ImageAnalysisToolkit
 	channelNames = new String[ndim.getNWavelengths()];
 	isPost = new boolean[channelNames.length];
 	resolutionXY = 0.046;
-	saturationThreshold = 30000;
+	saturationThreshold = 65536;
     }
     
     public void setImage(NDImage im){ ndim = im; }

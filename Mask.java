@@ -168,4 +168,15 @@ public class Mask
 	    }
 	}
     }
+
+    public int max(int x1, int x2, int y1, int y2)
+    {
+	int max = -999999;
+	for(int i = x1; i < x2; i++){
+	    for(int j = y1; j < y2; j++){
+		if(mask[i][j] > max) max = mask[i][j];
+	    }
+	}
+	return max;
+    }
 }
