@@ -355,7 +355,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             //double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2*localStd);
+	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 1.5*localStd);
 	    double localThreshold = localMedian + 3*localStd;
 	    if(Imax < localThreshold) continue;
 	    localThreshold = Imax;
@@ -399,7 +399,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    int bi = borderX.elementAt(0);
 		    int bj = borderY.elementAt(0);
 		    c.addPixel(bi,bj);
-		    double upperLimit = borderVal.elementAt(0);
+		    double upperLimit = Imax;
+		    if((borderVal.elementAt(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.elementAt(0);
 		    for(int k = 0; k < 8; k++){
 			int i = bi+diArr[k];
 			int j = bj+djArr[k];
@@ -582,15 +583,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int Imax = saturationThreshold;
 		double localMedian = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
 		double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
-		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2*localStd);
+		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 1.5*localStd);
 		while(borderUnsatX.size() > 0){
-		    int upperLimit = borderVal.elementAt(0);
+		    int upperLimit = Imax;
+		    if((borderVal.elementAt(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.elementAt(0);
 		    for(int k = 0; k < 8; k++){
 			try{
 			    int x = borderUnsatX.elementAt(0) + diArr[k];
 			    int y = borderUnsatY.elementAt(0) + djArr[k];
 			    int pixelValue = ndim.getPixel(w,z,t,x,y,p);
-			    double val = used.getValue(i,j)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
+			    double val = used.getValue(x,y)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
 			    if(val < 0.001 || val > 1.0) continue;
 			    borderUnsatX.addElement(x);
 			    borderUnsatY.addElement(y);
@@ -676,7 +678,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Point[] troughs = new Point[np];
 	Function2D[] fs = new Function2D[np];
 	Cluster[] clusters = new Cluster[np];
-	//Vector<Cluster> satClusters = new Vector<Cluster>();
+	Vector<Cluster> satClusters = new Vector<Cluster>();
 	for(int i = 0; i < np; i++){
 	    Cluster c = r.getPunctum(w,i);
 	    int imax = 0;
@@ -695,24 +697,25 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 		if(value > saturationThreshold){
 		    nSat++;
-		    //clusters[i] = null;
-		    //satClusters.addElement(c);
-		    //break;
+		    clusters[i] = null;
+		    satClusters.addElement(c);
+		    break;
 		}
 	    }
-	    //if(nSat > 0) continue;
+	    if(nSat > 0) continue;
 	    clusters[i] = new Cluster();
 	    clusters[i].addPixel(peaks[i]);
 	    fs[i] = Functions.gaussian2D();
 	    double[] param = {imax,peaks[i].x,peaks[i].y,-0.5*(c.size()/Math.PI)/Math.log(((double)imin)/imax)};
+	    /*
 	    if(nSat > 0){
 		peaks[i] = c.getCentroid();
 		param[0] = param[0] / Math.exp(-(nSat/Math.PI)/(2*param[3]));
 	    }
+	    */
 	    fs[i].setParameters(param);
 	}
 	Mask m = r.getPunctaMask(w);
-	/*
 	for(int i = 0; i < satClusters.size(); i++){
 	    Cluster c = satClusters.elementAt(i);
 	    for(int j = 0; j < c.size(); j++){
@@ -720,7 +723,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		m.setValue(pt.x,pt.y,0);
 	    }
 	}
-	*/
 	for(int i = 0; i < ndim.getWidth(); i++){
 	    //int x1 = Math.max(0,i-resolutionWindow);
 	    //int x2 = Math.min(ndim.getWidth(),i+resolutionWindow);
@@ -745,7 +747,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int minK = -1;
 		boolean isPeak = false;
 		for(int k = 0; k < np; k++){
-		    //if(clusters[k] == null) continue;
+		    if(clusters[k] == null) continue;
 		    if(i == peaks[k].x && j == peaks[k].y){
 			isPeak = true;
 			break;
@@ -763,7 +765,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 		if(isPeak) continue;
 		if(minDiff > -0.1) clusters[minK].addPixel(new Point(i,j));
-		else if(maxDiff > -0.2 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
+		else if(maxDiff > -0.5 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
+		//else clusters[maxK].addPixel(new Point(i,j));
 	    }
 	}
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
@@ -772,7 +775,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Vector<Integer> borderX = new Vector<Integer>();
 	Vector<Integer> borderY = new Vector<Integer>();
 	for(int l = 0; l < np; l++){
-	    //if(clusters[l] == null) continue;
+	    if(clusters[l] == null) continue;
 	    Cluster rc = new Cluster();
 	    for(int n = 0; n < clusters[l].size(); n++){
 		Point pt = clusters[l].getPixel(n);
@@ -809,10 +812,50 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    clusters[l] = rc;
 	}
 	r.clearPuncta(w);
-	//for(int i = 0; i < satClusters.size(); i++) r.addPunctum(w,satClusters.elementAt(i));
+	for(int i = 0; i < satClusters.size(); i++) r.addPunctum(w,satClusters.elementAt(i));
+	/*
 	for(int i = 0; i < np; i++){
-	    //if(clusters[i] == null) continue;
-	    if(clusters[i].size() > 0.05/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
+	    if(clusters[i] == null) continue;
+	    if(clusters[i].size() > 0.07/Math.pow(resolutionXY,2)) r.addPunctum(w,clusters[i]);
+	}
+	*/
+	double areaThreshold = 0.07/Math.pow(resolutionXY,2);
+	double borderThreshold = Math.sqrt(areaThreshold);
+	boolean doneMerging = true;
+	while(!doneMerging){
+	    doneMerging = true;
+	    for(int i = 0; i < np; i++){
+		if(clusters[i] == null) continue;
+		if(clusters[i].size() < areaThreshold){
+		    int maxBorder = 0;
+		    int maxJ = -1;
+		    for(int j = 0; j < i; j++){
+			if(clusters[j] == null) continue;
+			int jBorder = clusters[j].getBorderLength(clusters[i]);
+			if(jBorder > maxBorder){
+			    maxBorder = jBorder;
+			    maxJ = j;
+			}
+		    }
+		    for(int j = i+1; j < np; j++){
+			if(clusters[j] == null) continue;
+			int jBorder = clusters[j].getBorderLength(clusters[i]);
+			if(jBorder > maxBorder){
+			    maxBorder = jBorder;
+			    maxJ = j;
+			}
+		    }
+		    if(maxBorder > borderThreshold){
+			clusters[maxJ].add(clusters[i]);
+			clusters[i] = null;
+			doneMerging = false;
+		    }
+		}
+	    }
+	}
+	for(int i = 0; i < np; i++){
+	    if(clusters[i] == null) continue;
+	    if(clusters[i].size() > areaThreshold) r.addPunctum(w,clusters[i]);
 	}
     }
     

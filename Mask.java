@@ -78,6 +78,15 @@ public class Mask
         }
         return inv;
     }
+
+    public void copy(Mask m)
+    {
+	for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                mask[i][j] = m.getValue(i,j);
+            }
+        }
+    }
     
     public void multiply(int val)
     {

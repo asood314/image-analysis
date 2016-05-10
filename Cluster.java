@@ -123,4 +123,25 @@ public class Cluster
         }
         return overlap;
     }
+
+    public int getBorderLength(Cluster c)
+    {
+	int border = 0;
+	for(int i = 0; i < pixels.size(); i++){
+	    Point p = pixels.elementAt(i);
+	    for(int j = 0; j < c.size(); j++){
+		Point p2 = c.getPixel(j);
+		if(Math.abs(p.x - p2.x) < 2 && Math.abs(p.y - p2.y) < 2){
+		    border++;
+		    break;
+		}
+	    }
+	}
+	return border;
+    }
+
+    public void add(Cluster c)
+    {
+	for(int i = 0; i < c.size(); i++) pixels.addElement(c.getPixel(i));
+    }
 }

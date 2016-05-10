@@ -217,8 +217,8 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	int[] diArr = {-1,0,1,-1,1,-1,0,1};
         int[] djArr = {-1,-1,-1,0,0,1,1,1};
 	int minSignal = (int)Math.min(20.0 / Math.pow(resolutionXY,2),m.sum());
-	for(int i = 0; i < ndim.getWidth(); i++){
-	    for(int j = 0; j < ndim.getHeight(); j++){
+	for(int i = 0; i < ndim.getHeight(); i++){
+	    for(int j = 0; j < ndim.getWidth(); j++){
 		if(used.getValue(i,j)*ndim.getPixel(w,z,t,i,j,p) < saturationThreshold) continue;
 		System.out.println("Starting new cluster");
 		Cluster c = new Cluster();
@@ -227,6 +227,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 		cMask.setValue(i,j,1);
 		borderSatX.addElement(i);
 		borderSatY.addElement(j);
+		int nSat = 1;
 		while(borderSatX.size() > 0){
 		    for(int k = 0; k < 8; k++){
 			try{
@@ -237,6 +238,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 				if(value > saturationThreshold){
 				    borderSatX.addElement(x);
 				    borderSatY.addElement(y);
+				    nSat++;
 				}
 				else{
 				    borderUnsatX.addElement(x);
@@ -253,7 +255,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 		    borderSatX.remove(0);
 		    borderSatY.remove(0);
 		}
-		System.out.println("Done saturated cluster.");
+		System.out.println("Done saturated cluster: "+nSat);
 		Point center = c.getCentroid();
 		int x1 = Math.max(center.x-punctaDetectionWindow,0);
                 int x2 = Math.min(ndim.getWidth(),center.x+punctaDetectionWindow);
@@ -273,6 +275,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 		double localMedian = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
 		double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
 		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2*localStd);
+		System.out.println(""+localMedian+", "+localStd+", "+localThreshold);
 		while(borderUnsatX.size() > 0){
 		    int upperLimit = borderVal.elementAt(0);
 		    for(int k = 0; k < 8; k++){
@@ -280,7 +283,8 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 			    int x = borderUnsatX.elementAt(0) + diArr[k];
 			    int y = borderUnsatY.elementAt(0) + djArr[k];
 			    int pixelValue = ndim.getPixel(w,z,t,x,y,p);
-			    double val = used.getValue(i,j)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
+			    double val = used.getValue(x,y)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
+			    System.out.println(""+upperLimit+", "+val);
 			    if(val < 0.001 || val > 1.0) continue;
 			    borderUnsatX.addElement(x);
 			    borderUnsatY.addElement(y);

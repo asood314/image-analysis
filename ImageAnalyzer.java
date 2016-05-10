@@ -337,6 +337,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("syndens");
         analyzeMenu.add(menuItem);
+	menuItem = new JMenuItem("Find Skeleton");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("findskel");
+        analyzeMenu.add(menuItem);
         toolMenu = new JMenu("Tools");
         menuBar.add(toolMenu);
         menuItem = new JMenuItem("Region Selector");
@@ -753,6 +757,15 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	    System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames()));
             System.out.println("Done.");
         }
+	else if(cmd.equals("findskel")){
+	    int z = imPanel.getZSlice();
+            int t = imPanel.getTimepoint();
+            int p = imPanel.getPosition();
+	    ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
+	    imPanel.addMask(r.getSkeleton(0));
+	    imPanel.repaint();
+            System.out.println("Done.");
+	}
         else if(cmd.equals("zback")){
             int z = zslide.getValue();
             if(z > 0) zslide.setValue(z-1);
