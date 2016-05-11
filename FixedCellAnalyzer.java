@@ -355,7 +355,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             //double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 1.5*localStd);
+	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
 	    double localThreshold = localMedian + 3*localStd;
 	    if(Imax < localThreshold) continue;
 	    localThreshold = Imax;
@@ -583,7 +583,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int Imax = saturationThreshold;
 		double localMedian = ndim.median(w,z,t,p,x1,x2,y1,y2,m);
 		double localStd = ndim.std(w,z,t,p,x1,x2,y1,y2,m);
-		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 1.5*localStd);
+		double localThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
 		while(borderUnsatX.size() > 0){
 		    int upperLimit = Imax;
 		    if((borderVal.elementAt(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.elementAt(0);
@@ -765,8 +765,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 		if(isPeak) continue;
 		if(minDiff > -0.1) clusters[minK].addPixel(new Point(i,j));
-		else if(maxDiff > -0.5 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
-		//else clusters[maxK].addPixel(new Point(i,j));
+		//else if(maxDiff > -0.5 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
+		else clusters[maxK].addPixel(new Point(i,j));
 	    }
 	}
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
