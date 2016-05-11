@@ -48,6 +48,7 @@ public abstract class ImageAnalysisToolkit
     protected ImageReport[] reports;
     protected String[] channelNames;
     protected boolean[] isPost;
+    protected int[] prePost;
     protected double resolutionXY;
     protected int saturationThreshold;
 
@@ -57,6 +58,7 @@ public abstract class ImageAnalysisToolkit
         reports = r;
 	channelNames = new String[ndim.getNWavelengths()];
 	isPost = new boolean[channelNames.length];
+	prePost = new int[channelNames.length];
 	resolutionXY = 0.046;
 	saturationThreshold = 65536;
     }
@@ -70,6 +72,8 @@ public abstract class ImageAnalysisToolkit
     public String[] getChannelNames(){ return channelNames; }
 
     public void setPost(int w, boolean tf){ isPost[w] = tf; }
+
+    public void setPrePost(int w, int pp){ prePost[w] = pp; }
 
     public void setResolutionXY(double res)
     {
@@ -172,8 +176,9 @@ public abstract class ImageAnalysisToolkit
 	    int nchan = ndim.getNWavelengths();
 	    buf[0] = (byte)nchan;
 	    for(int i = 0; i < nchan; i++){
-		if(isPost[i]) buf[i+1] = 1;
-		else buf[i+1] = 0;
+		//if(isPost[i]) buf[i+1] = 1;
+		//else buf[i+1] = 0;
+		buf[i+1] = (byte)prePost[i];
 	    }
 	    raf.write(buf,0,1+nchan);
 	    for(int i = 0; i < nchan; i++){
@@ -206,8 +211,9 @@ public abstract class ImageAnalysisToolkit
 	    int nchan = (int)buf[0];
 	    raf.read(buf,0,nchan);
 	    for(int i = 0; i < nchan; i++){
-		if(buf[i] > 0) isPost[i] = true;
-		else isPost[i] = false;
+		//if(buf[i] > 0) isPost[i] = true;
+		//else isPost[i] = false;
+		prePost[i] = (int)buf[i];
 	    }
 	    for(int i = 0; i < nchan; i++){
 		raf.read(buf,0,4);

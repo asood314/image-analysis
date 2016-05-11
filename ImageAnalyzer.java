@@ -288,6 +288,11 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.setActionCommand("vm rois");
         menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
+	menuItem = new JMenuItem("Axons");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("vm axons");
+        menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
+        maskMenu.add(menuItem);
         menuItem = new JMenuItem("Stats");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("stats");
@@ -400,10 +405,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             button.addActionListener(this);
             button.setActionCommand("limff");
             jp.add(button);
-            button = new JButton("Load S. Data");
-            button.addActionListener(this);
-            button.setActionCommand("lsd");
-            jp.add(button);
+            //button = new JButton("Load S. Data");
+            //button.addActionListener(this);
+            //button.setActionCommand("lsd");
+            //jp.add(button);
             button = new JButton("Load From Memory");
             button.addActionListener(this);
             button.setActionCommand("limfm");
@@ -665,6 +670,26 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     imPanel.repaint();
                 }
             }
+	    else if(cmd.equals("vm axons")){
+		Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+		int pos = imPanel.getPosition();
+		int tp = imPanel.getTimepoint();
+		int zslice = imPanel.getZSlice();
+		ImageReport r = reports[pos*ndim.getNT()*ndim.getNZ() + tp*ndim.getNZ() + zslice];
+		Mask sig = r.getSignalMask(0);
+		Mask sig1 = r.getSignalMask(1);
+		double mean = ndim.mean(1,zslice,tp,pos,sig1);
+		double mode = ndim.mode(1,zslice,tp,pos,sig1);
+		for(int i = 0; i < ndim.getWidth(); i++){
+		    for(int j = 0; j < ndim.getHeight(); j++){
+			if(sig.getValue(i,j) < 1) continue;
+			if(ndim.getPixel(1,zslice,tp,i,j,pos) > (mean+mode)/2) continue;
+			if(ndim.getPixel(0,zslice,tp,i,j,pos) > ndim.getPixel(1,zslice,tp,i,j,pos)) m.setValue(i,j,1);
+		    }
+		}
+		imPanel.toggleMask(m);
+		imPanel.repaint();
+	    }
             else if(cmd.equals("vm none")){
                 //imPanel.setMask((Mask)null);
 		imPanel.clearMasks();

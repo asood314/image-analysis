@@ -87,6 +87,12 @@ public class Mask
             }
         }
     }
+
+    public Mask getCopy()
+    {
+	Mask m = new Mask(this);
+	return m;
+    }
     
     public void multiply(int val)
     {

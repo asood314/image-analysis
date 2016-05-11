@@ -36,11 +36,20 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    reports[index].setResolutionXY(resolutionXY);
 	}
 	long t1 = System.currentTimeMillis();
+	double meanPost = 0.0;
+	double modePost = 0.0;
+	int npost = 0;
 	if(masterChannel < 0){
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		Mask m = findBackgroundMask(w,z,t,p);
 		reports[index].setOutlierMask(w,m.getInverse());
-		reports[index].setSignalMask(w,findSignalMask(w,z,t,p,m));
+		Mask m2 = findSignalMask(w,z,t,p,m);
+		reports[index].setSignalMask(w,m2);
+		if(prePost[w] > 0){
+		    meanPost += ndim.mean(w,z,t,p,m2);
+		    modePost += ndim.mode(w,z,t,p,m2);
+		    npost++;
+		}
 	    }
 	}
 	else{
@@ -59,7 +68,40 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		reports[index].setOutlierMask(w,m);
-		reports[index].setSignalMask(w,m2);
+		reports[index].setSignalMask(w,m2.getCopy());
+		if(prePost[w] > 0){
+		    meanPost += ndim.mean(w,z,t,p,m2);
+		    modePost += ndim.mode(w,z,t,p,m2);
+		    npost++;
+		}
+	    }
+	}
+	double thresholdPost = (meanPost+modePost)/(2*npost);
+	Mask[] masks = reports[index].getSignalMasks();
+	for(int i = 0; i < ndim.getWidth(); i++){
+	    for(int j = 0; j < ndim.getHeight(); j++){
+		int isSignal = 1;
+		for(int w = 0; w < ndim.getNWavelengths(); w++){
+		    isSignal *= masks[w].getValue(i,j);
+		}
+		if(isSignal < 1) continue;
+		int maxPost = 0;
+		int maxPre = 0;
+		for(int w = 0; w < ndim.getNWavelengths(); w++){
+		    int value = ndim.getPixel(w,z,t,i,j,p);
+		    if(prePost[w] > 0){
+			if(value > maxPost) maxPost = value;
+		    }
+		    else if(prePost[w] < 0){
+			if(value > maxPre) maxPre = value;
+		    }
+		}
+		if(maxPost > thresholdPost) continue;
+		if(maxPre > maxPost){
+		    for(int w = 0; w < ndim.getNWavelengths(); w++){
+			if(prePost[w] > 0) masks[w].setValue(i,j,0);
+		    }
+		}
 	    }
 	}
 	long t2 = System.currentTimeMillis();
@@ -118,7 +160,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	double mode = ndim.mode(w,z,t,p);
 	double median = ndim.median(w,z,t,p);
 	double mean = ndim.mean(w,z,t,p);
-	double threshold = Math.min(1.5 * mode,(mode + median) / 2);
+	double threshold = Math.min(2.0 * mode,(mode + median) / 2);
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	int[] dist = new int[65536];
 	for(int i = 20; i < ndim.getWidth()-20; i++){
@@ -880,9 +922,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	int[] sc = new int[ndim.getNWavelengths()];
 	for(int i = 0; i < sc.length; i++) sc[i] = i;
 	for(int i = 0; i < sc.length; i++){
-	    if(isPost[sc[i]]) continue;
+	    //if(isPost[sc[i]]) continue;
 	    for(int j = i+1; j < sc.length; j++){
-		if(isPost[sc[j]]){
+		if(prePost[sc[j]] > prePost[sc[i]]){
 		    int tmp = sc[i];
 		    sc[i] = sc[j];
 		    sc[j] = tmp;

@@ -49,6 +49,8 @@ public class ImageReport
     
     public Mask getSignalMask(int chan){ return signalMasks[chan]; }
 
+    public Mask[] getSignalMasks(){ return signalMasks; }
+
     public Mask getUtilityMask(int chan){ return utilityMasks[chan]; }
 
     public void addROI(Mask m){ regionsOfInterest.addElement(m); }
