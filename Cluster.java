@@ -1,15 +1,14 @@
 import java.awt.Point;
 import java.util.Vector;
 
-public class Cluster
+public class Cluster extends LocalizedObject
 {
     private Vector<Point> pixels;
-    private Point centroid;
     
     public Cluster()
     {
+	super();
         pixels = new Vector<Point>();
-        centroid = null;
     }
     
     public void addPixel(int x, int y){ pixels.add(new Point(x,y)); }
@@ -68,7 +67,7 @@ public class Cluster
     
     public int size(){ return pixels.size(); }
     
-    public Point computeCentroid()
+    public void computeCentroid()
     {
         int x = 0;
         int y = 0;
@@ -78,52 +77,9 @@ public class Cluster
         }
         x = x / pixels.size();
         y = y / pixels.size();
-        centroid = new Point(x,y);
-        return centroid;
+        center = new Point(x,y);
     }
     
-    public Point getCentroid()
-    {
-        if(centroid == null) return computeCentroid();
-        return centroid;
-    }
-    
-    public double distanceTo(Point cent2)
-    {
-        if(centroid == null) computeCentroid();
-        return Math.sqrt(Math.pow(centroid.x - cent2.x,2) + Math.pow(centroid.y - cent2.y,2));
-    }
-    
-    public double distanceTo(Cluster c2){ return distanceTo(c2.getCentroid()); }
-    
-    public int getOverlap(Cluster c2)
-    {
-        int overlap = 0;
-        for(int i = 0; i < pixels.size(); i++){
-            Point p = pixels.elementAt(i);
-            for(int j = 0; j < c2.size(); j++){
-		Point p2 = c2.getPixel(j);
-                if(p.x == p2.x && p.y == p2.y){
-                    overlap++;
-                    break;
-                }
-            }
-        }
-        return overlap;
-    }
-    
-    public int getOverlap(Cluster[] clusters)
-    {
-        int overlap = 0;
-        for(int i = 0; i < pixels.size(); i++){
-            Point p = pixels.elementAt(i);
-            boolean overlapping = true;
-            for(int j = 0; j < clusters.length; j++) overlapping = overlapping && clusters[j].contains(p);
-            if(overlapping) overlap++;
-        }
-        return overlap;
-    }
-
     public int getBorderLength(Cluster c)
     {
 	int border = 0;
