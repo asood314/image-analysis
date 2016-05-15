@@ -91,7 +91,7 @@ public class Cluster
     public double distanceTo(Point cent2)
     {
         if(centroid == null) computeCentroid();
-        return Math.sqrt(Math.pow(centroid.getX() - cent2.getX(),2) + Math.pow(centroid.getY() - cent2.getY(),2));
+        return Math.sqrt(Math.pow(centroid.x - cent2.x,2) + Math.pow(centroid.y - cent2.y,2));
     }
     
     public double distanceTo(Cluster c2){ return distanceTo(c2.getCentroid()); }

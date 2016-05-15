@@ -70,7 +70,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
     private boolean synapseSelectorTool;
     private boolean regionSelectorTool;
     private boolean pixelSelectorTool;
-    private boolean roiSelectorTool;
+    private boolean roiSelectorTool,axisSelectorTool;
     private int mousePressX,mousePressY,prevX,prevY;
     private Vector<Integer> xpoints,ypoints;
     private ImageAnalysisToolkit analysisTools;
@@ -90,6 +90,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         regionSelectorTool = false;
         pixelSelectorTool = true;
 	roiSelectorTool = false;
+	axisSelectorTool = false;
 	prevX = -1;
 	prevY = -1;
 	xpoints = new Vector<Integer>();
@@ -197,7 +198,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         fileMenu.add(menuItem);
         viewMenu = new JMenu("View");
         menuBar.add(viewMenu);
-        channelMenu = new JMenu("Channel");
+        channelMenu = new JMenu("Single Wavelength");
         viewMenu.add(channelMenu);
         for(int i = 0; i < ndim.getNWavelengths();  i++){
             menuItem = new JMenuItem("Channel " + i);
@@ -348,7 +349,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         analyzeMenu.add(menuItem);
         toolMenu = new JMenu("Tools");
         menuBar.add(toolMenu);
-        menuItem = new JMenuItem("Region Selector");
+        menuItem = new JMenuItem("Window Selector");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("rsel");
         toolMenu.add(menuItem);
@@ -367,6 +368,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	menuItem = new JMenuItem("ROI Selector");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("roisel");
+        toolMenu.add(menuItem);
+	menuItem = new JMenuItem("Axis Selector");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("axsel");
         toolMenu.add(menuItem);
         setJMenuBar(menuBar);
         getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
@@ -644,8 +649,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                 }
             }
             else if(cmd.equals("vm synapses")){
+		ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(imPanel.getMode() == ImagePanel.SPLIT){
-                    ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                     Mask m = new Mask(ndim.getWidth()*2,ndim.getHeight()*2);
                     m.add(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
                     for(int w = 0; w < ndim.getNWavelengths(); w++){
@@ -658,8 +663,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     repaint();
                 }
                 else{
-                    //imPanel.setMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
-		    imPanel.toggleMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
+		    //imPanel.toggleMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
+		    for(int w = 0; w < ndim.getNWavelengths(); w++) imPanel.toggleMask(r.getSynapseMask(w));
                     repaint();
                 }
             }
@@ -705,6 +710,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             synapseSelectorTool = false;
 	    pixelSelectorTool = false;
 	    roiSelectorTool = false;
+	    axisSelectorTool = false;
         }
         else if(cmd.equals("psel")){
             regionSelectorTool = false;
@@ -712,6 +718,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             synapseSelectorTool = false;
 	    pixelSelectorTool = false;
 	    roiSelectorTool = false;
+	    axisSelectorTool = false;
         }
         else if(cmd.equals("ssel")){
             regionSelectorTool = false;
@@ -719,6 +726,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             synapseSelectorTool = true;
 	    pixelSelectorTool = false;
 	    roiSelectorTool = false;
+	    axisSelectorTool = false;
         }
 	else if(cmd.equals("pxsel")){
             regionSelectorTool = false;
@@ -726,6 +734,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             synapseSelectorTool = false;
 	    pixelSelectorTool = true;
 	    roiSelectorTool = false;
+	    axisSelectorTool = false;
         }
 	else if(cmd.equals("roisel")){
             regionSelectorTool = false;
@@ -733,6 +742,15 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             synapseSelectorTool = false;
 	    pixelSelectorTool = false;
 	    roiSelectorTool = true;
+	    axisSelectorTool = false;
+        }
+	else if(cmd.equals("axsel")){
+            regionSelectorTool = false;
+            punctaSelectorTool = false;
+            synapseSelectorTool = false;
+	    pixelSelectorTool = false;
+	    roiSelectorTool = false;
+	    axisSelectorTool = true;
         }
         else if(cmd.equals("Standard Analysis")){
             analysisTools.standardAnalysis(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition());
@@ -746,7 +764,8 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             for(int w = 0; w < ndim.getNWavelengths(); w++){
                 //Mask m = analysisTools.findOutlierMask(w,z,t,p);
                 //reports[index].setOutlierMask(w,m);
-                reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,reports[index].getOutlierMask(w).getInverse()));
+                //reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,reports[index].getOutlierMask(w).getInverse()));
+		reports[index].setSignalMask(w,analysisTools.findSignalMask(w,z,t,p,(Mask)null));
             }
             System.out.println("Done.");
         }
@@ -757,6 +776,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
             for(int w = 0; w < ndim.getNWavelengths(); w++){
                 reports[index].setUtilityMask(w,analysisTools.findBackgroundMask(w,z,t,p));
+		reports[index].setOutlierMask(w,reports[index].getUtilityMask(w).getInverse());
             }
             System.out.println("Done.");
         }
@@ -882,6 +902,28 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 		r.addROI(m);
 		r.setUtilityMask(imPanel.getWavelength(),m);
 		imPanel.toggleMask(m);
+		xpoints.clear();
+		ypoints.clear();
+		prevX = -1;
+		prevY = -1;
+	    }
+	}
+	else if(axisSelectorTool){
+	    if(e.getX() != prevX && e.getY() != prevY){
+		System.out.println("Location: (" + trueX + "," + trueY + ")");
+		xpoints.addElement(trueX);
+		ypoints.addElement(trueY);
+		prevX = e.getX();
+		prevY = e.getY();
+	    }
+	    else{
+		double length = 0.0;
+		for(int i = 1; i < xpoints.size(); i++){
+		    int xdiff = xpoints.elementAt(i) - xpoints.elementAt(i-1);
+		    int ydiff = ypoints.elementAt(i) - ypoints.elementAt(i-1);
+		    length += Math.sqrt(xdiff*xdiff + ydiff*ydiff);
+		}
+		r.addAxis((int)length);
 		xpoints.clear();
 		ypoints.clear();
 		prevX = -1;

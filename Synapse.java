@@ -27,6 +27,14 @@ public class Synapse
     public int getNChannels(){ return channels.length; }
     
     public int getChannel(int index){ return channels[index]; }
+
+    public int getChannelIndex(int chan)
+    {
+	for(int i = 0; i < channels.length; i++){
+	    if(channels[i] == chan) return i;
+	}
+	return -1;
+    }
     
     public void addPunctum(Cluster c, int index)
     {

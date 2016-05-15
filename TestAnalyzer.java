@@ -16,42 +16,175 @@ public class TestAnalyzer extends ImageAnalysisToolkit
     public Mask findOutlierMask(int w, int z, int t, int p){ return null; }
 
     public Mask findBackgroundMask(int w, int z, int t, int p){ return null; }
-    
+
     public Mask findSignalMask(int w, int z, int t, int p, Mask bkgdMask)
     {
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
-	double stdBkg = ndim.std(w,z,t,p,bkgdMask);
-	double globalThreshold = ndim.mean(w,z,t,p,bkgdMask) + 5*stdBkg;
+	double lowerLimit = ndim.mode(w,z,t,p);
+	double best = ndim.mean(w,z,t,p);
+	double upperLimit = 2*best;
+	double step = (upperLimit - lowerLimit) / 10;
+	int nsteps = 10;
+	if(step < 1.0){
+	    step = 1.0;
+	    nsteps = (int)(upperLimit - lowerLimit);
+	}
+	int fom = 0;
+	boolean finished = false;
+	while(!finished){
+	    finished = true;
+	    //System.out.println(""+lowerLimit+", "+upperLimit);
+	    for(int istep = 0; istep < nsteps; istep++){
+		double globalThreshold = lowerLimit + istep*step;
+		for(int i = 0; i < ndim.getWidth(); i++){
+		    for(int j = 0; j < ndim.getHeight(); j++){
+			int value = ndim.getPixel(w,z,t,i,j,p);
+			if(value > globalThreshold){
+			    m.setValue(i,j,1);
+			}
+			else m.setValue(i,j,0);
+		    }
+		}
+		int maxSize = 0;
+		int avgSigSize = 0;
+		int nSigClusters = 0;
+		Vector<Integer> borderX = new Vector<Integer>(10);
+		Vector<Integer> borderY = new Vector<Integer>(10);
+		Mask subMask = new Mask(ndim.getWidth(),ndim.getHeight());
+		for(int i = 0; i < ndim.getWidth(); i++){
+		    for(int j = 0; j < ndim.getHeight(); j++){
+			if(m.getValue(i,j) != 1) continue;
+			borderX.addElement(i);
+			borderY.addElement(j);
+			subMask.setValue(i,j,1);
+			int size = 1;
+			while(borderX.size() > 0){
+			    int bi = borderX.elementAt(0);
+			    int bj = borderY.elementAt(0);
+			    for(int di = -1; di < 2; di++){
+				for(int dj = -1; dj < 2; dj++){
+				    try{
+					int val = m.getValue(bi+di,bj+dj);
+					if(val > 0 && subMask.getValue(bi+di,bj+dj) == 0){
+					    subMask.setValue(bi+di,bj+dj,1);
+					    borderX.addElement(bi+di);
+					    borderY.addElement(bj+dj);
+					    size++;
+					}
+				    }
+				    catch(ArrayIndexOutOfBoundsException e){ continue; }
+				}
+			    }
+			    borderX.remove(0);
+			    borderY.remove(0);
+			}
+			if(size > maxSize) maxSize = size;
+			avgSigSize += size;
+			nSigClusters++;
+		    }
+		}
+		int avgSize = 0;
+		int nBkgClusters = 0;
+		for(int i = 0; i < ndim.getWidth(); i++){
+		    for(int j = 0; j < ndim.getHeight(); j++){
+			if(m.getValue(i,j) != 0) continue;
+			borderX.addElement(i);
+			borderY.addElement(j);
+			subMask.setValue(i,j,1);
+			int size = 1;
+			while(borderX.size() > 0){
+			    int bi = borderX.elementAt(0);
+			    int bj = borderY.elementAt(0);
+			    for(int di = -1; di < 2; di++){
+				for(int dj = -1; dj < 2; dj++){
+				    try{
+					int val = m.getValue(bi+di,bj+dj);
+					if(val < 1 && subMask.getValue(bi+di,bj+dj) == 0){
+					    subMask.setValue(bi+di,bj+dj,1);
+					    borderX.addElement(bi+di);
+					    borderY.addElement(bj+dj);
+					    size++;
+					}
+				    }
+				    catch(ArrayIndexOutOfBoundsException e){ continue; }
+				}
+			    }
+			    borderX.remove(0);
+			    borderY.remove(0);
+			}
+			avgSize += size;
+			nBkgClusters++;
+		    }
+		}
+		int ifom = avgSigSize*avgSize;
+		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+		else ifom = 0;
+		if(nSigClusters > 0) ifom = ifom/nSigClusters;
+		else ifom = 0;
+		if(ifom > fom){
+		    fom = ifom;
+		    best = globalThreshold;
+		    finished = false;
+		}
+	    }
+	    lowerLimit = best - step;
+	    upperLimit = best + step;
+	    step = (upperLimit - lowerLimit) / 10;
+	    if(step < 1.0){
+		step = 1.0;
+		nsteps = (int)(upperLimit - lowerLimit);
+	    }
+	}
+	System.out.println("Best threshold: "+best);
+	return findMaskWithThreshold(w,z,t,p,best);
+    }
+    
+    //public Mask findSignalMask(int w, int z, int t, int p, Mask bkgdMask)
+    public Mask findMaskWithThreshold(int w, int z, int t, int p, double globalThreshold)
+    {
+	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
+	//double stdBkg = ndim.std(w,z,t,p,bkgdMask);
+	//double globalThreshold = ndim.mean(w,z,t,p,bkgdMask) + 5*stdBkg;
 	for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
-		//if(bkgdMask.getValue(i,j) > 0) continue;
 		int value = ndim.getPixel(w,z,t,i,j,p);
 		if(value > globalThreshold){
 		    m.setValue(i,j,1);
-		    //m2.setValue(i,j,1);
-		    //dist[value/8]++;
 		}
 	    }
 	}
+	double sizeThreshold = 0.25/Math.pow(resolutionXY,2);
 	Vector<Integer> borderX = new Vector<Integer>(10);
         Vector<Integer> borderY = new Vector<Integer>(10);
+	//Vector<Integer> clusterX = new Vector<Integer>(10);
+	//Vector<Integer> clusterY = new Vector<Integer>(10);
+	int[] clusterX = new int[4200000];
+	int[] clusterY = new int[4200000];
+	Mask used = new Mask(m);
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
-                if(m.getValue(i,j) != 1) continue;
+                if(used.getValue(i,j) != 1) continue;
+		clusterX[0] = i;
+		clusterY[0] = j;
                 borderX.addElement(i);
                 borderY.addElement(j);
-                Mask subMask = new Mask(ndim.getWidth(),ndim.getHeight());
-                subMask.setValue(i,j,1);
-                int size = 0;
+                //Mask subMask = new Mask(ndim.getWidth(),ndim.getHeight());
+                //subMask.setValue(i,j,1);
+		used.setValue(i,j,0);
+                int size = 1;
                 while(borderX.size() > 0){
                     int bi = borderX.elementAt(0);
                     int bj = borderY.elementAt(0);
                     for(int di = -1; di < 2; di++){
                         for(int dj = -1; dj < 2; dj++){
                             try{
-                                int val = m.getValue(bi+di,bj+dj);
-                                if(val > 0 && subMask.getValue(bi+di,bj+dj) == 0){
-                                    subMask.setValue(bi+di,bj+dj,1);
+                                int val = used.getValue(bi+di,bj+dj);
+                                if(val > 0){// && subMask.getValue(bi+di,bj+dj) == 0){
+                                    //subMask.setValue(bi+di,bj+dj,1);
+				    used.setValue(bi+di,bj+dj,0);
+				    //m.setValue(bi+di,bj+dj,-1);
+				    clusterX[size] = bi+di;
+				    clusterY[size] = bj+dj;
                                     borderX.addElement(bi+di);
                                     borderY.addElement(bj+dj);
                                     size++;
@@ -60,19 +193,30 @@ public class TestAnalyzer extends ImageAnalysisToolkit
                             catch(ArrayIndexOutOfBoundsException e){ continue; }
                         }
                     }
+		    //clusterX.addElement(borderX.elementAt(0));
+		    //clusterY.addElement(borderY.elementAt(0));
                     borderX.remove(0);
                     borderY.remove(0);
                 }
-                subMask.multiply(size);
-                m.add(subMask);
+                //subMask.multiply(size);
+                //m.add(subMask);
+		if(size < sizeThreshold){
+		    for(int k = 0; k < size; k++){
+			//m.setValue(clusterX.elementAt(k),clusterY.elementAt(k),size);
+			m.setValue(clusterX[k],clusterY[k],0);
+		    }
+		}
+		//clusterX.clear();
+		//clusterY.clear();
 		//System.out.println("Added cluster: " + i + "," + j+", " + size);
             }
         }
 	//System.out.println("Thresholding");
         //m.threshold((int)(0.25/Math.pow(resolutionXY,2)));
-	//System.out.println("Filling in blanks");
+	System.out.println("Filling in blanks");
         for(int i = 1; i < ndim.getWidth()-1; i++){
             for(int j = 1; j < ndim.getHeight()-1; j++){
+		if(m.getValue(i,j) > 0) continue;
                 int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
                 if(sum > 4) m.setValue(i,j,1);
             }
@@ -82,7 +226,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 
     public int findPuncta(int w, int z, int t, int p)
     {
-	findSaturatedPuncta(w,z,t,p);
+	//findSaturatedPuncta(w,z,t,p);
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         Mask m = new Mask(r.getSignalMask(w));
         Mask m2 = r.getPunctaMask(w);
@@ -118,7 +262,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	//double localMean = ndim.mean(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
-	double minThreshold = localMedian + (Imax - localMedian)/2;
+	double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
 	double localThreshold = localMedian + 3*localStd;
 	System.out.println("Imax: "+Imax+" Median: "+localMedian+" Threshold: "+localThreshold);
 	if(Imax < localThreshold){
@@ -127,61 +271,66 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	}
 	localThreshold = Imax;
 	Cluster c = new Cluster();
+	Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
 	Vector<Integer> borderX = new Vector<Integer>();
 	Vector<Integer> borderY = new Vector<Integer>();
+	Vector<Integer> borderVal = new Vector<Integer>();
 	borderX.addElement(lm.x);
 	borderY.addElement(lm.y);
+	borderVal.addElement(Imax);
 	used.setValue(lm.x,lm.y,0);
-	double sumI = Imax;
-	int npix = 1;
-	int count = 0;
-	Vector<Double> removalQueueI = new Vector<Double>();
-	Vector<Integer> removalQueueN = new Vector<Integer>();
-	for(int k = 0; k < 2; k++){
-	    removalQueueI.addElement(0.0);
-	    removalQueueN.addElement(0);
-	}
+	cMask.setValue(lm.x,lm.y,1);
 	while(borderX.size() > 0){
-	    sumI -= removalQueueI.elementAt(0);
-	    npix -= removalQueueN.elementAt(0);
-	    removalQueueI.remove(0);
-	    removalQueueN.remove(0);
-	    double upperLimit = sumI / npix;
-	    if(count < 5) upperLimit = Imax;
 	    int nborder = borderX.size();
-	    double sumNew = 0.0;
-	    int numNew = 0;
 	    for(int b = 0; b < nborder; b++){
 		int bi = borderX.elementAt(0);
 		int bj = borderY.elementAt(0);
 		c.addPixel(bi,bj);
+		double upperLimit = Imax;
+		if((borderVal.elementAt(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.elementAt(0);
 		for(int k = 0; k < 8; k++){
 		    int i = bi+diArr[k];
 		    int j = bj+djArr[k];
 		    localThreshold = minThreshold;// + Math.pow(0.95,(int)(Math.sqrt(i*i + j*j)))*(localThreshold - minThreshold);
 		    try{
-			//double val = (1-used.getValue(i,j))*((double)ndim.getPixel(w,z,t,i,j,p)) / Imax;
-			//double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localMean) / (Imax - localMean);
 			double val = used.getValue(i,j)*((double)ndim.getPixel(w,z,t,i,j,p) - localThreshold) / (upperLimit - localThreshold);
 			if(val < 0.001 || val > 1.0) continue;
 			used.setValue(i,j,0);
 			borderX.addElement(i);
 			borderY.addElement(j);
-			sumNew += ndim.getPixel(w,z,t,i,j,p);
-			numNew++;
+			borderVal.addElement(ndim.getPixel(w,z,t,i,j,p));
+			cMask.setValue(i,j,1);
 		    }
 		    catch(ArrayIndexOutOfBoundsException e){ continue; }
 		}
-		//sumI -= ndim.getPixel(w,z,t,bi,bj,p);
-		//npix--;
 		borderX.remove(0);
 		borderY.remove(0);
+		borderVal.remove(0);
 	    }
-	    sumI += sumNew;
-	    npix += numNew;
-	    removalQueueI.addElement(sumNew);
-	    removalQueueN.addElement(numNew);
-	    count++;
+	}
+	boolean unfilled = true;
+	while(unfilled){
+	    unfilled = false;
+	    for(int i = ul.x+1; i < lr.x-1; i++){
+		for(int j = ul.y+1; j < lr.y-1; j++){
+		    if(cMask.getValue(i,j) > 0 || m.getValue(i,j) < 1) continue;
+		    int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
+		    if(sum > 4){
+			cMask.setValue(i,j,1);
+			c.addPixel(i,j);
+			unfilled = true;
+		    }
+		}
+	    }
+	}
+	for(int i = ul.x+1; i < lr.x-1; i++){
+	    for(int j = ul.y+1; j < lr.y-1; j++){
+		int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
+		if(sum < 3){
+		    cMask.setValue(i,j,0);
+		    c.removePixel(new Point(i,j));
+		}
+	    }
 	}
 	if(c.size() < 10){
 	    System.out.println("Cluster too small.");
