@@ -7,7 +7,7 @@ public class Synapse extends LocalizedObject
     private Vector<Integer> indices;
     private double colocalizationScore;
     
-    public Synapse(SynapseCollection sc)
+    public Synapse()
     {
 	super();
         puncta = new Vector<Cluster>();

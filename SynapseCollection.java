@@ -25,6 +25,8 @@ public class SynapseCollection
 
     public void removeSynapse(int index){ synapses.remove(index); }
 
+    public int getNSynapses(){ return synapses.size(); }
+
     public void setRequireAll(boolean tf){ requireAllColocalized = tf; }
 
     public boolean allRequired(){ return requireAllColocalized; }
