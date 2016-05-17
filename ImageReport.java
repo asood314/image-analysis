@@ -490,4 +490,33 @@ public class ImageReport
 	}
 	catch(IOException e){ e.printStackTrace(); }
     }
+
+    public void loadMetaMorphTraces(String phil, int w, boolean overwrite)
+    {
+	try{
+	    if(overwrite || utilityMasks[w] == null) utilityMasks[w] = new Mask(imWidth,imHeight);
+	    //Mask m = new Mask(imWidth,imHeight);
+	    BufferedReader fin = new BufferedReader(new FileReader(phil));
+	    String line = fin.readLine();
+	    while(line != null){
+		StringTokenizer st = new StringTokenizer(line,",");
+		for(int i = 0; i < 7; i++) line = st.nextToken();
+		st = new StringTokenizer(line," ");
+		if(Integer.parseInt(st.nextToken()) != 6){
+		    System.out.println("Something's wrong.");
+		    return;
+		}
+		int np = Integer.parseInt(st.nextToken());
+		for(int i = 0; i < np; i++){
+		    int x = Integer.parseInt(st.nextToken());
+		    int y = Integer.parseInt(st.nextToken());
+		    utilityMasks[w].setValue(x,y,1);
+		}
+		//utilityMasks[w].add(m);
+		line = fin.readLine();
+	    }
+	    fin.close();
+	}
+	catch(IOException e){ e.printStackTrace(); }
+    }
 }

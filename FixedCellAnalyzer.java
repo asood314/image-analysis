@@ -61,22 +61,26 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		double mean = ndim.mean(w,z,t,p,m2);
 		double std = ndim.std(w,z,t,p,m2);
 		double threshold = mean + std;
+		Mask m3 = m2.getCopy();
 		for(int i = 0; i < ndim.getWidth(); i++){
 		    for(int j = 0; j < ndim.getHeight(); j++){
-			if(ndim.getPixel(w,z,t,i,j,p) > threshold) m2.setValue(i,j,1);
+			if(ndim.getPixel(w,z,t,i,j,p) > threshold) m3.setValue(i,j,1);
 		    }
 		}
-	    }
-	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		reports[index].setOutlierMask(w,m);
-		reports[index].setSignalMask(w,m2.getCopy());
+		reports[index].setSignalMask(w,m3);
+	    }
+	    /*
+	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		if(prePost[w] > 0){
-		    meanPost += ndim.mean(w,z,t,p,m2);
-		    modePost += ndim.mode(w,z,t,p,m2);
+		    meanPost += ndim.mean(w,z,t,p,reports[index].getSignalMask(w));
+		    modePost += ndim.mode(w,z,t,p,reports[index].getSignalMask(w));
 		    npost++;
 		}
 	    }
+	    */
 	}
+	/*
 	double thresholdPost = (meanPost+modePost)/(2*npost);
 	Mask[] masks = reports[index].getSignalMasks();
 	for(int i = 0; i < ndim.getWidth(); i++){
@@ -105,6 +109,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	}
+	*/
 	long t2 = System.currentTimeMillis();
 	long diff = (t2 - t1) / 1000;
 	System.out.println("Done signal finding in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");

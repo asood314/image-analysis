@@ -265,9 +265,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("vm outlier");
         maskMenu.add(menuItem);
-        menuItem = new JMenuItem("Background Mask");
+        menuItem = new JMenuItem("Utility Mask");
         menuItem.addActionListener(this);
-        menuItem.setActionCommand("vm bkgd");
+        menuItem.setActionCommand("vm util");
+	menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
         maskMenu.add(menuItem);
         menuItem = new JMenuItem("Signal Mask");
         menuItem.addActionListener(this);
@@ -613,7 +614,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     imPanel.repaint();
                 }
             }
-	    else if(cmd.equals("vm bkgd")){
+	    else if(cmd.equals("vm util")){
                 ImageReport r = reports[imPanel.getPosition()*ndim.getNT()*ndim.getNZ() + imPanel.getTimepoint()*ndim.getNZ() + imPanel.getZSlice()];
                 if(r != null){
                     //imPanel.setMask(r.getUtilityMask(imPanel.getWavelength()));
@@ -1046,6 +1047,14 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             }
         }
         return m;
+    }
+
+    public void loadMetaMorphRegions(int index, String phil){
+	reports[index].loadMetaMorphRegions(phil);
+    }
+
+    public void loadMetaMorphTraces(int index, String phil, int w, boolean overwrite){
+	reports[index].loadMetaMorphTraces(phil,w,overwrite);
     }
     
     //9668390 --> 3,340,771
