@@ -1033,29 +1033,56 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	int nSynapses = 0;
 	for(int icol = 0; icol < r.getNSynapseCollections(); icol++){
+	    //System.out.println("Starting collection "+icol);
 	    SynapseCollection sc = r.getSynapseCollection(icol);
 	    int[] chan = sc.getChannels();
 	    int[] np = new int[chan.length];
+	    int[] pi = new int[chan.length];
 	    int maxIndex = 1;
-	    for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
+	    for(int i = 0; i < chan.length; i++){
+		np[i] = r.getNPuncta(chan[i]);
+		pi[i] = 0;
+	    }
 	    for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
 	    for(int j = 0; j < np[0]; j++){
+		//System.out.println("Testing puncta "+j);
 		Synapse best = null;
 		double bestScore = -999;
-		for(int l = 0; l < maxIndex; l++){
+		Cluster c = r.getPunctum(chan[0],j);
+		int sumpi = 1;
+		while(sumpi > 0){
 		    Synapse s = new Synapse();
 		    s.addPunctum(r.getPunctum(chan[0],j),j);
+		    boolean potentialSynapse = true;
 		    for(int i = 1; i < np.length; i++){
-			int index = l;
-			for(int k = 1; k < i; k++) index = index / np[k];
-			index = index % np[i];
-			s.addPunctum(r.getPunctum(chan[i],index),index);
+			Cluster c2 = r.getPunctum(chan[i],pi[i]);
+			if(c.peakToPeakDistance2(c2) > 2*(c.size()+c2.size())){
+			    potentialSynapse = false;
+			    for(int k = i; k > 0; k--){
+				pi[k]++;
+				if(pi[k] < np[k]) break;
+				pi[k] = 0;
+			    }
+			    for(int k = i+1; k < np.length; k++) pi[k] = 0;
+			    break;
+			}
+			s.addPunctum(c2,pi[i]);
 		    }
-		    if(!sc.computeColocalization(s)) continue;
-		    if(s.getColocalizationScore() > bestScore){
-			bestScore = s.getColocalizationScore();
-			best = s;
+		    if(potentialSynapse){
+			if(sc.computeColocalization(s)){
+			    if(s.getColocalizationScore() > bestScore){
+				bestScore = s.getColocalizationScore();
+				best = s;
+			    }
+			}
+			for(int i = np.length-1; i > 0; i--){
+			    pi[i]++;
+			    if(pi[i] < np[i]) break;
+			    pi[i] = 0;
+			}
 		    }
+		    sumpi = 0;
+		    for(int i = 1; i < np.length; i++) sumpi += pi[i];
 		}
 		if(best != null){
 		    sc.addSynapse(best);

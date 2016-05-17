@@ -102,4 +102,16 @@ public class Cluster extends LocalizedObject
     {
 	for(int i = 0; i < c.size(); i++) pixels.addElement(c.getPixel(i));
     }
+
+    public double peakToPeakDistance(Cluster c)
+    {
+	return Math.sqrt(peakToPeakDistance2(c));
+    }
+
+    public double peakToPeakDistance2(Cluster c)
+    {
+	Point pt = c.getPixel(0);
+	Point pt2 = pixels.elementAt(0);
+	return Math.pow(pt.x - pt2.x,2) + Math.pow(pt.y - pt2.y,2);
+    }
 }
