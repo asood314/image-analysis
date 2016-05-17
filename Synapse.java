@@ -27,6 +27,16 @@ public class Synapse extends LocalizedObject
     
     public int getNPuncta(){ return puncta.size(); }
 
+    public Vector<Point> getPoints()
+    {
+	Vector<Point> retVal = new Vector<Point>();
+	for(int i = 0; i < puncta.size(); i++){
+	    Cluster c = puncta.elementAt(i);
+	    for(int j = 0; j < c.size(); j++) retVal.add(c.getPixel(j));
+	}
+	return retVal;
+    }
+
     public void setColocalizationScore(double score){ colocalizationScore = score; }
 
     public double getColocalizationScore(){ return colocalizationScore; }

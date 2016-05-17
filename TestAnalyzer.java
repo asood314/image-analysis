@@ -504,65 +504,9 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	System.out.println("Done");
     }
     
-    public void findSynapses(int z, int t, int p)
+    public int findSynapses(int z, int t, int p)
     {
-	int[] chan = {1,0};
-	findSynapses(z,t,p,chan);
+	return 0;
     }
     
-    public void findSynapses(int z, int t, int p, int[] chan)
-    {
-        ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-        int[] np = new int[chan.length];
-        int maxIndex = 1;
-	int nSynapses = 0;
-	//int[] testX = {320,460};
-	//int[] testY = {380,530};
-	boolean verbose = false;
-        for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
-	for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
-        for(int j = 0; j < np[0]; j++){
-	    Synapse best = null;
-	    int bestScore = -999;
-	    Cluster c = r.getPunctum(chan[0],j);
-	    Point pt = c.getPixel(0);
-	    verbose = false;
-	    if(j == 125){//pt.x > 320 && pt.x < 460 && pt.y > 380 && pt.y < 530){
-		verbose = true;
-		System.out.println("PSD95 cluster " + j);
-		System.out.println("Size: " + c.size() + ", Peak Location: " + pt.toString() + ", Peak Intensity: " + ndim.getPixel(chan[0],z,t,pt.x,pt.y,p));
-	    }
-	    for(int l = 0; l < maxIndex; l++){
-		Synapse s = new Synapse(chan);
-		s.addPunctum(r.getPunctum(chan[0],j),j);
-		for(int i = 1; i < np.length; i++){
-		    int index = l;
-		    for(int k = 1; k < i; k++) index = index / np[k];
-		    index = index % np[i];
-		    c = r.getPunctum(chan[i],index);
-		    s.addPunctum(r.getPunctum(chan[i],index),index);
-		}
-		int score = s.getColocalizationScore();
-		pt = c.getPixel(0);
-		if(verbose && l == 509){//verbose && pt.x > 320 && pt.x < 460 && pt.y > 380 && pt.y < 530){
-		    System.out.println("VAMP cluster " + l);
-		    System.out.println("Size: " + c.size() + ", Peak Location: " + pt.toString() + ", Peak Intensity: " + ndim.getPixel(chan[1],z,t,pt.x,pt.y,p));
-		    System.out.println("Colocalization score: " + score);
-		    System.out.println(s.getNPuncta());
-		    System.out.println(s.getOverlap());
-		    System.out.println(s.isColocalized());
-		}
-		if(score > bestScore){
-		    bestScore = score;
-		    best = s;
-		}
-	    }
-	    if(best != null){
-		if(verbose) System.out.println("Adding synapse");
-		r.addSynapse(best);
-		nSynapses++;
-	    }
-        }
-	System.out.println("Found " + nSynapses + " synapses.");
-    }    
 }

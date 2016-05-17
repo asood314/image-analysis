@@ -14,7 +14,11 @@ public class LocalizedObject
 
     public void computeCentroid(){}
 
-    public Point getCentroid(){ return null; }
+    public Point getCentroid()
+    {
+	if(center == null) computeCentroid();
+	return center;
+    }
 
     public boolean contains(Point pt){ return false; }
 

@@ -799,7 +799,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int t = imPanel.getTimepoint();
             int p = imPanel.getPosition();
 	    ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-	    System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames()));
+	    for(int i = 0; i < r.getNSynapseCollections(); i++) System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames(),i));
             System.out.println("Done.");
         }
 	else if(cmd.equals("findskel")){
@@ -862,7 +862,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         else if(synapseSelectorTool){
             Point p = new Point(trueX,trueY);
             Synapse s = r.selectSynapse(p);
-            System.out.println("Center: " + s.getCenter().toString() + ", Overlap: " + s.getOverlap());
+            System.out.println("Center: " + s.getCentroid().toString() + ", Colocalization score: " + s.getColocalizationScore());
 	    for(int j = 0; j < s.getNPuncta(); j++){
 		Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 		Cluster c = s.getPunctum(j);
@@ -998,9 +998,12 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         if(imPanel.getMode() == ImagePanel.SPLIT) m = new Mask(ndim.getWidth()*2, ndim.getHeight()*2);
         else m = new Mask(ndim.getWidth(),ndim.getHeight());
         Vector<Point> centers = new Vector<Point>();
-        for(int s = 0; s < r.getNSynapses(); s++){
-            centers.add(r.getSynapse(s).getCenter());
-        }
+	for(int i = 0; i < r.getNSynapseCollections(); i++){
+	    SynapseCollection sc = r.getSynapseCollection(i);
+	    for(int s = 0; s < sc.getNSynapses(); s++){
+		centers.add(sc.getSynapse(s).getCentroid());
+	    }
+	}
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
                 for(int k = 0; k < centers.size(); k++){

@@ -6,7 +6,7 @@ public class SynapseCollection
     private boolean requireAllColocalized;
     private Vector<int[]> requiredColocalizations;
     private int overlapThreshold;
-    private int distanceThreshold;
+    private double distanceThreshold;
     private Vector<Synapse> synapses;
 
     public SynapseCollection(int[] chan)
@@ -41,9 +41,9 @@ public class SynapseCollection
 
     public int getOverlapThreshold(){ return overlapThreshold; }
 
-    public void setDistanceThreshold(int dt){ distanceThreshold = dt; }
+    public void setDistanceThreshold(double dt){ distanceThreshold = dt; }
 
-    public int getDistanceThreshold(){ return distanceThreshold; }
+    public double getDistanceThreshold(){ return distanceThreshold; }
 
     public int getNChannels(){ return channels.length; }
 

@@ -7,7 +7,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     private int punctaDetectionWindow;
     private int punctaFindingIterations;
     private double punctaAreaThreshold;
-    private int[] synapseChannels;
     private int masterChannel;
     
     public FixedCellAnalyzer(NDImage im, ImageReport[] r)
@@ -16,15 +15,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
 	punctaFindingIterations = 10;
-	synapseChannels = null;
 	masterChannel = -1;
     }
     
     public void setSignalDetectionWindow(int sdt){ signalDetectionWindow = sdt; }
     
     public void setPunctaDetectionWindow(int pdt){ punctaDetectionWindow = pdt; }
-
-    public void setSynapseChannels(int[] sc){ synapseChannels = sc; }
 
     public void setMasterChannel(int chan){ masterChannel = chan; }
 
@@ -132,11 +128,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    t1 = t2;
 	}
 	//System.out.println("Done puncta finding.");
-        if(synapseChannels != null) findSynapses(z,t,p,synapseChannels);
-	else findSynapses(z,t,p);
+	int nSynapses = findSynapses(z,t,p);
 	t2 = System.currentTimeMillis();
 	diff = (t2 - t1) / 1000;
-	System.out.println("Found " + reports[index].getNSynapses() + " synapses in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
+	System.out.println("Found " + nSynapses + " synapses in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
     }
     
     public Mask findOutlierMask(int w, int z, int t, int p)
@@ -1033,98 +1028,42 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         return maxPos;
     }
     
-    public void findSynapses(int z, int t, int p)
-    {
-	int[] sc = new int[ndim.getNWavelengths()];
-	for(int i = 0; i < sc.length; i++) sc[i] = i;
-	for(int i = 0; i < sc.length; i++){
-	    //if(isPost[sc[i]]) continue;
-	    for(int j = i+1; j < sc.length; j++){
-		if(prePost[sc[j]] > prePost[sc[i]]){
-		    int tmp = sc[i];
-		    sc[i] = sc[j];
-		    sc[j] = tmp;
-		    break;
-		}
-	    }
-	}
-	findSynapses(z,t,p,sc);
-    }
-    
-    public void findSynapses(int z, int t, int p, int[] chan)
+    public int findSynapses(int z, int t, int p)
     {
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-        int[] np = new int[chan.length];
-        int maxIndex = 1;
 	int nSynapses = 0;
-        for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
-	for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
-        for(int j = 0; j < np[0]; j++){
-	    Synapse best = null;
-	    int bestScore = -999;
-	    for(int l = 0; l < maxIndex; l++){
-		Synapse s = new Synapse(chan);
-		s.addPunctum(r.getPunctum(chan[0],j),j);
-		for(int i = 1; i < np.length; i++){
-		    int index = l;
-		    for(int k = 1; k < i; k++) index = index / np[k];
-		    index = index % np[i];
-		    s.addPunctum(r.getPunctum(chan[i],index),index);
+	for(int icol = 0; icol < r.getNSynapseCollections(); icol++){
+	    SynapseCollection sc = r.getSynapseCollection(icol);
+	    int[] chan = sc.getChannels();
+	    int[] np = new int[chan.length];
+	    int maxIndex = 1;
+	    for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
+	    for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
+	    for(int j = 0; j < np[0]; j++){
+		Synapse best = null;
+		double bestScore = -999;
+		for(int l = 0; l < maxIndex; l++){
+		    Synapse s = new Synapse();
+		    s.addPunctum(r.getPunctum(chan[0],j),j);
+		    for(int i = 1; i < np.length; i++){
+			int index = l;
+			for(int k = 1; k < i; k++) index = index / np[k];
+			index = index % np[i];
+			s.addPunctum(r.getPunctum(chan[i],index),index);
+		    }
+		    if(!sc.computeColocalization(s)) continue;
+		    if(s.getColocalizationScore() > bestScore){
+			bestScore = s.getColocalizationScore();
+			best = s;
+		    }
 		}
-		int score = s.getColocalizationScore();
-		if(score > bestScore){
-		    bestScore = score;
-		    best = s;
+		if(best != null){
+		    sc.addSynapse(best);
+		    nSynapses++;
 		}
 	    }
-	    if(best != null){
-		r.addSynapse(best);
-		nSynapses++;
-	    }
-        }
-	//System.out.println("Found " + nSynapses + " synapses.");
+	    //System.out.println("Found " + nSynapses + " synapses.");
+	}
+	return nSynapses;
     }
 }
-
-	/*
-	int Imax = (int)ndim.max(w,z,t,p);
-	int[] avgDist = new int[Imax];
-	Vector<Integer> maxima = new Vector<Integer>();
-	for(int i = 0; i < Imax; i+=1000){
-	    int max = 0;
-	    int maxbin = i;
-	    int lim = Math.min(Imax,i+1000);
-	    for(int j = i; j < lim; j++){
-		if(dist[j] > max){
-		    max = dist[j];
-		}
-	    }
-	    if(max < 10) continue;
-	    int avgLength = Math.max(1,1500/max);
-	    for(int j = i; j < lim; j++){
-		int sum = 0;
-		for(int k = j-avgLength+1; k < j+avgLength+1; k++) sum += dist[k];
-		avgDist[j] = sum/avgLength;
-	    }
-	    max = 0;
-	    for(int j = i; j < lim; j++){
-		if(avgDist[j] > max){
-		    max = avgDist[j];
-		    maxbin = j;
-		}
-	    }
-	    maxima.addElement(new Integer(maxbin));
-	}
-	for(int i = maxima.size()-1; i >= 0; i--){
-	    int max = avgDist[maxima.elementAt(i)];
-	    int low = Math.max(0,maxima.elementAt(i)-1500);
-	    int high = Math.min(Imax,maxima.elementAt(i)+1500);
-	    for(int j = low; j < high; j++){
-		if(avgDist[j] > max){
-		    maxima.remove(i);
-		    break;
-		}
-	    }
-	}
-	for(int i = 0; i < maxima.size(); i++) System.out.println(maxima.elementAt(i));
-	*/

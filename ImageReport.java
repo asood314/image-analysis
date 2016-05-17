@@ -331,7 +331,8 @@ public class ImageReport
         buf[0] = (byte)(nChannels & 0x000000ff);
         writeIntToBuffer(buf,1,width);
         writeIntToBuffer(buf,5,height);
-        fout.write(buf,0,9);
+	writeDoubleToBuffer(buf,9,resolutionXY);
+        fout.write(buf,0,17);
         for(int c = 0; c < nChannels; c++){
 	    if(outlierMasks[c] != null){
 		buf[0] = 1;
@@ -390,6 +391,27 @@ public class ImageReport
 		}
 	    }
 	    fout.write(buf,0,offset);
+	    writeIntToBuffer(buf,0,sc.getOverlapThreshold());
+	    writeDoubleToBuffer(buf,4,sc.getDistanceThreshold());
+	    if(sc.allRequired()){
+		buf[12] = 1;
+		fout.write(buf,0,13);
+	    }
+	    else{
+		buf[12] = 0;
+		writeIntToBuffer(buf,13,sc.getNRequirements());
+		offset = 17;
+		for(int i = 0; i < sc.getNRequirements(); i++){
+		    int[] req = sc.getRequiredColocalization(i);
+		    buf[offset] = (byte)(req.length & 0x000000ff);
+		    offset++;
+		    for(int j = 0; j < req.length; j++){
+			buf[offset] = (byte)(req[j] & 0x000000ff);
+			offset++;
+		    }
+		}
+		fout.write(buf,0,offset);
+	    }
 	}
 	int nROI = regionsOfInterest.size();
 	buf[0] = (byte)nROI;
@@ -421,16 +443,31 @@ public class ImageReport
         buffer[offset] = (byte)(data & 0x00ff);
         buffer[offset+1] = (byte)((data & 0xff00) >> 8);
     }
+
+    public static void writeDoubleToBuffer(byte[] buffer, int offset, double data)
+    {
+	long ldata = Double.doubleToLongBits(data);
+        buffer[offset] = (byte)(ldata & 0xff);
+        buffer[offset+1] = (byte)((ldata >> 8) & 0xff);
+        buffer[offset+2] = (byte)((ldata >> 16) & 0xff);
+        buffer[offset+3] = (byte)((ldata >> 24) & 0xff);
+        buffer[offset+4] = (byte)((ldata >> 32) & 0xff);
+        buffer[offset+5] = (byte)((ldata >> 40) & 0xff);
+        buffer[offset+6] = (byte)((ldata >> 48) & 0xff);
+        buffer[offset+7] = (byte)((ldata >> 56) & 0xff);
+    }
     
     public static ImageReport read(RandomAccessFile fin) throws IOException
     {
         byte[] buf = new byte[400000];
-        fin.read(buf,0,9);
+        fin.read(buf,0,17);
         int nc = (int)buf[0];
         if((nc & 0x000000ff) == 0x000000ff) return null;
         int width = readIntFromBuffer(buf,1);
         int height = readIntFromBuffer(buf,5);
+	double res = readDoubleFromBuffer(buf,9);
 	ImageReport r = new ImageReport(nc,width,height);
+	r.setResolutionXY(res);
 	//System.out.println(""+nc+", "+width+", "+height);
         for(int c = 0; c < nc; c++){
 	    fin.read(buf,0,1);
@@ -493,6 +530,22 @@ public class ImageReport
 		}
 		sc.addSynapse(s);
 	    }
+	    fin.read(buf,0,13);
+	    sc.setOverlapThreshold(readIntFromBuffer(buf,0));
+	    sc.setDistanceThreshold(readDoubleFromBuffer(buf,4));
+	    if(buf[12] != 1){
+		sc.setRequireAll(false);
+		fin.read(buf,0,4);
+		int nreq = readIntFromBuffer(buf,0);
+		for(int i = 0; i < nreq; i++){
+		    fin.read(buf,0,1);
+		    int[] req = new int[(int)buf[0]];
+		    fin.read(buf,0,req.length);
+		    for(int j = 0; j < req.length; j++) req[j] = (int)buf[j];
+		    sc.addRequiredColocalization(req);
+		}
+	    }
+	    else sc.setRequireAll(true);
         }
 	fin.read(buf,0,1);
 	Mask[] rois = new Mask[buf[0]];
@@ -523,6 +576,12 @@ public class ImageReport
     public static int readShortFromBuffer(byte[] buffer, int offset)
     {
         return ((buffer[offset+1] & 0xff) << 8) | (buffer[offset] & 0xff);
+    }
+
+    public static double readDoubleFromBuffer(byte[] buffer, int offset)
+    {
+        long tmp =  ((buffer[offset+7] & 0xff) << 56) | ((buffer[offset+6] & 0xff) << 48) | ((buffer[offset+5] & 0xff) << 40) | ((buffer[offset+4] & 0xff) << 32) | ((buffer[offset+3] & 0xff) << 24) | ((buffer[offset+2] & 0xff) << 16) | ((buffer[offset+1] & 0xff) << 8) | (buffer[offset] & 0xff);
+	return Double.longBitsToDouble(tmp);
     }
 
     public void loadMetaMorphRegions(String phil)

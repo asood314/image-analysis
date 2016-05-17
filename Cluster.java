@@ -42,6 +42,8 @@ public class Cluster extends LocalizedObject
 	    }
 	}
     }
+
+    public Vector<Point> getPoints(){ return pixels; }
     
     public boolean contains(Point p)
     {

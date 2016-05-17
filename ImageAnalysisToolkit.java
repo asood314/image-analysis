@@ -67,6 +67,14 @@ public abstract class ImageAnalysisToolkit
     
     public void setImageReports(ImageReport [] reps){ reports = reps; }
 
+    public void addSynapseCollection(SynapseCollection sc)
+    {
+	for(int i = 0; i < reports.length; i++){
+	    if(reports[i] == null) reports[i] = new ImageReport(channelNames.length,ndim.getWidth(),ndim.getHeight());
+	    reports[i].addSynapseCollection(sc);
+	}
+    }
+
     public void setChannelName(int w, String name){ channelNames[w] = name; }
 
     public String[] getChannelNames(){ return channelNames; }
@@ -164,9 +172,7 @@ public abstract class ImageAnalysisToolkit
 
     public abstract int findPuncta(int w, int z, int t, int p);
     
-    public abstract void findSynapses(int z, int t, int p);
-    
-    public abstract void findSynapses(int z, int t, int p, int[] chan);
+    public abstract int findSynapses(int z, int t, int p);
     
     public void saveImageReports(String phil)
     {
