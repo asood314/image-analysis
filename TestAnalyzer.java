@@ -229,7 +229,7 @@ public class TestAnalyzer extends ImageAnalysisToolkit
 	//findSaturatedPuncta(w,z,t,p);
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         Mask m = new Mask(r.getSignalMask(w));
-        Mask m2 = r.getPunctaMask(w);
+        Mask m2 = r.getPunctaMask(w,false);
         m.add(m2,-1);
 	imPanel.setMask(m);
 	int[] seed = imPanel.imArgMax(true);

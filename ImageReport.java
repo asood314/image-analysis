@@ -145,7 +145,7 @@ public class ImageReport
         return closest;
     }
     
-    public Mask getPunctaMask(int chan){
+    public Mask getPunctaMask(int chan, boolean outline){
         Mask m = new Mask(signalMasks[chan].getWidth(),signalMasks[chan].getHeight());
         Vector<Cluster> pList = puncta.elementAt(chan);
         for(int i = 0; i < pList.size(); i++){
@@ -155,10 +155,20 @@ public class ImageReport
                 m.setValue((int)x.getX(),(int)x.getY(),1);
             }
         }
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
     
-    public Mask getSynapseMask(){
+    public Mask getSynapseMask(boolean outline){
         Mask m = new Mask(imWidth,imHeight);
 	for(int icol = 0; icol < synapseCollections.size(); icol++){
 	    SynapseCollection sc = synapseCollections.elementAt(icol);
@@ -173,10 +183,20 @@ public class ImageReport
 		}
 	    }
 	}
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
-    public Mask getSynapseMask(int chan){
+    public Mask getSynapseMask(int chan, boolean outline){
         Mask m = new Mask(imWidth,imHeight);
 	for(int icol = 0; icol < synapseCollections.size(); icol++){
 	    SynapseCollection sc = synapseCollections.elementAt(icol);
@@ -191,10 +211,20 @@ public class ImageReport
 		}
 	    }
 	}
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
-    public Mask getSynapseMaskFromCollection(int icol){
+    public Mask getSynapseMaskFromCollection(int icol, boolean outline){
         Mask m = new Mask(imWidth,imHeight);
 	SynapseCollection sc = synapseCollections.elementAt(icol);
 	for(int i = 0; i < sc.getNSynapses(); i++){
@@ -207,10 +237,20 @@ public class ImageReport
 		}
 	    }
 	}
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
-    public Mask getSynapseMaskFromCollection(int icol, int chan){
+    public Mask getSynapseMaskFromCollection(int icol, int chan, boolean outline){
         Mask m = new Mask(imWidth,imHeight);
 	SynapseCollection sc = synapseCollections.elementAt(icol);
 	int index = sc.getChannelIndex(chan);
@@ -223,7 +263,17 @@ public class ImageReport
 		m.setValue(pt.x,pt.y,1);
 	    }
 	}
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
     public Mask getSkeleton(int chan)

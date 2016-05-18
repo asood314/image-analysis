@@ -415,7 +415,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     {
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         Mask m = new Mask(r.getSignalMask(w));
-        Mask m2 = r.getPunctaMask(w);
+        Mask m2 = r.getPunctaMask(w,false);
         m.add(m2,-1);
         Vector<Point> localMaxima = new Vector<Point>();
         Vector<Point> upperLeft = new Vector<Point>();
@@ -859,7 +859,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    */
 	    fs[i].setParameters(param);
 	}
-	Mask m = r.getPunctaMask(w);
+	Mask m = r.getPunctaMask(w,false);
 	for(int i = 0; i < satClusters.size(); i++){
 	    Cluster c = satClusters.elementAt(i);
 	    for(int j = 0; j < c.size(); j++){

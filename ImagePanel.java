@@ -238,11 +238,13 @@ public class ImagePanel extends JPanel
 	imMasks.addElement(m);
     }
 
+    public void clearMasks(){ imMasks.clear(); }
+
     public void setMaskColor(int index, int color){ maskColors.set(index,color); }
 
     public void addMaskColor(int color){ maskColors.addElement(color); }
 
-    public void clearMasks(){ imMasks.clear(); }
+    public void clearMaskColors(){ maskColors.clear(); }
 
     public void removeMask(Mask m){ imMasks.remove(m); }
     
