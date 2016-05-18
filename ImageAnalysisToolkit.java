@@ -71,7 +71,7 @@ public abstract class ImageAnalysisToolkit
     {
 	for(int i = 0; i < reports.length; i++){
 	    if(reports[i] == null) reports[i] = new ImageReport(channelNames.length,ndim.getWidth(),ndim.getHeight());
-	    reports[i].addSynapseCollection(sc);
+	    reports[i].addSynapseCollection(sc.emptyCopy());
 	}
     }
 
@@ -256,7 +256,7 @@ public abstract class ImageAnalysisToolkit
 		int length = ImageReport.readIntFromBuffer(buf,0);
 		byte[] nameBytes = new byte[length];
 		raf.read(nameBytes,0,length);
-		System.out.println("Channel " + i + ": " + new String(nameBytes));
+		//System.out.println("Channel " + i + ": " + new String(nameBytes));
 	    }
 	    raf.read(buf,0,4);
 	    int nReports = ImageReport.readIntFromBuffer(buf,0);

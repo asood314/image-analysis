@@ -41,6 +41,13 @@ public class Synapse extends LocalizedObject
 
     public double getColocalizationScore(){ return colocalizationScore; }
     
+    public int getClusterOverlap()
+    {
+        Cluster[] c = new Cluster[puncta.size()];
+        for(int i = 0; i < c.length; i++) c[i] = puncta.elementAt(i);
+        return LocalizedObject.findOverlap(c);
+    }
+
     public int getClusterOverlap(int[] indices)
     {
         Cluster[] c = new Cluster[indices.length];

@@ -21,6 +21,17 @@ public class SynapseCollection
 	description = "-";
     }
 
+    public SynapseCollection emptyCopy()
+    {
+	SynapseCollection sc = new SynapseCollection(channels);
+	sc.setRequireAll(requireAllColocalized);
+	for(int i = 0; i < requiredColocalizations.size(); i++) sc.addRequiredColocalizationByIndex(requiredColocalizations.elementAt(i));
+	sc.setOverlapThreshold(overlapThreshold);
+	sc.setDistanceThreshold(distanceThreshold);
+	sc.setDescription(description);
+	return sc;
+    }
+
     public void addSynapse(Synapse s){ synapses.addElement(s); }
 
     public Synapse getSynapse(int index){ return synapses.elementAt(index); }
@@ -33,7 +44,20 @@ public class SynapseCollection
 
     public boolean allRequired(){ return requireAllColocalized; }
 
-    public void addRequiredColocalization(int[] chans){ requiredColocalizations.addElement(chans); }
+    public void addRequiredColocalization(int[] chans)
+    {
+	int[] indices = new int[chans.length];
+	for(int i = 0; i < chans.length; i++){
+	    indices[i] = getChannelIndex(chans[i]);
+	    if(indices[i] < 0){
+		System.out.println("Channel not found");
+		return;
+	    }
+	}
+	requiredColocalizations.addElement(indices);
+    }
+
+    public void addRequiredColocalizationByIndex(int[] indices){ requiredColocalizations.addElement(indices); }
 
     public int[] getRequiredColocalization(int index){ return requiredColocalizations.elementAt(index); }
 
@@ -69,7 +93,7 @@ public class SynapseCollection
     {
 	if(requireAllColocalized){
 	    if(overlapThreshold >= 0){
-		int overlap = s.getClusterOverlap(channels) - overlapThreshold;
+		int overlap = s.getClusterOverlap() - overlapThreshold;
 		s.setColocalizationScore((double)overlap);
 		if(overlap > 0) return true;
 		else return false;

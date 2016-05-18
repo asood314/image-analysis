@@ -320,7 +320,8 @@ public class ImageReport
 	double[] areas = new double[nROI];
 	int[][] nSynapses = new int[ncol][nROI];
 	int[][] sumSynapseSizes = new int[ncol][nROI];
-	double[][] sumColocScores = new double[ncol][nROI];
+	int[][][] sumOverlaps = new int[ncol][10][nROI];
+	int[] nReqs = new int[ncol];
 	int[][] nPuncta = new int[puncta.size()][nROI];
 	int[][] sumPunctaSizes = new int[puncta.size()][nROI];
 
@@ -338,15 +339,20 @@ public class ImageReport
 	    for(int icol = 0; icol < ncol; icol++){
 		nSynapses[icol][r] = 0;
 		sumSynapseSizes[icol][r] = 0;
-		sumColocScores[icol][r] = 0;
 		SynapseCollection sc = synapseCollections.elementAt(icol);
+		if(sc.allRequired()) nReqs[icol] = 1;
+		else nReqs[icol] = sc.getNRequirements();
+		for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] = 0;
 		for(int i = 0; i < sc.getNSynapses(); i++){
 		    Synapse s = sc.getSynapse(i);
 		    Point p = s.getCentroid();
 		    if(roi.getValue(p.x,p.y) > 0){
 			nSynapses[icol][r]++;
 			sumSynapseSizes[icol][r] += s.size();
-			sumColocScores[icol][r] += s.getColocalizationScore();
+			if(sc.allRequired()) sumOverlaps[icol][0][r] += s.getClusterOverlap();
+			else{
+			    for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] += s.getClusterOverlap(sc.getRequiredColocalization(j));
+			}
 		    }
 		}
 	    }
@@ -374,9 +380,9 @@ public class ImageReport
 	    SynapseCollection sc = synapseCollections.elementAt(icol);
 	    msg += "\"Type "+icol+" synapses\",";
 	    for(int r = 0; r < nROI; r++) msg += ""+nSynapses[icol][r]+",";
-	    msg += "\""+sc.getDescription()+"\"\n\"Density (um^-2)\",";
+	    msg += "\""+sc.getDescription()+"\"\n\"Density (per 100 um^2)\",";
 	    for(int r = 0; r < nROI; r++){
-		double densityA = nSynapses[icol][r]/areas[r];
+		double densityA = 100 * nSynapses[icol][r]/areas[r];
 		msg += ""+densityA+",";
 	    }
 	    msg += "-\n\"Average size\",";
@@ -384,21 +390,30 @@ public class ImageReport
 		double avgSize = ((double)sumSynapseSizes[icol][r])/nSynapses[icol][r];
 		msg += ""+avgSize+",";
 	    }
-	    msg += "-\n\"Average score\",";
-	    for(int r = 0; r < nROI; r++){
-		double avgScore = ((double)sumColocScores[icol][r])/nSynapses[icol][r];
-		msg += ""+avgScore+",";
+	    msg += "-\n";
+	    for(int i = 0; i < nReqs[icol]; i++){
+		msg += "\"Average overlap "+i+"\",";
+		for(int r = 0; r < nROI; r++){
+		    double avgOverlap = ((double)sumOverlaps[icol][i][r])/nSynapses[icol][r];
+		    msg += ""+avgOverlap+",";
+		}
+		if(sc.allRequired()) msg += "-\n";
+		else{
+		    int[] req = sc.getRequiredColocalization(i);
+		    //System.out.println(sc.getChannelIndex(req[0]));
+		    msg += "\""+chanNames[sc.getChannel(req[0])];
+		    for(int j = 1; j < req.length; j++) msg += " and " + chanNames[sc.getChannel(req[j])];
+		    msg += "\"\n";
+		}
 	    }
-	    if(sc.getOverlapThreshold() >= 0) msg += "\"Product of overlaps over threshold\"\n";
-	    else if(sc.getDistanceThreshold() >= 0) msg += "\"Product of distances under threshold\"\n";
-	    else msg += "-\n";
+	    msg += "-,-,-,-,-\n";
 	}
 	for(int chan = 0; chan < puncta.size(); chan++){
 	    msg += "\""+chanNames[chan]+" puncta\",";
 	    for(int r = 0; r < nROI; r++) msg += ""+nPuncta[chan][r]+",";
-	    msg += "-\n\"Density (um^-2)\",";
+	    msg += "-\n\"Density (per 100 um^2)\",";
 	    for(int r = 0; r < nROI; r++){
-		double densityA = nPuncta[chan][r]/areas[r];
+		double densityA = 100 * nPuncta[chan][r]/areas[r];
 		msg += ""+densityA+",";
 	    }
 	    msg += "-\n\"Average size\",";
@@ -407,6 +422,7 @@ public class ImageReport
 		msg += ""+avgSize+",";
 	    }
 	    msg += "-\n";
+	    msg += "-,-,-,-,-\n";
 	}
 	return msg;
     }
@@ -705,7 +721,7 @@ public class ImageReport
 		    int[] req = new int[(int)buf[0]];
 		    fin.read(buf,0,req.length);
 		    for(int j = 0; j < req.length; j++) req[j] = (int)buf[j];
-		    sc.addRequiredColocalization(req);
+		    sc.addRequiredColocalizationByIndex(req);
 		}
 	    }
 	    else sc.setRequireAll(true);
