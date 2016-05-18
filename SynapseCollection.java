@@ -8,6 +8,7 @@ public class SynapseCollection
     private int overlapThreshold;
     private double distanceThreshold;
     private Vector<Synapse> synapses;
+    private String description;
 
     public SynapseCollection(int[] chan)
     {
@@ -17,6 +18,7 @@ public class SynapseCollection
 	overlapThreshold = 0;
 	distanceThreshold = -1;
 	synapses = new Vector<Synapse>();
+	description = "-";
     }
 
     public void addSynapse(Synapse s){ synapses.addElement(s); }
@@ -58,6 +60,10 @@ public class SynapseCollection
 	}
 	return -1;
     }
+
+    public void setDescription(String s){ description = s; }
+
+    public String getDescription(){ return description; }
 
     public boolean computeColocalization(Synapse s)
     {

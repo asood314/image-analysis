@@ -1,7 +1,9 @@
 import java.awt.Point;
 import java.awt.Polygon;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.StringTokenizer;
@@ -311,6 +313,104 @@ public class ImageReport
 	return newMask;
     }
 
+    public String getSynapseDensityTable(int postChan, String[] chanNames)
+    {
+	int nROI = regionsOfInterest.size();
+	int ncol = synapseCollections.size();
+	double[] areas = new double[nROI];
+	int[][] nSynapses = new int[ncol][nROI];
+	int[][] sumSynapseSizes = new int[ncol][nROI];
+	double[][] sumColocScores = new double[ncol][nROI];
+	int[][] nPuncta = new int[puncta.size()][nROI];
+	int[][] sumPunctaSizes = new int[puncta.size()][nROI];
+
+	for(int r = 0; r < regionsOfInterest.size(); r++){
+	    Mask roi = regionsOfInterest.elementAt(r);
+	    areas[r] = 0;
+	    for(int i = 0; i < roi.getWidth(); i++){
+		for(int j = 0; j < roi.getHeight(); j++){
+		    if(roi.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
+			areas[r] += 1.0;
+		    }
+		}
+	    }
+	    areas[r] *= resolutionXY*resolutionXY;
+	    for(int icol = 0; icol < ncol; icol++){
+		nSynapses[icol][r] = 0;
+		sumSynapseSizes[icol][r] = 0;
+		sumColocScores[icol][r] = 0;
+		SynapseCollection sc = synapseCollections.elementAt(icol);
+		for(int i = 0; i < sc.getNSynapses(); i++){
+		    Synapse s = sc.getSynapse(i);
+		    Point p = s.getCentroid();
+		    if(roi.getValue(p.x,p.y) > 0){
+			nSynapses[icol][r]++;
+			sumSynapseSizes[icol][r] += s.size();
+			sumColocScores[icol][r] += s.getColocalizationScore();
+		    }
+		}
+	    }
+	    for(int chan = 0; chan < puncta.size(); chan++){
+		Vector<Cluster> clusters = puncta.elementAt(chan);
+		nPuncta[chan][r] = 0;
+		sumPunctaSizes[chan][r] = 0;
+		for(int i = 0; i < clusters.size(); i++){
+		    Point p = clusters.elementAt(i).getCentroid();
+		    if(roi.getValue(p.x,p.y) > 0){
+			nPuncta[chan][r]++;
+			sumPunctaSizes[chan][r] += clusters.elementAt(i).size();
+		    }
+		}
+	    }
+	}
+	
+	String msg = "Field,";
+	for(int r = 0; r < nROI; r++) msg += "\"Region "+r+"\",";
+	msg += "Description\n";
+	msg += "\"Dendrite area (um^2)\",";
+	for(int r = 0; r < nROI; r++) msg += ""+areas[r]+",";
+	msg += "-\n";
+	for(int icol = 0; icol < ncol; icol++){
+	    SynapseCollection sc = synapseCollections.elementAt(icol);
+	    msg += "\"Type "+icol+" synapses\",";
+	    for(int r = 0; r < nROI; r++) msg += ""+nSynapses[icol][r]+",";
+	    msg += "\""+sc.getDescription()+"\"\n\"Density (um^-2)\",";
+	    for(int r = 0; r < nROI; r++){
+		double densityA = nSynapses[icol][r]/areas[r];
+		msg += ""+densityA+",";
+	    }
+	    msg += "-\n\"Average size\",";
+	    for(int r = 0; r < nROI; r++){
+		double avgSize = ((double)sumSynapseSizes[icol][r])/nSynapses[icol][r];
+		msg += ""+avgSize+",";
+	    }
+	    msg += "-\n\"Average score\",";
+	    for(int r = 0; r < nROI; r++){
+		double avgScore = ((double)sumColocScores[icol][r])/nSynapses[icol][r];
+		msg += ""+avgScore+",";
+	    }
+	    if(sc.getOverlapThreshold() >= 0) msg += "\"Product of overlaps over threshold\"\n";
+	    else if(sc.getDistanceThreshold() >= 0) msg += "\"Product of distances under threshold\"\n";
+	    else msg += "-\n";
+	}
+	for(int chan = 0; chan < puncta.size(); chan++){
+	    msg += "\""+chanNames[chan]+" puncta\",";
+	    for(int r = 0; r < nROI; r++) msg += ""+nPuncta[chan][r]+",";
+	    msg += "-\n\"Density (um^-2)\",";
+	    for(int r = 0; r < nROI; r++){
+		double densityA = nPuncta[chan][r]/areas[r];
+		msg += ""+densityA+",";
+	    }
+	    msg += "-\n\"Average size\",";
+	    for(int r = 0; r < nROI; r++){
+		double avgSize = ((double)sumPunctaSizes[chan][r])/nPuncta[chan][r];
+		msg += ""+avgSize+",";
+	    }
+	    msg += "-\n";
+	}
+	return msg;
+    }
+
     public String getSynapseDensity(int postChan, String[] chanNames, int collectionIndex)
     {
 	String msg = "";
@@ -429,12 +529,18 @@ public class ImageReport
 	fout.write(buf,0,2);
 	for(int k = 0; k < synapseCollections.size(); k++){
 	    SynapseCollection sc = synapseCollections.elementAt(k);
+	    byte[] nameBytes = sc.getDescription().getBytes();
+	    writeIntToBuffer(buf,0,nameBytes.length);
+	    fout.write(buf,0,4);
+	    fout.write(nameBytes);
             buf[0] = (byte)(sc.getNChannels() & 0x000000ff);
 	    for(int i = 0; i < sc.getNChannels(); i++) buf[i+1] = (byte)(sc.getChannel(i) & 0x000000ff);
 	    writeShortToBuffer(buf,1+sc.getNChannels(),(short)sc.getNSynapses());
 	    int offset = 3+sc.getNChannels();
 	    for(int i = 0; i < sc.getNSynapses(); i++){
 		Synapse s = sc.getSynapse(i);
+		writeDoubleToBuffer(buf,offset,s.getColocalizationScore());
+		offset += 8;
 		for(int j = 0; j < sc.getNChannels(); j++){
 		    writeShortToBuffer(buf,offset,(short)s.getPunctumIndex(j));
 		    offset += 2;
@@ -559,25 +665,32 @@ public class ImageReport
         fin.read(buf,0,2);
 	int ncol = readShortFromBuffer(buf,0);
 	for(int k = 0; k < ncol; k++){
+	    fin.read(buf,0,4);
+	    int length = ImageReport.readIntFromBuffer(buf,0);
+	    byte[] nameBytes = new byte[length];
+	    fin.read(nameBytes,0,length);
 	    fin.read(buf,0,1);
 	    int nchan = (int)buf[0];
 	    fin.read(buf,0,nchan+2);
             int [] chans = new int[nchan];
 	    for(int i = 0; i < nchan; i++) chans[i] = (int)buf[i];
 	    SynapseCollection sc = new SynapseCollection(chans);
+	    sc.setDescription(new String(nameBytes));
 	    r.addSynapseCollection(sc);
 	    int ns = readShortFromBuffer(buf,nchan);
 	    //System.out.println(ns);
             int [] ids = new int[nchan];
-	    fin.read(buf,0,2*ns*nchan);
+	    fin.read(buf,0,ns*(8+2*nchan));
 	    for(int i = 0; i < ns; i++){
+		double score = readDoubleFromBuffer(buf,(8+2*nchan)*i);
 		for(int j = 0; j < nchan; j++){
-		    ids[j] = readShortFromBuffer(buf,2*i*nchan + 2*j);
+		    ids[j] = readShortFromBuffer(buf,i*(8+2*nchan) + 2*j + 8);
 		}
 		Synapse s = new Synapse();
 		for(int j = 0; j < nchan; j++){
 		    s.addPunctum(r.getPunctum(chans[j],ids[j]),ids[j]);
 		}
+		s.setColocalizationScore(score);
 		sc.addSynapse(s);
 	    }
 	    fin.read(buf,0,13);

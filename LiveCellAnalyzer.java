@@ -119,7 +119,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         double[][] zscores = new double[ndim.getWidth()][ndim.getHeight()];
         Mask m = new Mask(r.getSignalMask(w));
-	Mask m2 = r.getPunctaMask(w);
+	Mask m2 = r.getPunctaMask(w,false);
 	m.add(m2,-1);
 	int nPuncta = 0;
         for(int i = 0; i < ndim.getWidth(); i++){
