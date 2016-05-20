@@ -217,19 +217,20 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	double lowerLimit = ndim.mode(w,z,t,p);
 	double best = ndim.mean(w,z,t,p);
-	double upperLimit = best + 6*ndim.std(w,z,t,p);
-	double step = (upperLimit - lowerLimit) / 10;
+	double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
 	int nsteps = 10;
+	double step = (upperLimit - lowerLimit) / nsteps;
 	if(step < 1.0){
 	    step = 1.0;
 	    nsteps = (int)(upperLimit - lowerLimit);
 	}
 	double fom = 0;
+	int maxClusters = 0;
 	boolean finished = false;
 	while(!finished){
 	    finished = true;
 	    //System.out.println(""+lowerLimit+", "+upperLimit);
-	    for(int istep = 0; istep < nsteps; istep++){
+	    for(int istep = 0; istep < nsteps+1; istep++){
 		double globalThreshold = lowerLimit + istep*step;
 		for(int i = 0; i < ndim.getWidth(); i++){
 		    for(int j = 0; j < ndim.getHeight(); j++){
@@ -334,22 +335,39 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    }
 		}
 		double ifom = ((double)avgSigSize)*avgSize;
-		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
-		else ifom = 0;
+		if(((double)avgSigSize)/(ndim.getHeight()*ndim.getWidth()) < 0.01) break;
+		//if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+		//else ifom = 0;
 		if(nSigClusters > 0) ifom = ifom/nSigClusters;
 		else ifom = 0;
-		if(ifom > fom){
+		if(nSigClusters >= maxClusters){
+		    fom = ifom;
+		    maxClusters = nSigClusters;
+		    best = globalThreshold;
+		    finished = false;
+		}
+		else if(ifom > fom){
 		    fom = ifom;
 		    best = globalThreshold;
 		    finished = false;
 		}
+		//System.out.println(""+globalThreshold+", "+avgSigSize+", "+nSigClusters+", "+avgSize+", "+nBkgClusters+":\t\t"+ifom);
 	    }
-	    lowerLimit = best - step;
-	    upperLimit = best + step;
-	    step = (upperLimit - lowerLimit) / 10;
-	    if(step < 1.0){
-		step = 1.0;
-		nsteps = (int)(upperLimit - lowerLimit);
+	    if(step < 1.01) break;
+	    if(best < 0) break;
+	    if(best == lowerLimit || best == upperLimit){
+		lowerLimit = best - 5*step;
+		upperLimit = best + 5*step;
+		fom *= 0.999;
+	    }
+	    else{
+		lowerLimit = best - step;
+		upperLimit = best + step;
+		step = (upperLimit - lowerLimit) / nsteps;
+		if(step < 1.0){
+		    step = 1.0;
+		    nsteps = (int)(upperLimit - lowerLimit);
+		}
 	    }
 	}
 	//System.out.println("Best threshold: "+best);
@@ -370,7 +388,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	}
-	double sizeThreshold = 0.25/Math.pow(resolutionXY,2);
+	double sizeThreshold = 5;//0.15/Math.pow(resolutionXY,2);
 	Vector<Integer> borderX = new Vector<Integer>(10);
         Vector<Integer> borderY = new Vector<Integer>(10);
 	int[] clusterX = new int[4200000];
