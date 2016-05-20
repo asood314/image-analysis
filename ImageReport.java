@@ -321,6 +321,7 @@ public class ImageReport
 	int[][] nSynapses = new int[ncol][nROI];
 	int[][] sumSynapseSizes = new int[ncol][nROI];
 	int[][][] sumOverlaps = new int[ncol][10][nROI];
+	int[][][] sumSynapticPunctaSizes = new int[ncol][10][nROI];
 	int[] nReqs = new int[ncol];
 	int[][] nPuncta = new int[puncta.size()][nROI];
 	int[][] sumPunctaSizes = new int[puncta.size()][nROI];
@@ -342,7 +343,9 @@ public class ImageReport
 		SynapseCollection sc = synapseCollections.elementAt(icol);
 		if(sc.allRequired()) nReqs[icol] = 1;
 		else nReqs[icol] = sc.getNRequirements();
+		int nChannels = sc.getNChannels();
 		for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] = 0;
+		for(int j = 0; j < nChannels; j++) sumSynapticPunctaSizes[icol][j][r] = 0;
 		for(int i = 0; i < sc.getNSynapses(); i++){
 		    Synapse s = sc.getSynapse(i);
 		    Point p = s.getCentroid();
@@ -353,6 +356,7 @@ public class ImageReport
 			else{
 			    for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] += s.getClusterOverlap(sc.getRequiredColocalization(j));
 			}
+			for(int j = 0; j < nChannels; j++) sumSynapticPunctaSizes[icol][j][r] += s.getPunctum(j).size();
 		    }
 		}
 	    }
@@ -372,31 +376,56 @@ public class ImageReport
 	
 	String msg = "Field,";
 	for(int r = 0; r < nROI; r++) msg += "\"Region "+r+"\",";
-	msg += "Description\n";
+	msg += "Average,Description\n";
 	msg += "\"Dendrite area (um^2)\",";
-	for(int r = 0; r < nROI; r++) msg += ""+areas[r]+",";
-	msg += "-\n";
+	double sum = 0;
+	for(int r = 0; r < nROI; r++){
+	    msg += ""+areas[r]+",";
+	    sum += areas[r];
+	}
+	msg += "" + (sum/nROI) + ",-\n";
 	for(int icol = 0; icol < ncol; icol++){
 	    SynapseCollection sc = synapseCollections.elementAt(icol);
 	    msg += "\"Type "+icol+" synapses\",";
-	    for(int r = 0; r < nROI; r++) msg += ""+nSynapses[icol][r]+",";
-	    msg += "\""+sc.getDescription()+"\"\n\"Density (per 100 um^2)\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		msg += ""+nSynapses[icol][r]+",";
+		sum += nSynapses[icol][r];
+	    }
+	    msg += "" + (sum/nROI) + ",\""+sc.getDescription()+"\"\n\"Density (per 100 um^2)\",";
+	    sum = 0;
 	    for(int r = 0; r < nROI; r++){
 		double densityA = 100 * nSynapses[icol][r]/areas[r];
 		msg += ""+densityA+",";
+		sum += densityA;
 	    }
-	    msg += "-\n\"Average size\",";
+	    msg += "" + (sum/nROI) + ",-\n\"Average size\",";
+	    sum = 0;
 	    for(int r = 0; r < nROI; r++){
 		double avgSize = ((double)sumSynapseSizes[icol][r])/nSynapses[icol][r];
 		msg += ""+avgSize+",";
+		sum += avgSize;
 	    }
-	    msg += "-\n";
+	    msg += "" + (sum/nROI) + ",-\n";
+	    for(int i = 0; i < sc.getNChannels(); i++){
+		msg += "\"Average puncta "+i+" size\",";
+		sum = 0;
+		for(int r = 0; r < nROI; r++){
+		    double avgSize = ((double)sumSynapticPunctaSizes[icol][i][r])/nSynapses[icol][r];
+		    msg += ""+avgSize+",";
+		    sum += avgSize;
+		}
+		msg += "" + (sum/nROI) + "," + chanNames[sc.getChannel(i)] + "\n";
+	    }
 	    for(int i = 0; i < nReqs[icol]; i++){
 		msg += "\"Average overlap "+i+"\",";
+		sum = 0;
 		for(int r = 0; r < nROI; r++){
 		    double avgOverlap = ((double)sumOverlaps[icol][i][r])/nSynapses[icol][r];
 		    msg += ""+avgOverlap+",";
+		    sum += avgOverlap;
 		}
+		msg += "" + (sum/nROI) + ",";
 		if(sc.allRequired()) msg += "-\n";
 		else{
 		    int[] req = sc.getRequiredColocalization(i);
@@ -406,23 +435,31 @@ public class ImageReport
 		    msg += "\"\n";
 		}
 	    }
-	    msg += "-,-,-,-,-\n";
+	    msg += "-,-,-,-,-,-\n";
 	}
 	for(int chan = 0; chan < puncta.size(); chan++){
 	    msg += "\""+chanNames[chan]+" puncta\",";
-	    for(int r = 0; r < nROI; r++) msg += ""+nPuncta[chan][r]+",";
-	    msg += "-\n\"Density (per 100 um^2)\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		msg += ""+nPuncta[chan][r]+",";
+		sum += nPuncta[chan][r];
+	    }
+	    msg += "" + (sum/nROI) + ",-\n\"Density (per 100 um^2)\",";
+	    sum = 0;
 	    for(int r = 0; r < nROI; r++){
 		double densityA = 100 * nPuncta[chan][r]/areas[r];
 		msg += ""+densityA+",";
+		sum += densityA;
 	    }
-	    msg += "-\n\"Average size\",";
+	    msg += "" + (sum/nROI) + ",-\n\"Average size\",";
+	    sum = 0;
 	    for(int r = 0; r < nROI; r++){
 		double avgSize = ((double)sumPunctaSizes[chan][r])/nPuncta[chan][r];
 		msg += ""+avgSize+",";
+		sum += avgSize;
 	    }
-	    msg += "-\n";
-	    msg += "-,-,-,-,-\n";
+	    msg += "" + (sum/nROI) + ",-\n";
+	    msg += "-,-,-,-,-,-\n";
 	}
 	return msg;
     }

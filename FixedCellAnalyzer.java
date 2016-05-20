@@ -217,14 +217,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	double lowerLimit = ndim.mode(w,z,t,p);
 	double best = ndim.mean(w,z,t,p);
-	double upperLimit = 2*best;
+	double upperLimit = best + 6*ndim.std(w,z,t,p);
 	double step = (upperLimit - lowerLimit) / 10;
 	int nsteps = 10;
 	if(step < 1.0){
 	    step = 1.0;
 	    nsteps = (int)(upperLimit - lowerLimit);
 	}
-	int fom = 0;
+	double fom = 0;
 	boolean finished = false;
 	while(!finished){
 	    finished = true;
@@ -245,13 +245,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		int nSigClusters = 0;
 		Vector<Integer> borderX = new Vector<Integer>(10);
 		Vector<Integer> borderY = new Vector<Integer>(10);
-		Mask subMask = new Mask(ndim.getWidth(),ndim.getHeight());
+		Mask subMask = new Mask(m);
+		//Cluster maxCluster = null;
 		for(int i = 0; i < ndim.getWidth(); i++){
 		    for(int j = 0; j < ndim.getHeight(); j++){
-			if(m.getValue(i,j) != 1) continue;
+			if(subMask.getValue(i,j) != 1) continue;
 			borderX.addElement(i);
 			borderY.addElement(j);
-			subMask.setValue(i,j,1);
+			subMask.setValue(i,j,0);
+			//Cluster c = new Cluster();
+			//c.addPixel(i,j);
 			int size = 1;
 			while(borderX.size() > 0){
 			    int bi = borderX.elementAt(0);
@@ -260,10 +263,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 				for(int dj = -1; dj < 2; dj++){
 				    try{
 					int val = m.getValue(bi+di,bj+dj);
-					if(val > 0 && subMask.getValue(bi+di,bj+dj) == 0){
-					    subMask.setValue(bi+di,bj+dj,1);
+					if(val > 0 && subMask.getValue(bi+di,bj+dj) == 1){
+					    subMask.setValue(bi+di,bj+dj,0);
 					    borderX.addElement(bi+di);
 					    borderY.addElement(bj+dj);
+					    //c.addPixel(bi+di,bj+dj);
 					    size++;
 					}
 				    }
@@ -273,16 +277,34 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    borderX.remove(0);
 			    borderY.remove(0);
 			}
-			//if(size > maxSize) maxSize = size;
+			//if(size > maxSize){
+			//  maxSize = size;
+			//  maxCluster = c;
+			//}
 			avgSigSize += size;
 			nSigClusters++;
 		    }
 		}
+		/*
+		int perimeter = 0;
+		for(int i = 0; i < maxCluster.size(); i++){
+		    Point pt = maxCluster.getPixel(i);
+		    int localSum = 0;
+		    for(int di = -1; di < 2; di++){
+			for(int dj = -1; dj < 2; dj++){
+			    try{ localSum += m.getValue(pt.x+di,pt.y+dj); }
+			    catch(ArrayIndexOutOfBoundsException e){ continue; }
+			}
+		    }
+		    if(localSum < 9) perimeter++;
+		}
+		*/
 		int avgSize = 0;
 		int nBkgClusters = 0;
+		subMask = new Mask(m);
 		for(int i = 0; i < ndim.getWidth(); i++){
 		    for(int j = 0; j < ndim.getHeight(); j++){
-			if(m.getValue(i,j) != 0) continue;
+			if(subMask.getValue(i,j) != 0) continue;
 			borderX.addElement(i);
 			borderY.addElement(j);
 			subMask.setValue(i,j,1);
@@ -311,7 +333,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nBkgClusters++;
 		    }
 		}
-		int ifom = avgSigSize*avgSize;
+		double ifom = ((double)avgSigSize)*avgSize;
 		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
 		else ifom = 0;
 		if(nSigClusters > 0) ifom = ifom/nSigClusters;
@@ -422,7 +444,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         Vector<Point> lowerRight = new Vector<Point>();
 	Vector<Integer> intensities = new Vector<Integer>();
 	int nPuncta = 0;
-	int minSignal = (int)(20.0 / Math.pow(resolutionXY,2));
+	int minSignal = (int)(5.0 / Math.pow(resolutionXY,2));
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
                 if(m.getValue(i,j) < 1){
@@ -673,7 +695,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Vector<Integer> borderVal = new Vector<Integer>();
 	int[] diArr = {-1,0,1,-1,1,-1,0,1};
         int[] djArr = {-1,-1,-1,0,0,1,1,1};
-	int minSignal = (int)Math.min(20.0 / Math.pow(resolutionXY,2),m.sum());
+	int minSignal = (int)Math.min(5.0 / Math.pow(resolutionXY,2),m.sum());
 	for(int i = 0; i < ndim.getWidth(); i++){
 	    for(int j = 0; j < ndim.getHeight(); j++){
 		if(used.getValue(i,j)*ndim.getPixel(w,z,t,i,j,p) < saturationThreshold) continue;
