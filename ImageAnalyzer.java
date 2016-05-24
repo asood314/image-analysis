@@ -547,7 +547,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             st.nextToken();
             int wl = Integer.parseInt(st.nextToken());
             imPanel.setWavelength(wl);
-	    if(imPanel.getMode() != ImagePanel.RGB_8){
+	    if(imPanel.getMode() != ImagePanel.GRAY_8){
 		imPanel.setMode(ImagePanel.GRAY_8);
 		//imPanel.setMaskColor(0xffff00ff);
 		imPanel.clearMaskColors();
