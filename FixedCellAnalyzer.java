@@ -242,7 +242,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    }
 		}
 		//int maxSize = 0;
-		int avgSigSize = 0;
+		long avgSigSize = 0;
+		long avgSigSize2 = 0;
 		int nSigClusters = 0;
 		Vector<Integer> borderX = new Vector<Integer>(10);
 		Vector<Integer> borderY = new Vector<Integer>(10);
@@ -256,7 +257,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			subMask.setValue(i,j,0);
 			//Cluster c = new Cluster();
 			//c.addPixel(i,j);
-			int size = 1;
+			long size = 1;
 			while(borderX.size() > 0){
 			    int bi = borderX.elementAt(0);
 			    int bj = borderY.elementAt(0);
@@ -283,6 +284,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			//  maxCluster = c;
 			//}
 			avgSigSize += size;
+			avgSigSize2 += size*size;
 			nSigClusters++;
 		    }
 		}
@@ -334,12 +336,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nBkgClusters++;
 		    }
 		}
-		double ifom = ((double)avgSigSize)*avgSize;
+		double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
 		if(((double)avgSigSize)/(ndim.getHeight()*ndim.getWidth()) < 0.01) break;
-		//if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
-		//else ifom = 0;
-		if(nSigClusters > 0) ifom = ifom/nSigClusters;
+		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
 		else ifom = 0;
+		//if(nSigClusters > 0) ifom = ifom/nSigClusters;
+		//else ifom = 0;
 		if(nSigClusters >= maxClusters){
 		    fom = ifom;
 		    maxClusters = nSigClusters;
@@ -617,7 +619,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		//removalQueueI.addElement(sumNew);
 		//removalQueueN.addElement(numNew);
 	    }
-	    if(localMaxima.size() == 1161) System.out.println("Filling in blanks");
+	    //if(localMaxima.size() == 1161) System.out.println("Filling in blanks");
 	    boolean unfilled = true;
 	    while(unfilled){
 		unfilled = false;
