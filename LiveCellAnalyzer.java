@@ -119,7 +119,7 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
         double[][] zscores = new double[ndim.getWidth()][ndim.getHeight()];
         Mask m = new Mask(r.getSignalMask(w));
-	Mask m2 = r.getPunctaMask(w);
+	Mask m2 = r.getPunctaMask(w,false);
 	m.add(m2,-1);
 	int nPuncta = 0;
         for(int i = 0; i < ndim.getWidth(); i++){
@@ -197,50 +197,43 @@ public class LiveCellAnalyzer extends ImageAnalysisToolkit
         return maxPos;
     }
     
-    public void findSynapses(int z, int t, int p)
+    public int findSynapses(int z, int t, int p)
     {
         ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-        int[] np = new int[r.getNChannels()];
-        int[] chan = new int[r.getNChannels()];
-        int maxIndex = 1;
-        for(int i = 0; i < r.getNChannels(); i++){
-            np[i] = r.getNPuncta(i);
-            chan[i] = i;
-            //System.out.println(np[i]);
-            maxIndex *= np[i];
-        }
-        for(int j = 0; j < maxIndex; j++){
-            Synapse s = new Synapse(chan);
-            //System.out.println("Potential syanpse " + j);
-            for(int i = 0; i < np.length; i++){
-                int index = j;
-                for(int k = 0; k < i; k++) index = index / np[k];
-                index = index % np[i];
-                //System.out.println("Puncta " + i + " center: " + r.getPunctum(i,index).getCentroid().toString());
-                s.addPunctum(r.getPunctum(i,index),index);
-            }
-            if(s.isColocalized()) r.addSynapse(s);
-        }
+	int nSynapses = 0;
+	for(int icol = 0; icol < r.getNSynapseCollections(); icol++){
+	    SynapseCollection sc = r.getSynapseCollection(icol);
+	    int[] chan = sc.getChannels();
+	    int[] np = new int[chan.length];
+	    int maxIndex = 1;
+	    for(int i = 0; i < chan.length; i++) np[i] = r.getNPuncta(chan[i]);
+	    for(int i = 1; i < chan.length; i++) maxIndex *= np[i];
+	    for(int j = 0; j < np[0]; j++){
+		Synapse best = null;
+		double bestScore = -999;
+		for(int l = 0; l < maxIndex; l++){
+		    Synapse s = new Synapse();
+		    s.addPunctum(r.getPunctum(chan[0],j),j);
+		    for(int i = 1; i < np.length; i++){
+			int index = l;
+			for(int k = 1; k < i; k++) index = index / np[k];
+			index = index % np[i];
+			s.addPunctum(r.getPunctum(chan[i],index),index);
+		    }
+		    if(!sc.computeColocalization(s)) continue;
+		    if(s.getColocalizationScore() > bestScore){
+			bestScore = s.getColocalizationScore();
+			best = s;
+		    }
+		}
+		if(best != null){
+		    sc.addSynapse(best);
+		    nSynapses++;
+		}
+	    }
+	    //System.out.println("Found " + nSynapses + " synapses.");
+	}
+	return nSynapses;
     }
     
-    public void findSynapses(int z, int t, int p, int[] chan)
-    {
-        ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-        int[] np = new int[chan.length];
-        int maxIndex = 1;
-        for(int i = 0; i < chan.length; i++){
-            np[i] = r.getNPuncta(chan[i]);
-            maxIndex *= np[i];
-        }
-        for(int j = 0; j < maxIndex; j++){
-            Synapse s = new Synapse(chan);
-            for(int i = 0; i < np.length; i++){
-                int index = j;
-                for(int k = 0; k < i; k++) index = index / np[k];
-                index = index % np[i];
-                s.addPunctum(r.getPunctum(chan[i],index),index);
-            }
-            if(s.isColocalized()) r.addSynapse(s);
-        }
-    }    
 }

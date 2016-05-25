@@ -1,7 +1,9 @@
 import java.awt.Point;
 import java.awt.Polygon;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.StringTokenizer;
@@ -15,7 +17,7 @@ public class ImageReport
     private Vector<Integer> axisLengths;
     private Vector<Mask> regionsOfInterest;
     private Vector<Vector<Cluster>> puncta;
-    private Vector<Synapse> synapses;
+    private Vector<SynapseCollection> synapseCollections;
     private int nChannels, imWidth, imHeight;
     private double resolutionXY;
     
@@ -31,7 +33,7 @@ public class ImageReport
 	axisLengths = new Vector<Integer>();
         puncta = new Vector<Vector<Cluster>>();
         for(int i = 0; i < nchan; i++) puncta.add(new Vector<Cluster>());
-        synapses = new Vector<Synapse>();
+        synapseCollections = new Vector<SynapseCollection>();
 	resolutionXY = 0.046;
     }
 
@@ -71,17 +73,17 @@ public class ImageReport
 
     public void clearPuncta(int chan){ puncta.elementAt(chan).clear(); }
     
-    public void addSynapse(Synapse s){ synapses.add(s); }
+    public void addSynapseCollection(SynapseCollection sc){ synapseCollections.add(sc); }
     
-    public void removeSynapse(int index){ synapses.remove(index); }
+    public void removeSynapseCollection(int index){ synapseCollections.remove(index); }
     
     public Cluster getPunctum(int chan, int index){ return puncta.elementAt(chan).elementAt(index); }
     
     public int getNPuncta(int chan){ return puncta.elementAt(chan).size(); }
     
-    public Synapse getSynapse(int index){ return synapses.elementAt(index); }
+    public SynapseCollection getSynapseCollection(int index){ return synapseCollections.elementAt(index); }
     
-    public int getNSynapses(){ return synapses.size(); }
+    public int getNSynapseCollections(){ return synapseCollections.size(); }
     
     public Cluster selectPunctum(Point p){
         double minDist = 999999;
@@ -116,17 +118,36 @@ public class ImageReport
     public Synapse selectSynapse(Point p){
         double minDist = 999999;
         Synapse closest = null;
-        for(int j = 0; j < synapses.size(); j++){
-            double dist = synapses.elementAt(j).distanceTo(p);
-            if(dist < minDist){
-                minDist = dist;
-                closest = synapses.elementAt(j);
-            }
-        }
+	for(int i = 0; i < synapseCollections.size(); i++){
+	    SynapseCollection sc = synapseCollections.elementAt(i);
+	    for(int j = 0; j < sc.getNSynapses(); j++){
+		Synapse s = sc.getSynapse(j);
+		double dist = s.distanceTo(p);
+		if(dist < minDist){
+		    minDist = dist;
+		    closest = s;
+		}
+	    }
+	}
+        return closest;
+    }
+
+    public Synapse selectSynapseFromCollection(Point p, int i){
+        double minDist = 999999;
+        Synapse closest = null;
+	SynapseCollection sc = synapseCollections.elementAt(i);
+	for(int j = 0; j < sc.getNSynapses(); j++){
+	    Synapse s = sc.getSynapse(j);
+	    double dist = s.distanceTo(p);
+	    if(dist < minDist){
+		minDist = dist;
+		closest = s;
+	    }
+	}
         return closest;
     }
     
-    public Mask getPunctaMask(int chan){
+    public Mask getPunctaMask(int chan, boolean outline){
         Mask m = new Mask(signalMasks[chan].getWidth(),signalMasks[chan].getHeight());
         Vector<Cluster> pList = puncta.elementAt(chan);
         for(int i = 0; i < pList.size(); i++){
@@ -136,36 +157,125 @@ public class ImageReport
                 m.setValue((int)x.getX(),(int)x.getY(),1);
             }
         }
-        return m;
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
     
-    public Mask getSynapseMask(){
+    public Mask getSynapseMask(boolean outline){
         Mask m = new Mask(imWidth,imHeight);
-        for(int i = 0; i < synapses.size(); i++){
-            Synapse s = synapses.elementAt(i);
-            for(int j = 0; j < s.getNPuncta(); j++){
-                Cluster c = s.getPunctum(j);
-                for(int k = 0; k < c.size(); k++){
-                    Point pt = c.getPixel(k);
-                    m.setValue(pt.x,pt.y,1);
-                }
-            }
-        }
-        return m;
+	for(int icol = 0; icol < synapseCollections.size(); icol++){
+	    SynapseCollection sc = synapseCollections.elementAt(icol);
+	    for(int i = 0; i < sc.getNSynapses(); i++){
+		Synapse s = sc.getSynapse(i);
+		for(int j = 0; j < s.getNPuncta(); j++){
+		    Cluster c = s.getPunctum(j);
+		    for(int k = 0; k < c.size(); k++){
+			Point pt = c.getPixel(k);
+			m.setValue(pt.x,pt.y,1);
+		    }
+		}
+	    }
+	}
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
-    public Mask getSynapseMask(int chan){
+    public Mask getSynapseMask(int chan, boolean outline){
         Mask m = new Mask(imWidth,imHeight);
-        for(int i = 0; i < synapses.size(); i++){
-            Synapse s = synapses.elementAt(i);
-	    int index = s.getChannelIndex(chan);
+	for(int icol = 0; icol < synapseCollections.size(); icol++){
+	    SynapseCollection sc = synapseCollections.elementAt(icol);
+	    int index = sc.getChannelIndex(chan);
+	    if(index < 0) continue;
+	    for(int i = 0; i < sc.getNSynapses(); i++){
+		Synapse s = sc.getSynapse(i);
+		Cluster c = s.getPunctum(index);
+		for(int k = 0; k < c.size(); k++){
+		    Point pt = c.getPixel(k);
+		    m.setValue(pt.x,pt.y,1);
+		}
+	    }
+	}
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
+    }
+
+    public Mask getSynapseMaskFromCollection(int icol, boolean outline){
+        Mask m = new Mask(imWidth,imHeight);
+	SynapseCollection sc = synapseCollections.elementAt(icol);
+	for(int i = 0; i < sc.getNSynapses(); i++){
+	    Synapse s = sc.getSynapse(i);
+	    for(int j = 0; j < s.getNPuncta(); j++){
+		Cluster c = s.getPunctum(j);
+		for(int k = 0; k < c.size(); k++){
+		    Point pt = c.getPixel(k);
+		    m.setValue(pt.x,pt.y,1);
+		}
+	    }
+	}
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
+    }
+
+    public Mask getSynapseMaskFromCollection(int icol, int chan, boolean outline){
+        Mask m = new Mask(imWidth,imHeight);
+	SynapseCollection sc = synapseCollections.elementAt(icol);
+	int index = sc.getChannelIndex(chan);
+	if(index < 0) return null;
+	for(int i = 0; i < sc.getNSynapses(); i++){
+	    Synapse s = sc.getSynapse(i);
 	    Cluster c = s.getPunctum(index);
 	    for(int k = 0; k < c.size(); k++){
 		Point pt = c.getPixel(k);
 		m.setValue(pt.x,pt.y,1);
 	    }
-        }
-        return m;
+	}
+	Mask m2 = m.getCopy();
+	if(outline){
+	    for(int i = 1; i < imWidth-1; i++){
+		for(int j = 1; j < imHeight-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1)+m.getValue(i-1,j)+m.getValue(i-1,j+1)+m.getValue(i,j-1)+m.getValue(i,j+1)+m.getValue(i+1,j-1)+m.getValue(i+1,j)+m.getValue(i+1,j+1);
+		    if(sum > 7) m2.setValue(i,j,0);
+		}
+	    }
+	}
+        return m2;
     }
 
     public Mask getSkeleton(int chan)
@@ -203,7 +313,158 @@ public class ImageReport
 	return newMask;
     }
 
-    public String getSynapseDensity(int postChan, String[] chanNames)
+    public String getSynapseDensityTable(int postChan, String[] chanNames)
+    {
+	int nROI = regionsOfInterest.size();
+	int ncol = synapseCollections.size();
+	double[] areas = new double[nROI];
+	int[][] nSynapses = new int[ncol][nROI];
+	int[][] sumSynapseSizes = new int[ncol][nROI];
+	int[][][] sumOverlaps = new int[ncol][10][nROI];
+	int[][][] sumSynapticPunctaSizes = new int[ncol][10][nROI];
+	int[] nReqs = new int[ncol];
+	int[][] nPuncta = new int[puncta.size()][nROI];
+	int[][] sumPunctaSizes = new int[puncta.size()][nROI];
+
+	for(int r = 0; r < regionsOfInterest.size(); r++){
+	    Mask roi = regionsOfInterest.elementAt(r);
+	    areas[r] = 0;
+	    for(int i = 0; i < roi.getWidth(); i++){
+		for(int j = 0; j < roi.getHeight(); j++){
+		    if(roi.getValue(i,j) * signalMasks[postChan].getValue(i,j) > 0){
+			areas[r] += 1.0;
+		    }
+		}
+	    }
+	    areas[r] *= resolutionXY*resolutionXY;
+	    for(int icol = 0; icol < ncol; icol++){
+		nSynapses[icol][r] = 0;
+		sumSynapseSizes[icol][r] = 0;
+		SynapseCollection sc = synapseCollections.elementAt(icol);
+		if(sc.allRequired()) nReqs[icol] = 1;
+		else nReqs[icol] = sc.getNRequirements();
+		int nChannels = sc.getNChannels();
+		for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] = 0;
+		for(int j = 0; j < nChannels; j++) sumSynapticPunctaSizes[icol][j][r] = 0;
+		for(int i = 0; i < sc.getNSynapses(); i++){
+		    Synapse s = sc.getSynapse(i);
+		    Point p = s.getCentroid();
+		    if(roi.getValue(p.x,p.y) > 0){
+			nSynapses[icol][r]++;
+			sumSynapseSizes[icol][r] += s.size();
+			if(sc.allRequired()) sumOverlaps[icol][0][r] += s.getClusterOverlap();
+			else{
+			    for(int j = 0; j < nReqs[icol]; j++) sumOverlaps[icol][j][r] += s.getClusterOverlap(sc.getRequiredColocalization(j));
+			}
+			for(int j = 0; j < nChannels; j++) sumSynapticPunctaSizes[icol][j][r] += s.getPunctum(j).size();
+		    }
+		}
+	    }
+	    for(int chan = 0; chan < puncta.size(); chan++){
+		Vector<Cluster> clusters = puncta.elementAt(chan);
+		nPuncta[chan][r] = 0;
+		sumPunctaSizes[chan][r] = 0;
+		for(int i = 0; i < clusters.size(); i++){
+		    Point p = clusters.elementAt(i).getCentroid();
+		    if(roi.getValue(p.x,p.y) > 0){
+			nPuncta[chan][r]++;
+			sumPunctaSizes[chan][r] += clusters.elementAt(i).size();
+		    }
+		}
+	    }
+	}
+	
+	String msg = "Field,";
+	for(int r = 0; r < nROI; r++) msg += "\"Region "+r+"\",";
+	msg += "Average,Description\n";
+	msg += "\"Dendrite area (um^2)\",";
+	double sum = 0;
+	for(int r = 0; r < nROI; r++){
+	    msg += ""+areas[r]+",";
+	    sum += areas[r];
+	}
+	msg += "" + (sum/nROI) + ",-\n";
+	for(int icol = 0; icol < ncol; icol++){
+	    SynapseCollection sc = synapseCollections.elementAt(icol);
+	    msg += "\"Type "+icol+" synapses\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		msg += ""+nSynapses[icol][r]+",";
+		sum += nSynapses[icol][r];
+	    }
+	    msg += "" + (sum/nROI) + ",\""+sc.getDescription()+"\"\n\"Density (per 100 um^2)\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		double densityA = 100 * nSynapses[icol][r]/areas[r];
+		msg += ""+densityA+",";
+		sum += densityA;
+	    }
+	    msg += "" + (sum/nROI) + ",-\n\"Average size\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		double avgSize = ((double)sumSynapseSizes[icol][r])/nSynapses[icol][r];
+		msg += ""+avgSize+",";
+		sum += avgSize;
+	    }
+	    msg += "" + (sum/nROI) + ",-\n";
+	    for(int i = 0; i < sc.getNChannels(); i++){
+		msg += "\"Average puncta "+i+" size\",";
+		sum = 0;
+		for(int r = 0; r < nROI; r++){
+		    double avgSize = ((double)sumSynapticPunctaSizes[icol][i][r])/nSynapses[icol][r];
+		    msg += ""+avgSize+",";
+		    sum += avgSize;
+		}
+		msg += "" + (sum/nROI) + "," + chanNames[sc.getChannel(i)] + "\n";
+	    }
+	    for(int i = 0; i < nReqs[icol]; i++){
+		msg += "\"Average overlap "+i+"\",";
+		sum = 0;
+		for(int r = 0; r < nROI; r++){
+		    double avgOverlap = ((double)sumOverlaps[icol][i][r])/nSynapses[icol][r];
+		    msg += ""+avgOverlap+",";
+		    sum += avgOverlap;
+		}
+		msg += "" + (sum/nROI) + ",";
+		if(sc.allRequired()) msg += "-\n";
+		else{
+		    int[] req = sc.getRequiredColocalization(i);
+		    //System.out.println(sc.getChannelIndex(req[0]));
+		    msg += "\""+chanNames[sc.getChannel(req[0])];
+		    for(int j = 1; j < req.length; j++) msg += " and " + chanNames[sc.getChannel(req[j])];
+		    msg += "\"\n";
+		}
+	    }
+	    msg += "-,-,-,-,-,-\n";
+	}
+	for(int chan = 0; chan < puncta.size(); chan++){
+	    msg += "\""+chanNames[chan]+" puncta\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		msg += ""+nPuncta[chan][r]+",";
+		sum += nPuncta[chan][r];
+	    }
+	    msg += "" + (sum/nROI) + ",-\n\"Density (per 100 um^2)\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		double densityA = 100 * nPuncta[chan][r]/areas[r];
+		msg += ""+densityA+",";
+		sum += densityA;
+	    }
+	    msg += "" + (sum/nROI) + ",-\n\"Average size\",";
+	    sum = 0;
+	    for(int r = 0; r < nROI; r++){
+		double avgSize = ((double)sumPunctaSizes[chan][r])/nPuncta[chan][r];
+		msg += ""+avgSize+",";
+		sum += avgSize;
+	    }
+	    msg += "" + (sum/nROI) + ",-\n";
+	    msg += "-,-,-,-,-,-\n";
+	}
+	return msg;
+    }
+
+    public String getSynapseDensity(int postChan, String[] chanNames, int collectionIndex)
     {
 	String msg = "";
 	int[] di = {-1,0,1,-1,1,-1,0,1};
@@ -230,13 +491,14 @@ public class ImageReport
 	    int nSynapses = 0;
 	    int sumOverlap = 0;
 	    int sumSize = 0;
-	    for(int i = 0; i < synapses.size(); i++){
-		Synapse s = synapses.elementAt(i);
-		Point p = s.getCenter();
+	    SynapseCollection sc = synapseCollections.elementAt(collectionIndex);
+	    for(int i = 0; i < sc.getNSynapses(); i++){
+		Synapse s = sc.getSynapse(i);
+		Point p = s.getCentroid();
 		if(roi.getValue(p.x,p.y) > 0){
 		    nSynapses++;
 		    sumSize += s.size();
-		    sumOverlap += s.getOverlap();
+		    sumOverlap += s.getClusterOverlap(sc.getChannels());
 		}
 	    }
 	    double densityA = nSynapses/area;
@@ -272,7 +534,8 @@ public class ImageReport
         buf[0] = (byte)(nChannels & 0x000000ff);
         writeIntToBuffer(buf,1,width);
         writeIntToBuffer(buf,5,height);
-        fout.write(buf,0,9);
+	writeDoubleToBuffer(buf,9,resolutionXY);
+        fout.write(buf,0,17);
         for(int c = 0; c < nChannels; c++){
 	    if(outlierMasks[c] != null){
 		buf[0] = 1;
@@ -315,19 +578,50 @@ public class ImageReport
                 fout.write(buf,0,4*clust.size() + 2);
             }
         }
-        writeShortToBuffer(buf,0,(short)synapses.size());
-        int offset = 2;
-        for(int i = 0; i < synapses.size(); i++){
-            Synapse s = synapses.elementAt(i);
-            buf[offset] = (byte)(s.getNChannels() & 0x000000ff);
-            offset++;
-            for(int j = 0; j < s.getNChannels(); j++){
-                buf[offset] = (byte)(s.getChannel(j) & 0x000000ff);
-                writeShortToBuffer(buf,offset+1,(short)s.getPunctumIndex(j));
-                offset += 3;
-            }
-        }
-        fout.write(buf,0,offset);
+        writeShortToBuffer(buf,0,(short)synapseCollections.size());
+	fout.write(buf,0,2);
+	for(int k = 0; k < synapseCollections.size(); k++){
+	    SynapseCollection sc = synapseCollections.elementAt(k);
+	    byte[] nameBytes = sc.getDescription().getBytes();
+	    writeIntToBuffer(buf,0,nameBytes.length);
+	    fout.write(buf,0,4);
+	    fout.write(nameBytes);
+            buf[0] = (byte)(sc.getNChannels() & 0x000000ff);
+	    for(int i = 0; i < sc.getNChannels(); i++) buf[i+1] = (byte)(sc.getChannel(i) & 0x000000ff);
+	    writeShortToBuffer(buf,1+sc.getNChannels(),(short)sc.getNSynapses());
+	    int offset = 3+sc.getNChannels();
+	    for(int i = 0; i < sc.getNSynapses(); i++){
+		Synapse s = sc.getSynapse(i);
+		writeDoubleToBuffer(buf,offset,s.getColocalizationScore());
+		offset += 8;
+		for(int j = 0; j < sc.getNChannels(); j++){
+		    writeShortToBuffer(buf,offset,(short)s.getPunctumIndex(j));
+		    offset += 2;
+		}
+	    }
+	    fout.write(buf,0,offset);
+	    writeIntToBuffer(buf,0,sc.getOverlapThreshold());
+	    writeDoubleToBuffer(buf,4,sc.getDistanceThreshold());
+	    if(sc.allRequired()){
+		buf[12] = 1;
+		fout.write(buf,0,13);
+	    }
+	    else{
+		buf[12] = 0;
+		writeIntToBuffer(buf,13,sc.getNRequirements());
+		offset = 17;
+		for(int i = 0; i < sc.getNRequirements(); i++){
+		    int[] req = sc.getRequiredColocalization(i);
+		    buf[offset] = (byte)(req.length & 0x000000ff);
+		    offset++;
+		    for(int j = 0; j < req.length; j++){
+			buf[offset] = (byte)(req[j] & 0x000000ff);
+			offset++;
+		    }
+		}
+		fout.write(buf,0,offset);
+	    }
+	}
 	int nROI = regionsOfInterest.size();
 	buf[0] = (byte)nROI;
 	fout.write(buf,0,1);
@@ -358,16 +652,31 @@ public class ImageReport
         buffer[offset] = (byte)(data & 0x00ff);
         buffer[offset+1] = (byte)((data & 0xff00) >> 8);
     }
+
+    public static void writeDoubleToBuffer(byte[] buffer, int offset, double data)
+    {
+	long ldata = Double.doubleToLongBits(data);
+        buffer[offset] = (byte)(ldata & 0xff);
+        buffer[offset+1] = (byte)((ldata >> 8) & 0xff);
+        buffer[offset+2] = (byte)((ldata >> 16) & 0xff);
+        buffer[offset+3] = (byte)((ldata >> 24) & 0xff);
+        buffer[offset+4] = (byte)((ldata >> 32) & 0xff);
+        buffer[offset+5] = (byte)((ldata >> 40) & 0xff);
+        buffer[offset+6] = (byte)((ldata >> 48) & 0xff);
+        buffer[offset+7] = (byte)((ldata >> 56) & 0xff);
+    }
     
     public static ImageReport read(RandomAccessFile fin) throws IOException
     {
-        byte[] buf = new byte[40000];
-        fin.read(buf,0,9);
+        byte[] buf = new byte[400000];
+        fin.read(buf,0,17);
         int nc = (int)buf[0];
         if((nc & 0x000000ff) == 0x000000ff) return null;
         int width = readIntFromBuffer(buf,1);
         int height = readIntFromBuffer(buf,5);
+	double res = readDoubleFromBuffer(buf,9);
 	ImageReport r = new ImageReport(nc,width,height);
+	r.setResolutionXY(res);
 	//System.out.println(""+nc+", "+width+", "+height);
         for(int c = 0; c < nc; c++){
 	    fin.read(buf,0,1);
@@ -407,23 +716,52 @@ public class ImageReport
             }
         }
         fin.read(buf,0,2);
-        int ns = readShortFromBuffer(buf,0);
-	//System.out.println(ns);
-        for(int i = 0; i < ns; i++){
-            fin.read(buf,0,1);
-            int nchan = (int)buf[0];
+	int ncol = readShortFromBuffer(buf,0);
+	for(int k = 0; k < ncol; k++){
+	    fin.read(buf,0,4);
+	    int length = ImageReport.readIntFromBuffer(buf,0);
+	    byte[] nameBytes = new byte[length];
+	    fin.read(nameBytes,0,length);
+	    fin.read(buf,0,1);
+	    int nchan = (int)buf[0];
+	    fin.read(buf,0,nchan+2);
             int [] chans = new int[nchan];
+	    for(int i = 0; i < nchan; i++) chans[i] = (int)buf[i];
+	    SynapseCollection sc = new SynapseCollection(chans);
+	    sc.setDescription(new String(nameBytes));
+	    r.addSynapseCollection(sc);
+	    int ns = readShortFromBuffer(buf,nchan);
+	    //System.out.println(ns);
             int [] ids = new int[nchan];
-            for(int j = 0; j < nchan; j++){
-                fin.read(buf,0,3);
-                chans[j] = (int)buf[0];
-                ids[j] = readShortFromBuffer(buf,1);
-            }
-            Synapse s = new Synapse(chans);
-	    for(int j = 0; j < nchan; j++){
-		s.addPunctum(r.getPunctum(chans[j],ids[j]),ids[j]);
+	    fin.read(buf,0,ns*(8+2*nchan));
+	    for(int i = 0; i < ns; i++){
+		double score = readDoubleFromBuffer(buf,(8+2*nchan)*i);
+		for(int j = 0; j < nchan; j++){
+		    ids[j] = readShortFromBuffer(buf,i*(8+2*nchan) + 2*j + 8);
+		}
+		Synapse s = new Synapse();
+		for(int j = 0; j < nchan; j++){
+		    s.addPunctum(r.getPunctum(chans[j],ids[j]),ids[j]);
+		}
+		s.setColocalizationScore(score);
+		sc.addSynapse(s);
 	    }
-            r.addSynapse(s);
+	    fin.read(buf,0,13);
+	    sc.setOverlapThreshold(readIntFromBuffer(buf,0));
+	    sc.setDistanceThreshold(readDoubleFromBuffer(buf,4));
+	    if(buf[12] != 1){
+		sc.setRequireAll(false);
+		fin.read(buf,0,4);
+		int nreq = readIntFromBuffer(buf,0);
+		for(int i = 0; i < nreq; i++){
+		    fin.read(buf,0,1);
+		    int[] req = new int[(int)buf[0]];
+		    fin.read(buf,0,req.length);
+		    for(int j = 0; j < req.length; j++) req[j] = (int)buf[j];
+		    sc.addRequiredColocalizationByIndex(req);
+		}
+	    }
+	    else sc.setRequireAll(true);
         }
 	fin.read(buf,0,1);
 	Mask[] rois = new Mask[buf[0]];
@@ -454,6 +792,12 @@ public class ImageReport
     public static int readShortFromBuffer(byte[] buffer, int offset)
     {
         return ((buffer[offset+1] & 0xff) << 8) | (buffer[offset] & 0xff);
+    }
+
+    public static double readDoubleFromBuffer(byte[] buffer, int offset)
+    {
+        long tmp =  ((buffer[offset+7] & 0xff) << 56) | ((buffer[offset+6] & 0xff) << 48) | ((buffer[offset+5] & 0xff) << 40) | ((buffer[offset+4] & 0xff) << 32) | ((buffer[offset+3] & 0xff) << 24) | ((buffer[offset+2] & 0xff) << 16) | ((buffer[offset+1] & 0xff) << 8) | (buffer[offset] & 0xff);
+	return Double.longBitsToDouble(tmp);
     }
 
     public void loadMetaMorphRegions(String phil)

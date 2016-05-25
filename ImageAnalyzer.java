@@ -83,7 +83,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         imName = name;
         reports = new ImageReport[im.getNZ()*im.getNT()*im.getNPos()];
         for(int i = 0; i < im.getNZ()*im.getNT()*im.getNPos();i++) reports[i] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
-        //analysisTools = new FixedCellAnalyzer(ndim,reports);
+        analysisTools = new FixedCellAnalyzer(ndim,reports);
         stats = null;
         punctaSelectorTool = false;
         synapseSelectorTool = false;
@@ -99,7 +99,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         int[] chan = {1,0};
         imPanel = new ImagePanel(im);
         imPanel.addMouseListener(this);
-	analysisTools = new TestAnalyzer(ndim,reports,imPanel);
+	//analysisTools = new TestAnalyzer(ndim,reports,imPanel);
         imPane = new JScrollPane(imPanel);
         imPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         imPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
@@ -548,15 +548,25 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             st.nextToken();
             int wl = Integer.parseInt(st.nextToken());
             imPanel.setWavelength(wl);
-            imPanel.setMode(ImagePanel.GRAY_8);
-            //imPanel.autoScale();
-            imPanel.setMaskColor(0xffff00ff);
+	    if(imPanel.getMode() != ImagePanel.GRAY_8){
+		imPanel.setMode(ImagePanel.GRAY_8);
+		//imPanel.setMaskColor(0xffff00ff);
+		imPanel.clearMaskColors();
+		imPanel.addMaskColor(0xffff0000);
+		imPanel.addMaskColor(0xff00ff00);
+		imPanel.addMaskColor(0xff0000ff);
+	    }
+	    imPanel.autoScale();
             imPanel.repaint();
         }
         else if(cmd.equals("vcom")){
             imPanel.setMode(ImagePanel.RGB_8);
-            //imPanel.autoScale();
-            imPanel.setMaskColor(0xffffffff);
+            imPanel.autoScale();
+            //imPanel.setMaskColor(0xffffffff);
+	    imPanel.clearMaskColors();
+	    imPanel.addMaskColor(0xffffffff);
+	    imPanel.addMaskColor(0xffff00ff);
+	    imPanel.addMaskColor(0xff00ffff);
             imPanel.repaint();
         }
         else if(cmd.equals("vsplit")){
@@ -637,7 +647,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     for(int w = 0; w < ndim.getNWavelengths(); w++){
                         int xOffset = ((w+1) % 2) * ndim.getWidth();
                         int yOffset = ((w+1) / 2) * ndim.getHeight();
-                        m.add(r.getPunctaMask(w),xOffset,yOffset);
+                        m.add(r.getPunctaMask(w,false),xOffset,yOffset);
                     }
                     //imPanel.setMask(m);
 		    imPanel.toggleMask(m);
@@ -645,7 +655,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                 }
                 else{
                     //imPanel.setMask(circlePuncta(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint()));
-                    imPanel.toggleMask(r.getPunctaMask(imPanel.getWavelength()));
+                    imPanel.toggleMask(r.getPunctaMask(imPanel.getWavelength(),false));
                     repaint();
                 }
             }
@@ -657,15 +667,20 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
                     for(int w = 0; w < ndim.getNWavelengths(); w++){
                         int xOffset = ((w+1) % 2) * ndim.getWidth();
                         int yOffset = ((w+1) / 2) * ndim.getHeight();
-                        m.add(r.getPunctaMask(w),xOffset,yOffset);
+                        m.add(r.getPunctaMask(w,false),xOffset,yOffset);
                     }
                     //imPanel.setMask(m);
 		    imPanel.toggleMask(m);
                     repaint();
                 }
+		else if(imPanel.getMode() == ImagePanel.RGB_8){
+		    //imPanel.toggleMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
+		    imPanel.toggleMask(r.getSynapseMask(true));
+                    repaint();
+                }
                 else{
 		    //imPanel.toggleMask(circleSynapses(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition()));
-		    for(int w = 0; w < ndim.getNWavelengths(); w++) imPanel.toggleMask(r.getSynapseMask(w));
+		    for(int w = 0; w < ndim.getNWavelengths(); w++) imPanel.toggleMask(r.getSynapseMask(w,true));
                     repaint();
                 }
             }
@@ -800,7 +815,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             int t = imPanel.getTimepoint();
             int p = imPanel.getPosition();
 	    ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
-	    System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames()));
+	    for(int i = 0; i < r.getNSynapseCollections(); i++) System.out.print(r.getSynapseDensity(1,analysisTools.getChannelNames(),i));
             System.out.println("Done.");
         }
 	else if(cmd.equals("findskel")){
@@ -863,7 +878,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         else if(synapseSelectorTool){
             Point p = new Point(trueX,trueY);
             Synapse s = r.selectSynapse(p);
-            System.out.println("Center: " + s.getCenter().toString() + ", Overlap: " + s.getOverlap());
+            System.out.println("Center: " + s.getCentroid().toString() + ", Colocalization score: " + s.getColocalizationScore());
 	    for(int j = 0; j < s.getNPuncta(); j++){
 		Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 		Cluster c = s.getPunctum(j);
@@ -999,9 +1014,12 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         if(imPanel.getMode() == ImagePanel.SPLIT) m = new Mask(ndim.getWidth()*2, ndim.getHeight()*2);
         else m = new Mask(ndim.getWidth(),ndim.getHeight());
         Vector<Point> centers = new Vector<Point>();
-        for(int s = 0; s < r.getNSynapses(); s++){
-            centers.add(r.getSynapse(s).getCenter());
-        }
+	for(int i = 0; i < r.getNSynapseCollections(); i++){
+	    SynapseCollection sc = r.getSynapseCollection(i);
+	    for(int s = 0; s < sc.getNSynapses(); s++){
+		centers.add(sc.getSynapse(s).getCentroid());
+	    }
+	}
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
                 for(int k = 0; k < centers.size(); k++){
