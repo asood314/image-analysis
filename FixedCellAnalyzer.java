@@ -3,11 +3,15 @@ import java.util.Vector;
 
 public class FixedCellAnalyzer extends ImageAnalysisToolkit
 {
+    public static int OVERRIDE = 0;
+    public static int OR = 1;
+    
     private int signalDetectionWindow;
     private int punctaDetectionWindow;
     private int punctaFindingIterations;
     private double punctaAreaThreshold;
     private int masterChannel;
+    private int masterMode;
     
     public FixedCellAnalyzer(NDImage im, ImageReport[] r)
     {
@@ -16,6 +20,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
 	punctaFindingIterations = 10;
 	masterChannel = -1;
+	masterMode = OVERRIDE;
     }
     
     public void setSignalDetectionWindow(int sdt){ signalDetectionWindow = sdt; }
@@ -23,6 +28,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     public void setPunctaDetectionWindow(int pdt){ punctaDetectionWindow = pdt; }
 
     public void setMasterChannel(int chan){ masterChannel = chan; }
+
+    public void setMasterMode(int mode){ masterMode = mode; }
 
     public void standardAnalysis(int z, int t, int p)
     {
@@ -38,9 +45,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	int npost = 0;
 	if(masterChannel < 0){
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
-		Mask m = findBackgroundMask(w,z,t,p);
-		reports[index].setOutlierMask(w,m.getInverse());
-		Mask m2 = findSignalMask(w,z,t,p,m);
+		//Mask m = findBackgroundMask(w,z,t,p);
+		//reports[index].setOutlierMask(w,m.getInverse());
+		Mask m2 = findSignalMask(w,z,t,p,(Mask)null);
 		reports[index].setSignalMask(w,m2);
 		if(prePost[w] > 0){
 		    meanPost += ndim.mean(w,z,t,p,m2);
@@ -50,22 +57,34 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	}
 	else{
-	    Mask m = findBackgroundMask(masterChannel,z,t,p);
-	    Mask m2 = findSignalMask(masterChannel,z,t,p,m);
-	    m = m.getInverse();
-	    for(int w = 0; w < ndim.getNWavelengths(); w++){
-		double mean = ndim.mean(w,z,t,p,m2);
-		double std = ndim.std(w,z,t,p,m2);
-		double threshold = mean + std;
-		Mask m3 = m2.getCopy();
-		for(int i = 0; i < ndim.getWidth(); i++){
-		    for(int j = 0; j < ndim.getHeight(); j++){
-			if(ndim.getPixel(w,z,t,i,j,p) > threshold) m3.setValue(i,j,1);
+	    //Mask m = findBackgroundMask(masterChannel,z,t,p);
+	    Mask m2 = findSignalMask(masterChannel,z,t,p,(Mask)null);
+	    //m = m.getInverse();
+	    if(masterMode == OVERRIDE){
+		for(int w = 0; w < ndim.getNWavelengths(); w++){
+		    double mean = ndim.mean(w,z,t,p,m2);
+		    double std = ndim.std(w,z,t,p,m2);
+		    double threshold = mean + std;
+		    Mask m3 = m2.getCopy();
+		    for(int i = 0; i < ndim.getWidth(); i++){
+			for(int j = 0; j < ndim.getHeight(); j++){
+			    if(ndim.getPixel(w,z,t,i,j,p) > threshold) m3.setValue(i,j,1);
+			}
 		    }
+		    //reports[index].setOutlierMask(w,m);
+		    reports[index].setSignalMask(w,m3);
 		}
-		reports[index].setOutlierMask(w,m);
-		reports[index].setSignalMask(w,m3);
 	    }
+	    else if(masterMode == OR){
+		reports[index].setSignalMask(masterChannel,m2);
+		for(int w = 0; w < ndim.getNWavelengths(); w++){
+		    if(w == masterChannel) continue;
+		    Mask m3 = findSignalMask(w,z,t,p,(Mask)null);
+		    m3.or(m2);
+		    reports[index].setSignalMask(w,m3);
+		}
+	    }
+	    /*
 	    for(int w = 0; w < ndim.getNWavelengths(); w++){
 		if(prePost[w] > 0){
 		    meanPost += ndim.mean(w,z,t,p,reports[index].getSignalMask(w));
@@ -73,7 +92,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    npost++;
 		}
 	    }
+	    */
 	}
+	/*
 	double thresholdPost = (meanPost+modePost)/(2*npost);
 	Mask[] masks = reports[index].getSignalMasks();
 	for(int i = 0; i < ndim.getWidth(); i++){
@@ -102,6 +123,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	}
+	*/
 	long t2 = System.currentTimeMillis();
 	long diff = (t2 - t1) / 1000;
 	System.out.println("Done signal finding in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
@@ -242,7 +264,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			else m.setValue(i,j,0);
 		    }
 		}
-		//int maxSize = 0;
+		int maxSize = 0;
 		long avgSigSize = 0;
 		long avgSigSize2 = 0;
 		int nSigClusters = 0;
@@ -280,10 +302,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    borderX.remove(0);
 			    borderY.remove(0);
 			}
-			//if(size > maxSize){
-			//  maxSize = size;
+			if(size > maxSize){
+			    maxSize = (int)size;
 			//  maxCluster = c;
-			//}
+			}
 			avgSigSize += size;
 			avgSigSize2 += size*size;
 			nSigClusters++;
@@ -303,6 +325,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    if(localSum < 9) perimeter++;
 		}
 		*/
+		int maxBkgSize = 0;
 		int avgSize = 0;
 		int nBkgClusters = 0;
 		subMask = new Mask(m);
@@ -333,6 +356,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    borderX.remove(0);
 			    borderY.remove(0);
 			}
+			if(size > maxBkgSize){
+			    maxBkgSize = size;
+			}
 			avgSize += size;
 			nBkgClusters++;
 		    }
@@ -354,6 +380,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    best = globalThreshold;
 		    finished = false;
 		}
+		/*
+		double ifom = maxSize*maxBkgSize;
+		if(ifom > fom){
+		    fom = ifom;
+		    best = globalThreshold;
+		    finished = false;
+		}
+		*/
 		//System.out.println(""+globalThreshold+", "+avgSigSize+", "+nSigClusters+", "+avgSize+", "+nBkgClusters+":\t\t"+ifom);
 	    }
 	    if(step < 1.01) break;
@@ -374,6 +408,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	}
 	//System.out.println("Best threshold: "+best);
+	ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
+	r.setThreshold(w,(int)best);
 	return findMaskWithThreshold(w,z,t,p,best);
     }
     

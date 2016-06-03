@@ -20,6 +20,7 @@ public class ImageReport
     private Vector<SynapseCollection> synapseCollections;
     private int nChannels, imWidth, imHeight;
     private double resolutionXY;
+    private int[] thresholds;
     
     public ImageReport(int nchan, int w, int h)
     {
@@ -35,11 +36,16 @@ public class ImageReport
         for(int i = 0; i < nchan; i++) puncta.add(new Vector<Cluster>());
         synapseCollections = new Vector<SynapseCollection>();
 	resolutionXY = 0.046;
+	thresholds = new int[nchan];
     }
 
     public void setResolutionXY(double res){ resolutionXY = res; }
 
     public double getResolutionXY(){ return resolutionXY; }
+
+    public void setThreshold(int chan, int t){ thresholds[chan] = t; }
+
+    public int getThreshold(int chan){ return thresholds[chan]; }
     
     public int getNChannels(){ return nChannels; }
     
@@ -377,6 +383,11 @@ public class ImageReport
 	String msg = "Field,";
 	for(int r = 0; r < nROI; r++) msg += "\"Region "+r+"\",";
 	msg += "Average,Description\n";
+	for(int chan = 0; chan < puncta.size(); chan++){
+	    msg += "Channel "+chan+" threshold,";
+	    for(int r = 0; r < nROI; r++) msg += "-,";
+	    msg += ""+thresholds[chan]+",-\n";
+	}
 	msg += "\"Dendrite area (um^2)\",";
 	double sum = 0;
 	for(int r = 0; r < nROI; r++){
@@ -534,8 +545,8 @@ public class ImageReport
         buf[0] = (byte)(nChannels & 0x000000ff);
         writeIntToBuffer(buf,1,width);
         writeIntToBuffer(buf,5,height);
-	writeDoubleToBuffer(buf,9,resolutionXY);
-        fout.write(buf,0,17);
+	writeIntToBuffer(buf,9,(int)(1000*resolutionXY));
+        fout.write(buf,0,13);
         for(int c = 0; c < nChannels; c++){
 	    if(outlierMasks[c] != null){
 		buf[0] = 1;
@@ -553,7 +564,8 @@ public class ImageReport
 	    }
 	    if(signalMasks[c] != null){
 		buf[0] = 1;
-		fout.write(buf,0,1);
+		writeIntToBuffer(buf,1,thresholds[c]);
+		fout.write(buf,0,5);
 		for(int j = 0; j < height; j++){
 		    for(int i = 0; i < width; i++){
 			buf[i] = (byte)(signalMasks[c].getValue(i,j) & 0x000000ff);
@@ -592,8 +604,8 @@ public class ImageReport
 	    int offset = 3+sc.getNChannels();
 	    for(int i = 0; i < sc.getNSynapses(); i++){
 		Synapse s = sc.getSynapse(i);
-		writeDoubleToBuffer(buf,offset,s.getColocalizationScore());
-		offset += 8;
+		writeIntToBuffer(buf,offset,(int)(1000*s.getColocalizationScore()));
+		offset += 4;
 		for(int j = 0; j < sc.getNChannels(); j++){
 		    writeShortToBuffer(buf,offset,(short)s.getPunctumIndex(j));
 		    offset += 2;
@@ -601,15 +613,15 @@ public class ImageReport
 	    }
 	    fout.write(buf,0,offset);
 	    writeIntToBuffer(buf,0,sc.getOverlapThreshold());
-	    writeDoubleToBuffer(buf,4,sc.getDistanceThreshold());
+	    writeIntToBuffer(buf,4,(int)(1000*sc.getDistanceThreshold()));
 	    if(sc.allRequired()){
-		buf[12] = 1;
-		fout.write(buf,0,13);
+		buf[8] = 1;
+		fout.write(buf,0,9);
 	    }
 	    else{
-		buf[12] = 0;
-		writeIntToBuffer(buf,13,sc.getNRequirements());
-		offset = 17;
+		buf[8] = 0;
+		writeIntToBuffer(buf,9,sc.getNRequirements());
+		offset = 13;
 		for(int i = 0; i < sc.getNRequirements(); i++){
 		    int[] req = sc.getRequiredColocalization(i);
 		    buf[offset] = (byte)(req.length & 0x000000ff);
@@ -669,14 +681,14 @@ public class ImageReport
     public static ImageReport read(RandomAccessFile fin) throws IOException
     {
         byte[] buf = new byte[400000];
-        fin.read(buf,0,17);
+        fin.read(buf,0,13);
         int nc = (int)buf[0];
         if((nc & 0x000000ff) == 0x000000ff) return null;
         int width = readIntFromBuffer(buf,1);
         int height = readIntFromBuffer(buf,5);
-	double res = readDoubleFromBuffer(buf,9);
+	double res = (double)readIntFromBuffer(buf,9);
 	ImageReport r = new ImageReport(nc,width,height);
-	r.setResolutionXY(res);
+	r.setResolutionXY(res/1000.0);
 	//System.out.println(""+nc+", "+width+", "+height);
         for(int c = 0; c < nc; c++){
 	    fin.read(buf,0,1);
@@ -692,6 +704,8 @@ public class ImageReport
 	    }
 	    fin.read(buf,0,1);
 	    if(buf[0] > 0){
+		fin.read(buf,0,4);
+		r.setThreshold(c,readIntFromBuffer(buf,0));
 		Mask sm = new Mask(width,height);
 		for(int j = 0; j < height; j++){
 		    fin.read(buf,0,width);
@@ -733,23 +747,23 @@ public class ImageReport
 	    int ns = readShortFromBuffer(buf,nchan);
 	    //System.out.println(ns);
             int [] ids = new int[nchan];
-	    fin.read(buf,0,ns*(8+2*nchan));
+	    fin.read(buf,0,ns*(4+2*nchan));
 	    for(int i = 0; i < ns; i++){
-		double score = readDoubleFromBuffer(buf,(8+2*nchan)*i);
+		double score = (double)readIntFromBuffer(buf,(4+2*nchan)*i);
 		for(int j = 0; j < nchan; j++){
-		    ids[j] = readShortFromBuffer(buf,i*(8+2*nchan) + 2*j + 8);
+		    ids[j] = readShortFromBuffer(buf,i*(4+2*nchan) + 2*j + 4);
 		}
 		Synapse s = new Synapse();
 		for(int j = 0; j < nchan; j++){
 		    s.addPunctum(r.getPunctum(chans[j],ids[j]),ids[j]);
 		}
-		s.setColocalizationScore(score);
+		s.setColocalizationScore(score/1000.0);
 		sc.addSynapse(s);
 	    }
-	    fin.read(buf,0,13);
+	    fin.read(buf,0,9);
 	    sc.setOverlapThreshold(readIntFromBuffer(buf,0));
-	    sc.setDistanceThreshold(readDoubleFromBuffer(buf,4));
-	    if(buf[12] != 1){
+	    sc.setDistanceThreshold(((double)readIntFromBuffer(buf,4))/1000.0);
+	    if(buf[8] != 1){
 		sc.setRequireAll(false);
 		fin.read(buf,0,4);
 		int nreq = readIntFromBuffer(buf,0);

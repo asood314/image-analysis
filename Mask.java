@@ -93,6 +93,15 @@ public class Mask
 	Mask m = new Mask(this);
 	return m;
     }
+
+    public void or(Mask m)
+    {
+	for(int i = 0; i < width; i++){
+            for(int j = 0; j < height; j++){
+                if(m.getValue(i,j) > 0) mask[i][j] = 1;
+            }
+        }
+    }
     
     public void multiply(int val)
     {
