@@ -200,10 +200,12 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuBar.add(viewMenu);
         channelMenu = new JMenu("Single Wavelength");
         viewMenu.add(channelMenu);
+	int[] numberKeys = {KeyEvent.VK_0,KeyEvent.VK_1,KeyEvent.VK_2,KeyEvent.VK_3,KeyEvent.VK_4,KeyEvent.VK_5,KeyEvent.VK_6,KeyEvent.VK_7,KeyEvent.VK_8,KeyEvent.VK_9};
         for(int i = 0; i < ndim.getNWavelengths();  i++){
             menuItem = new JMenuItem("Channel " + i);
             menuItem.addActionListener(this);
             menuItem.setActionCommand("vch " + i);
+	    menuItem.setAccelerator(KeyStroke.getKeyStroke(numberKeys[i], Toolkit.getDefaultToolkit().getMenuShortcutKeyMask()));
             channelMenu.add(menuItem);
         }
         menuItem = new JMenuItem("Composite");

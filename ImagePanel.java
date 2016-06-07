@@ -14,6 +14,7 @@ public class ImagePanel extends JPanel
     public static final int SPLIT = 3;
     
     private NDImage ndim;
+    private BufferedImage displayImage;
     private int mode;
     private int wavelength;
     private int zslice;
@@ -35,6 +36,7 @@ public class ImagePanel extends JPanel
     {
         super();
         ndim = n;
+	displayImage = null;
         mode = GRAY_8;
         channels = new int[3];
         cpixMin = new int[3];
@@ -73,6 +75,7 @@ public class ImagePanel extends JPanel
     {
         super();
         ndim = n;
+	displayImage = null;
         mode = RGB_8;
         if(chan.length < 3){
             channels = new int[3];
@@ -115,86 +118,66 @@ public class ImagePanel extends JPanel
     protected void paintComponent(Graphics g)
     {
         if(ndim == null) return;
+	if(displayImage == null) updateImage();
 	double aspectRatio = ((double)ndim.getWidth()) / ndim.getHeight();
         if(zoomToRegion) aspectRatio = ((double)displayRegion[2]) / displayRegion[3];
         int imWidth = (int)(ndim.getHeight() * aspectRatio * zoom);
         int imHeight = (int)(ndim.getHeight() * zoom);
-        //if(mode == SPLIT) setPreferredSize(new Dimension(2*imWidth,2*imHeight));
-        //else setPreferredSize(new Dimension(imWidth,imHeight));
-        try{
-	    BufferedImage bim;
-            if(imMask == null){
-		if(zoomToRegion){
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,displayRegion);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
-		    else if(mode == SPLIT){
-			imWidth *= 2;
-			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
-		    }
-		    else return;
-		}
-		else{
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
-		    else if(mode == SPLIT){
-			imWidth *= 2;
-			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
-		    }
-		    else return;
-		}
-            }
-            else{
-		if(zoomToRegion){
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,displayRegion);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
-		    else if(mode == SPLIT){
-			imWidth *= 2;
-			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
-		    }
-		    else return;
-		}
-		else{
-		    if(mode == GRAY_8) bim = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax);
-		    else if(mode == RGB_8) bim = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
-		    else if(mode == SPLIT){
-			imWidth *= 2;
-			imHeight *= 2;
-			bim = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
-		    }
-		    else return;
-		}
-            }
-            setPreferredSize(new Dimension(imWidth,imHeight));
-	    if(imMasks.size() > 0){
-		for(int i = 0; i < bim.getWidth(); i++){
-		    for(int j = 0; j < bim.getHeight(); j++){
-			int color = 0x00000000;
-			for(int k = 0; k < imMasks.size(); k++){
-			    if(imMasks.elementAt(k).getValue(i,j) > 0) color = color | maskColors.elementAt(k % maskColors.size());
-			}
-			if(color != 0) bim.setRGB(i,j,color);
-		    }
-		}
-	    }
-	    g.drawImage(bim.getScaledInstance(imWidth,imHeight,Image.SCALE_SMOOTH),0,0,this);
+	try{
+	    if(mode == SPLIT) setPreferredSize(new Dimension(2*imWidth,2*imHeight));
+	    else setPreferredSize(new Dimension(imWidth,imHeight));
+	    g.drawImage(displayImage.getScaledInstance(imWidth,imHeight,Image.SCALE_SMOOTH),0,0,this);
 	    if(!zoomToRegion && displayRegionSet){
 		g.setColor(Color.white);
 		g.drawRect((int)(displayRegion[0]*zoom),(int)(displayRegion[1]*zoom),(int)(displayRegion[2]*zoom),(int)(displayRegion[3]*zoom));
 	    }
-            revalidate();
-        }
-        catch(Exception e){ e.printStackTrace(); }
+	    revalidate();
+	}
+	catch(Exception e){ e.printStackTrace(); }
+    }
+
+    private void updateImage()
+    {
+	if(zoomToRegion){
+	    if(mode == GRAY_8) displayImage = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax,displayRegion);
+	    else if(mode == RGB_8) displayImage = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
+	    else if(mode == SPLIT) displayImage = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax,displayRegion);
+	    else return;
+	}
+	else{
+	    if(mode == GRAY_8) displayImage = ndim.getGrayImage(wavelength,zslice,timepoint,position,wpixMin,wpixMax);
+	    else if(mode == RGB_8) displayImage = ndim.getRGBImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
+	    else if(mode == SPLIT) displayImage = ndim.getSplitImage(channels,zslice,timepoint,position,cpixMin,cpixMax);
+	    else return;
+	}
+	if(imMasks.size() > 0){
+	    for(int i = 0; i < displayImage.getWidth(); i++){
+		for(int j = 0; j < displayImage.getHeight(); j++){
+		    int color = 0x00000000;
+		    for(int k = 0; k < imMasks.size(); k++){
+			if(imMasks.elementAt(k).getValue(i,j) > 0) color = color | maskColors.elementAt(k % maskColors.size());
+		    }
+		    if(color != 0) displayImage.setRGB(i,j,color);
+		}
+	    }
+	}
     }
     
     public void setImage(NDImage im){
         ndim = im;
-        repaint();
+        updateImage();
+    }
+
+    public void setDisplayImage(BufferedImage bim)
+    {
+	displayImage = bim;
+	repaint();
     }
     
-    public void setMode(int m){ mode = m; }
+    public void setMode(int m){
+	mode = m;
+	updateImage();
+    }
     
     public int getMode(){ return mode; }
     
@@ -225,34 +208,54 @@ public class ImagePanel extends JPanel
     
     public void setMaskColor(int color){ maskColor = color; }
 
-    public void addMask(Mask m){ imMasks.addElement(m); }
+    public void addMask(Mask m){
+	imMasks.addElement(m);
+	updateImage();
+    }
 
     public void toggleMask(Mask m)
     {
 	for(int i = 0; i < imMasks.size(); i++){
 	    if(imMasks.elementAt(i).equals(m)){
 		imMasks.remove(i);
+		updateImage();
 		return;
 	    }
 	}
 	imMasks.addElement(m);
+	updateImage();
     }
 
-    public void clearMasks(){ imMasks.clear(); }
+    public void clearMasks(){
+	imMasks.clear();
+	updateImage();
+    }
 
-    public void setMaskColor(int index, int color){ maskColors.set(index,color); }
+    public void setMaskColor(int index, int color){
+	maskColors.set(index,color);
+	updateImage();
+    }
 
     public void addMaskColor(int color){ maskColors.addElement(color); }
 
     public void clearMaskColors(){ maskColors.clear(); }
 
-    public void removeMask(Mask m){ imMasks.remove(m); }
+    public void removeMask(Mask m){
+	imMasks.remove(m);
+	updateImage();
+    }
     
-    public void setZoom(double z){ zoom = z; }
+    public void setZoom(double z){
+	zoom = z;
+	updateImage();
+    }
     
     public double getZoom(){ return zoom; }
 
-    public void setZoomToRegion(boolean tf){ zoomToRegion = tf; }
+    public void setZoomToRegion(boolean tf){
+	zoomToRegion = tf;
+	updateImage();
+    }
     
     public void unzoom()
     {
@@ -263,6 +266,7 @@ public class ImagePanel extends JPanel
         zoom = 1.0;
 	zoomToRegion = false;
 	displayRegionSet = false;
+	updateImage();
     }
     
     public int getWavelength(){ return wavelength; }
@@ -281,13 +285,23 @@ public class ImagePanel extends JPanel
             wpixMin = cpixMin[chan];
             wpixMax = cpixMax[chan];
         }
+	updateImage();
     }
     
-    public void setZSlice(int z){ zslice = z; }
+    public void setZSlice(int z){
+	zslice = z;
+	updateImage();
+    }
     
-    public void setTimepoint(int t){ timepoint = t; }
+    public void setTimepoint(int t){
+	timepoint = t;
+	updateImage();
+    }
     
-    public void setPosition(int pos){ position = pos; }
+    public void setPosition(int pos){
+	position = pos;
+	updateImage();
+    }
     
     public void autoScale()
     {
@@ -303,15 +317,28 @@ public class ImagePanel extends JPanel
                 cpixMax[i] = minMax[2*i+1];
             }
         }
+	updateImage();
     }
     
-    public void setWPixMin(int min){ wpixMin = min; }
+    public void setWPixMin(int min){
+	wpixMin = min;
+	updateImage();
+    }
     
-    public void setWPixMax(int max){ wpixMax = max; }
+    public void setWPixMax(int max){
+	wpixMax = max;
+	updateImage();
+    }
     
-    public void setCPixMin(int chan, int min){ cpixMin[chan] = min; }
+    public void setCPixMin(int chan, int min){
+	cpixMin[chan] = min;
+	updateImage();
+    }
     
-    public void setCPixMax(int chan, int max){ cpixMax[chan] = max; }
+    public void setCPixMax(int chan, int max){
+	cpixMax[chan] = max;
+	updateImage();
+    }
     
     public int getWPixMin(){ return wpixMin; }
     
@@ -328,6 +355,7 @@ public class ImagePanel extends JPanel
         displayRegion[2] = width;
         displayRegion[3] = height;
 	displayRegionSet = true;
+	updateImage();
     }
 
     public int[] getDisplayRegion(){ return displayRegion; }
