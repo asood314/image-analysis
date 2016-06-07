@@ -350,6 +350,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("findskel");
         analyzeMenu.add(menuItem);
+	menuItem = new JMenuItem("Show Gradient");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("showgrad");
+        analyzeMenu.add(menuItem);
         toolMenu = new JMenu("Tools");
         menuBar.add(toolMenu);
         menuItem = new JMenuItem("Window Selector");
@@ -827,6 +831,13 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	    ImageReport r = reports[p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z];
 	    imPanel.addMask(r.getSkeleton(0));
 	    imPanel.repaint();
+            System.out.println("Done.");
+	}
+	else if(cmd.equals("showgrad")){
+	    int z = imPanel.getZSlice();
+            int t = imPanel.getTimepoint();
+            int p = imPanel.getPosition();
+	    imPanel.setDisplayImage(ndim.getGradientDirection(imPanel.getWavelength(),z,t,p));
             System.out.println("Done.");
 	}
         else if(cmd.equals("zback")){
