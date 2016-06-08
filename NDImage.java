@@ -1532,22 +1532,27 @@ public class NDImage
         return new NDImage(im);
     }
 
-    public BufferedImage getGradientDirection(int wl, int z, int t, int p)
+    public BufferedImage getGradientDirection(int wl, int z, int t, int p, int min, int max)
     {
 	BufferedImage bi = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+	double sf = 255.0/(max - min);
 	for(int i = 1; i < width-1; i++){
 	    for(int j = 1; j < height-1; j++){
 		double dx = ((double)(image[wl][z][t][i+1][j][p] - image[wl][z][t][i-1][j][p]))/2;
 		double dy = ((double)(image[wl][z][t][i][j+1][p] - image[wl][z][t][i][j-1][p]))/2;
 		double theta = Math.atan2(dy,dx);
+		double norm = Math.sqrt(dx*dx + dy*dy);
+		int brightness = (int)((norm - min) * sf);
+		if(brightness > 255) brightness = 255;
+		else if(brightness < 0) brightness = 0;
 		int[] rgb = {0,0,0};
 		if(theta > 0){
-		    rgb[0] = (int)(255*theta/Math.PI);
-		    rgb[1] = 255 - (int)(255*theta/Math.PI);
+		    rgb[0] = (int)(brightness*theta/Math.PI);
+		    rgb[1] = brightness - (int)(brightness*theta/Math.PI);
 		}
 		else{
-		    rgb[2] = (int)(-255*theta/Math.PI);
-		    rgb[1] = 255 + (int)(255*theta/Math.PI);
+		    rgb[2] = (int)(-brightness*theta/Math.PI);
+		    rgb[1] = brightness + (int)(brightness*theta/Math.PI);
 		}
                 int value = 0xff000000 | ((rgb[0] & 0xff) << 16) | ((rgb[1] & 0xff) << 8) | (rgb[2] & 0xff);
 		bi.setRGB(i,j,value);

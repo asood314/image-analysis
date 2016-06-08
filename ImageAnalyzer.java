@@ -837,8 +837,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	    int z = imPanel.getZSlice();
             int t = imPanel.getTimepoint();
             int p = imPanel.getPosition();
-	    imPanel.setDisplayImage(ndim.getGradientDirection(imPanel.getWavelength(),z,t,p));
-            System.out.println("Done.");
+	    imPanel.setDisplayImage(ndim.getGradientDirection(imPanel.getWavelength(),z,t,p,imPanel.getWPixMin(),imPanel.getWPixMax()));
 	}
         else if(cmd.equals("zback")){
             int z = zslide.getValue();
