@@ -134,9 +134,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    findSaturatedPuncta(w,z,t,p);
 	    //System.out.println("Done saturated puncta.");
 	    int pfi;
+	    int n = 0;
 	    for(pfi = 1; pfi < punctaFindingIterations+1; pfi++){
 		int nRemoved = 0;
-		for(int j = reports[index].getNPuncta(w)-1; j >= 0; j--){
+		for(int j = reports[index].getNPuncta(w)-1; j >= reports[index].getNPuncta(w)-n; j--){
 		    Cluster c = reports[index].getPunctum(w,j);
 		    Point pt = c.getPixel(0);
 		    if(ndim.getPixel(w,z,t,pt.x,pt.y,p) < saturationThreshold && c.size() < 1.5*punctaAreaThreshold){
@@ -144,7 +145,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nRemoved++;
 		    }
 		}
-		int n = findPuncta(w,z,t,p);
+		n = findPuncta(w,z,t,p);
 		//System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
 		if(n <= nRemoved) break;
 	    }
@@ -506,7 +507,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
         Vector<Point> lowerRight = new Vector<Point>();
 	Vector<Integer> intensities = new Vector<Integer>();
 	int nPuncta = 0;
-	int minSignal = (int)(5.0 / Math.pow(resolutionXY,2));
+	int minSignal = (int)Math.min(5.0 / Math.pow(resolutionXY,2),m.sum());
 	int initialWindowSize = (int)(Math.sqrt(minSignal) / 2);
 	int[] diArr = {-1,0,1,-1,1,-1,0,1};
         int[] djArr = {-1,-1,-1,0,0,1,1,1};
@@ -540,7 +541,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 int y2 = Math.min(ndim.getHeight(),j+initialWindowSize);
                 int nSignal = m.sum(x1,x2,y1,y2);
                 while(nSignal < minSignal){
-		    //int step = (int)((minSignal/nSignal - 1) * initialWindowSize) + 1;
+		    //int step = (int)(Math.sqrt(minSignal/nSignal - 1) * initialWindowSize) + 1;
                     x1 = Math.max(x1-punctaDetectionWindow,0);
                     x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
                     y1 = Math.max(y1-punctaDetectionWindow,0);
@@ -550,10 +551,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                     //y1 = Math.max(y1-step,0);
                     //y2 = Math.min(ndim.getHeight(),y2+step);
                     nSignal = m.sum(x1,x2,y1,y2);
-		    if(x2 - x1 > 2000){
-			System.out.println("Stuck finding local signal for maximum at ("+localMaxima.elementAt(localMaxima.size()-1).x+","+localMaxima.elementAt(localMaxima.size()-1).y+")");
-			break;
-		    }
+		    //if(x2 - x1 > 2000){
+		    //System.out.println("Stuck finding local signal for maximum at ("+localMaxima.elementAt(localMaxima.size()-1).x+","+localMaxima.elementAt(localMaxima.size()-1).y+")");
+		    //break;
+		    //}
                 }
                 upperLeft.add(new Point(x1,y1));
                 lowerRight.add(new Point(x2,y2));
@@ -693,6 +694,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
 			if(sum > 4){
 			    cMask.setValue(i,j,1);
+			    used.setValue(i,j,0);
 			    c.addPixel(i,j);
 			    unfilled = true;
 			}
@@ -704,6 +706,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    int sum = cMask.getValue(i-1,j-1) + cMask.getValue(i,j-1) + cMask.getValue(i+1,j-1) + cMask.getValue(i-1,j) + cMask.getValue(i+1,j) + cMask.getValue(i-1,j+1) + cMask.getValue(i,j+1) + cMask.getValue(i+1,j+1);
 		    if(sum < 3){
 			cMask.setValue(i,j,0);
+			used.setValue(i,j,1);
 			c.removePixel(new Point(i,j));
 		    }
 		}
@@ -973,6 +976,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		m.setValue(pt.x,pt.y,0);
 	    }
 	}
+	double maxDist = 5.0 / Math.pow(resolutionXY,2);
 	for(int i = 0; i < ndim.getWidth(); i++){
 	    //int x1 = Math.max(0,i-resolutionWindow);
 	    //int x2 = Math.min(ndim.getWidth(),i+resolutionWindow);
@@ -1005,6 +1009,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			break;
 		    }
 		    double kdist = Math.sqrt(Math.pow(i-peaks[k].x,2) + Math.pow(j-peaks[k].y,2));
+		    if(kdist > maxDist) continue;
 		    if(kdist < minDist){
 			minDist = kdist;
 			distK = k;
@@ -1024,7 +1029,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		if(minDiff > -0.1 && minK >= 0) clusters[minK].addPixel(new Point(i,j));
 		//else if(maxDiff > -0.5 || value > saturationThreshold) clusters[maxK].addPixel(new Point(i,j));
 		else if(maxDiff > -1.0) clusters[maxK].addPixel(new Point(i,j));
-		else clusters[distK].addPixel(new Point(i,j));
+		else if(distK >= 0) clusters[distK].addPixel(new Point(i,j));
 	    }
 	}
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
