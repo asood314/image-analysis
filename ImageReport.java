@@ -163,8 +163,8 @@ public class ImageReport
                 m.setValue((int)x.getX(),(int)x.getY(),1);
             }
         }
-	Mask m2 = m.getCopy();
 	if(outline){
+	    Mask m2 = m.getCopy();
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(m.getValue(i,j) < 1) continue;
@@ -172,8 +172,9 @@ public class ImageReport
 		    if(sum > 7) m2.setValue(i,j,0);
 		}
 	    }
+	    return m2;
 	}
-        return m2;
+        return m;
     }
     
     public Mask getSynapseMask(boolean outline){
@@ -191,8 +192,8 @@ public class ImageReport
 		}
 	    }
 	}
-	Mask m2 = m.getCopy();
 	if(outline){
+	    Mask m2 = m.getCopy();
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(m.getValue(i,j) < 1) continue;
@@ -200,8 +201,9 @@ public class ImageReport
 		    if(sum > 7) m2.setValue(i,j,0);
 		}
 	    }
+	    return m2;
 	}
-        return m2;
+        return m;
     }
 
     public Mask getSynapseMask(int chan, boolean outline){
@@ -219,8 +221,8 @@ public class ImageReport
 		}
 	    }
 	}
-	Mask m2 = m.getCopy();
 	if(outline){
+	    Mask m2 = m.getCopy();
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(m.getValue(i,j) < 1) continue;
@@ -228,8 +230,9 @@ public class ImageReport
 		    if(sum > 7) m2.setValue(i,j,0);
 		}
 	    }
+	    return m2;
 	}
-        return m2;
+        return m;
     }
 
     public Mask getSynapseMaskFromCollection(int icol, boolean outline){
@@ -245,8 +248,8 @@ public class ImageReport
 		}
 	    }
 	}
-	Mask m2 = m.getCopy();
 	if(outline){
+	    Mask m2 = m.getCopy();
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(m.getValue(i,j) < 1) continue;
@@ -254,8 +257,9 @@ public class ImageReport
 		    if(sum > 7) m2.setValue(i,j,0);
 		}
 	    }
+	    return m2;
 	}
-        return m2;
+        return m;
     }
 
     public Mask getSynapseMaskFromCollection(int icol, int chan, boolean outline){
@@ -271,8 +275,8 @@ public class ImageReport
 		m.setValue(pt.x,pt.y,1);
 	    }
 	}
-	Mask m2 = m.getCopy();
 	if(outline){
+	    Mask m2 = m.getCopy();
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(m.getValue(i,j) < 1) continue;
@@ -280,8 +284,9 @@ public class ImageReport
 		    if(sum > 7) m2.setValue(i,j,0);
 		}
 	    }
+	    return m2;
 	}
-        return m2;
+        return m;
     }
 
     public Mask getSkeleton(int chan)
