@@ -18,7 +18,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	init(im,r);
         signalDetectionWindow = 50*(ndim.getWidth()/1000);
         punctaDetectionWindow = 5*(ndim.getWidth()/1000);
-	punctaFindingIterations = 10;
+	punctaFindingIterations = 20;
 	masterChannel = -1;
 	masterMode = OVERRIDE;
     }
@@ -133,21 +133,26 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    //System.out.println("Finding puncta for channel "+w);
 	    findSaturatedPuncta(w,z,t,p);
 	    //System.out.println("Done saturated puncta.");
-	    for(int i = 0; i < punctaFindingIterations; i++){
+	    int pfi;
+	    for(pfi = 1; pfi < punctaFindingIterations+1; pfi++){
+		int nRemoved = 0;
 		for(int j = reports[index].getNPuncta(w)-1; j >= 0; j--){
 		    Cluster c = reports[index].getPunctum(w,j);
 		    Point pt = c.getPixel(0);
-		    if(ndim.getPixel(w,z,t,pt.x,pt.y,p) < saturationThreshold && c.size() < 1.5*punctaAreaThreshold) reports[index].removePunctum(w,j);
+		    if(ndim.getPixel(w,z,t,pt.x,pt.y,p) < saturationThreshold && c.size() < 1.5*punctaAreaThreshold){
+			reports[index].removePunctum(w,j);
+			nRemoved++;
+		    }
 		}
 		int n = findPuncta(w,z,t,p);
 		//System.out.println("Iteration " + i + " found " + n + " puncta in channel " + w + ".");
-		if(n == 0) break;
+		if(n <= nRemoved) break;
 	    }
 	    //System.out.println("Resolving overlaps");
 	    resolveOverlaps(w,z,t,p);
 	    t2 = System.currentTimeMillis();
 	    diff = (t2 - t1) / 1000;
-	    System.out.println("Found " + reports[index].getNPuncta(w) + " puncta in channel " + w + " in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
+	    System.out.println("Found " + reports[index].getNPuncta(w) + " puncta in channel " + w + "("+pfi+" iterations) in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
 	    t1 = t2;
 	}
 	//System.out.println("Done puncta finding.");
@@ -502,24 +507,48 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Vector<Integer> intensities = new Vector<Integer>();
 	int nPuncta = 0;
 	int minSignal = (int)(5.0 / Math.pow(resolutionXY,2));
+	int initialWindowSize = (int)(Math.sqrt(minSignal) / 2);
+	int[] diArr = {-1,0,1,-1,1,-1,0,1};
+        int[] djArr = {-1,-1,-1,0,0,1,1,1};
         for(int i = 0; i < ndim.getWidth(); i++){
             for(int j = 0; j < ndim.getHeight(); j++){
                 if(m.getValue(i,j) < 1){
                     continue;
                 }
-                int x1 = Math.max(i-punctaDetectionWindow,0);
-                int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
-                int y1 = Math.max(j-punctaDetectionWindow,0);
-                int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
-                if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
+                //int x1 = Math.max(i-punctaDetectionWindow,0);
+                //int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
+                //int y1 = Math.max(j-punctaDetectionWindow,0);
+                //int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
+		int val = ndim.getPixel(w,z,t,i,j,p);
+		boolean isMax = true;
+		for(int k = 0; k < 8; k++){
+		    try{
+			if(ndim.getPixel(w,z,t,i+diArr[k],j+djArr[k],p) > val){
+			    isMax = false;
+			    break;
+			}
+		    }
+		    catch(ArrayIndexOutOfBoundsException e){ continue; }
+		}
+		if(!isMax) continue;
+                //if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
                 localMaxima.add(new Point(i,j));
-		intensities.add(ndim.getPixel(w,z,t,i,j,p));
+		intensities.add(val);//ndim.getPixel(w,z,t,i,j,p));
+		int x1 = Math.max(i-initialWindowSize,0);
+                int x2 = Math.min(ndim.getWidth(),i+initialWindowSize);
+                int y1 = Math.max(j-initialWindowSize,0);
+                int y2 = Math.min(ndim.getHeight(),j+initialWindowSize);
                 int nSignal = m.sum(x1,x2,y1,y2);
                 while(nSignal < minSignal){
+		    //int step = (int)((minSignal/nSignal - 1) * initialWindowSize) + 1;
                     x1 = Math.max(x1-punctaDetectionWindow,0);
                     x2 = Math.min(ndim.getWidth(),x2+punctaDetectionWindow);
                     y1 = Math.max(y1-punctaDetectionWindow,0);
                     y2 = Math.min(ndim.getHeight(),y2+punctaDetectionWindow);
+		    //x1 = Math.max(x1-step,0);
+                    //x2 = Math.min(ndim.getWidth(),x2+step);
+                    //y1 = Math.max(y1-step,0);
+                    //y2 = Math.min(ndim.getHeight(),y2+step);
                     nSignal = m.sum(x1,x2,y1,y2);
 		    if(x2 - x1 > 2000){
 			System.out.println("Stuck finding local signal for maximum at ("+localMaxima.elementAt(localMaxima.size()-1).x+","+localMaxima.elementAt(localMaxima.size()-1).y+")");
@@ -561,8 +590,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    lowerRight.set(imax,temp);
 	}
         //int[] maxXY = argmax(zscores);
-        int[] diArr = {-1,0,1,-1,1,-1,0,1};
-        int[] djArr = {-1,-1,-1,0,0,1,1,1};
         Mask used = new Mask(ndim.getWidth(),ndim.getHeight(),false);
         used.multiply(m);
         Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
@@ -580,7 +607,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,m);
 	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
 	    double localThreshold = localMedian + 3*localStd;
-	    if(Imax < localThreshold) continue;
+	    if(used.getValue(lm.x,lm.y)*Imax < localThreshold) continue;
 	    localThreshold = Imax;
             Cluster c = new Cluster();
             Vector<Integer> borderX = new Vector<Integer>();

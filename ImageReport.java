@@ -286,36 +286,28 @@ public class ImageReport
 
     public Mask getSkeleton(int chan)
     {
-	int window = (int)(2.0/resolutionXY);
 	Mask oldMask = new Mask(signalMasks[chan]);
 	Mask newMask = new Mask(imWidth,imHeight);
-	int count = 0;
-	boolean changed = true;
-	while(changed && count < 10){
-	    changed = false;
-	    int nSignal = 0;
-	    int centerX = 0;
-	    int centerY = 0;
+	int count = oldMask.sum(1,imWidth-1,1,imHeight-1);
+	while(count > 10){
 	    for(int i = 1; i < imWidth-1; i++){
 		for(int j = 1; j < imHeight-1; j++){
 		    if(oldMask.getValue(i,j) == 0) continue;
-		    int sum = oldMask.getValue(i-1,j-1)+oldMask.getValue(i-1,j)+oldMask.getValue(i-1,j+1)+oldMask.getValue(i,j-1)+oldMask.getValue(i,j+1)+oldMask.getValue(i+1,j-1)+oldMask.getValue(i+1,j)+oldMask.getValue(i+1,j+1);
-		    //int sumDi = oldMask.getValue(i+1,j-1)+oldMask.getValue(i+1,j)+oldMask.getValue(i+1,j+1) - (oldMask.getValue(i-1,j-1)+oldMask.getValue(i-1,j)+oldMask.getValue(i-1,j+1));
-		    //int sumDj = oldMask.getValue(i-1,j+1)+oldMask.getValue(i,j+1)+oldMask.getValue(i+1,j+1) - (oldMask.getValue(i-1,j-1)+oldMask.getValue(i,j-1)+oldMask.getValue(i+1,j-1));
-		    //if(sum < 3 && sumDi*sumDj == 0) continue;
-		    newMask.setValue(i,j,sum);
-		    changed = true;
+		    int newVal = (oldMask.getValue(i-1,j-1)+oldMask.getValue(i-1,j)+oldMask.getValue(i-1,j+1)+oldMask.getValue(i,j-1)+oldMask.getValue(i,j+1)+oldMask.getValue(i+1,j-1)+oldMask.getValue(i+1,j)+oldMask.getValue(i+1,j+1)) / 8;
+		    count += newVal - 1;
+		    newMask.setValue(i,j,newVal);
 		}
 	    }
 	    oldMask.copy(newMask);
-	    count++;
 	}
+	/*
 	for(int i = 1; i < imWidth-1; i++){
 	    for(int j = 1; j < imHeight-1; j++){
 		if(newMask.getValue(i,j) > 256000) newMask.setValue(i,j,1);
 		else newMask.setValue(i,j,0);
 	    }
 	}
+	*/
 	return newMask;
     }
 
