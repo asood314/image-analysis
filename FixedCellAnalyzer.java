@@ -611,8 +611,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
 	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
-	    double localThreshold = localMedian + 3.5*localStd;
-	    double minIntensity = 20*(localMedian + 2.5*localStd);
+	    double localThreshold = localMedian + 3*localStd;
+	    double minIntensity = 20*(localMedian + 2*localStd);
 	    if(Imax < localThreshold) continue;
 	    localThreshold = Imax;
             Cluster c = new Cluster();
