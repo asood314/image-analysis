@@ -518,10 +518,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 if(m.getValue(i,j) < 1){
                     continue;
                 }
-                //int x1 = Math.max(i-punctaDetectionWindow,0);
-                //int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
-                //int y1 = Math.max(j-punctaDetectionWindow,0);
-                //int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
+                int x1 = Math.max(i-punctaDetectionWindow,0);
+                int x2 = Math.min(ndim.getWidth(),i+punctaDetectionWindow);
+                int y1 = Math.max(j-punctaDetectionWindow,0);
+                int y2 = Math.min(ndim.getHeight(),j+punctaDetectionWindow);
+		
 		int val = ndim.getPixel(w,z,t,i,j,p);
 		boolean isMax = true;
 		for(int k = 0; k < 8; k++){
@@ -534,13 +535,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    catch(ArrayIndexOutOfBoundsException e){ continue; }
 		}
 		if(!isMax) continue;
+		
                 //if(ndim.getPixel(w,z,t,i,j,p) < ndim.max(w,z,t,p,x1,x2,y1,y2,m)) continue;
                 localMaxima.add(new Point(i,j));
 		intensities.add(val);//ndim.getPixel(w,z,t,i,j,p));
-		int x1 = Math.max(i-initialWindowSize,0);
-                int x2 = Math.min(ndim.getWidth(),i+initialWindowSize);
-                int y1 = Math.max(j-initialWindowSize,0);
-                int y2 = Math.min(ndim.getHeight(),j+initialWindowSize);
+		//int x1 = Math.max(i-initialWindowSize,0);
+                //int x2 = Math.min(ndim.getWidth(),i+initialWindowSize);
+                //int y1 = Math.max(j-initialWindowSize,0);
+                //int y2 = Math.min(ndim.getHeight(),j+initialWindowSize);
                 int nSignal = m.sum(x1,x2,y1,y2);
                 while(nSignal < minSignal){
 		    //int step = (int)(Math.sqrt(minSignal/nSignal - 1) * initialWindowSize) + 1;
@@ -602,7 +604,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
             //int Imax = ndim.getPixel(w,z,t,maxXY[0],maxXY[1],p);
             Point lm = localMaxima.elementAt(s);
 	    if(used.getValue(lm.x,lm.y) == 0) continue;
-	    //if(used.getValue(lm.x,lm.y) == 0) continue;
             Point ul = upperLeft.elementAt(s);
             Point lr = lowerRight.elementAt(s);
             int Imax = ndim.getPixel(w,z,t,lm.x,lm.y,p);
@@ -610,7 +611,8 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    double localMedian = ndim.median(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
 	    double localStd = ndim.std(w,z,t,p,ul.x,lr.x,ul.y,lr.y,used);
 	    double minThreshold = Math.min(localMedian + (Imax - localMedian)/2, localMedian + 2.0*localStd);
-	    double localThreshold = localMedian + 3*localStd;
+	    double localThreshold = localMedian + 3.5*localStd;
+	    double minIntensity = 20*(localMedian + 2.5*localStd);
 	    if(Imax < localThreshold) continue;
 	    localThreshold = Imax;
             Cluster c = new Cluster();
@@ -626,6 +628,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    borderVal.addElement(Imax);
             used.setValue(lm.x,lm.y,0);
             cMask.setValue(lm.x,lm.y,1);
+	    double sumI = Imax;
 	    //System.out.println("Imax: "+Imax+", Threshold: "+localThreshold);
 	    /*
 	    double sumI = Imax;
@@ -672,6 +675,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    //sumNew += ndim.getPixel(w,z,t,i,j,p);
 			    //numNew++;
 			    //zscores[i][j] = 0;
+			    sumI += ndim.getPixel(w,z,t,i,j,p);
 			    cMask.setValue(i,j,1);
 			}
 			catch(ArrayIndexOutOfBoundsException e){ continue; }
@@ -699,6 +703,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    cMask.setValue(i,j,1);
 			    used.setValue(i,j,0);
 			    c.addPixel(i,j);
+			    sumI += ndim.getPixel(w,z,t,i,j,p);
 			    unfilled = true;
 			}
 		    }
@@ -711,6 +716,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    if(sum < 3){
 			cMask.setValue(i,j,0);
 			used.setValue(i,j,1);
+			sumI -= ndim.getPixel(w,z,t,i,j,p);
 			c.removePixel(new Point(i,j));
 		    }
 		}
@@ -730,7 +736,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
                 continue;
             }
 	    */
-	    if(c.size() < 2){
+	    if(sumI < minIntensity){//c.size() < 2){
 		for(int i = c.size()-1; i >=0; i--){
 		    Point pt = c.getPixel(i);
 		    used.setValue(pt.x,pt.y,1);
@@ -1093,7 +1099,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    doneMerging = true;
 	    for(int i = 0; i < np; i++){
 		if(clusters[i] == null) continue;
-		if(clusters[i].size() < 4){//punctaAreaThreshold){
+		if(clusters[i].size() < 20){//punctaAreaThreshold){
 		    int maxBorder = 0;
 		    int maxJ = -1;
 		    for(int j = 0; j < i; j++){
