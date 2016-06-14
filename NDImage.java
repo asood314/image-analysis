@@ -1230,6 +1230,34 @@ public class NDImage
         return Math.sqrt(sum / (npix - 1));
     }
 
+    public double[] getMedianStd(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
+    {
+	int[] values = new int[4096];
+	int target = 0;
+	for(int i = 0; i < 4096; i++) values[i] = 0;
+	double mean = 0.0;
+	double[] medStd = {0.0, 0.0};
+        for(int i = x1; i < x2; i++){
+            for(int j = y1; j < y2; j++){
+		int a = m.getValue(i,j);
+		int val = image[wl][z][t][i][j][p] * a;
+                values[val] += a;
+		target += a;
+		mean += val;
+            }
+        }
+	mean = mean / target;
+	for(int i = 0; i < 4096; i++) medStd[1] += values[i]*(i - mean)*(i - mean);
+	medStd[1] = Math.sqrt(medStd[1]/(target-1));
+	int sum = 0;
+	target = target/2;
+	int index;
+	for(index = 0; sum < target; index++) sum += values[index];
+	medStd[0] = index;
+	return medStd;
+    }
+	
+
     public double stdDebug(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
     {
         double mean = mean(wl,z,t,p,x1,x2,y1,y2,m);
