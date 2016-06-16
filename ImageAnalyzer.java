@@ -380,6 +380,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem.addActionListener(this);
         menuItem.setActionCommand("axsel");
         toolMenu.add(menuItem);
+	menuItem = new JMenuItem("Print Puncta");
+        menuItem.addActionListener(this);
+        menuItem.setActionCommand("dumpPuncta");
+        toolMenu.add(menuItem);
         setJMenuBar(menuBar);
         getContentPane().setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
         getContentPane().add(topPanel);
@@ -774,6 +778,13 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	    roiSelectorTool = false;
 	    axisSelectorTool = true;
         }
+	else if(cmd.equals("dumpPuncta")){
+	    int z = imPanel.getZSlice();
+            int t = imPanel.getTimepoint();
+            int p = imPanel.getPosition();
+            int index = p*ndim.getNT()*ndim.getNZ() + t*ndim.getNZ() + z;
+	    reports[index].printPunctaInfo(imPanel.getWavelength(),imPanel.getDisplayRegion());
+	}
         else if(cmd.equals("Standard Analysis")){
             analysisTools.standardAnalysis(imPanel.getZSlice(),imPanel.getTimepoint(),imPanel.getPosition());
             System.out.println("Done.");

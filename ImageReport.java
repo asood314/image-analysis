@@ -86,6 +86,18 @@ public class ImageReport
     public Cluster getPunctum(int chan, int index){ return puncta.elementAt(chan).elementAt(index); }
     
     public int getNPuncta(int chan){ return puncta.elementAt(chan).size(); }
+
+    public int getNPuncta(int chan, int x1, int x2, int y1, int y2){
+	Vector<Cluster> channel = puncta.elementAt(chan);
+	int nPuncta = 0;
+	for(int j = 0; j < channel.size(); j++){
+	    Point p = channel.elementAt(j).getCentroid();
+	    if(p.x > x1 && p.x < x2 && p.y > y1 && p.y < y2){
+		nPuncta++;
+	    }
+	}
+	return nPuncta;
+    }
     
     public SynapseCollection getSynapseCollection(int index){ return synapseCollections.elementAt(index); }
     
@@ -119,6 +131,17 @@ public class ImageReport
 	    }
 	}
         return closest;
+    }
+
+    public void printPunctaInfo(int chan, int[] region){
+	Vector<Cluster> channel = puncta.elementAt(chan);
+	for(int j = 0; j < channel.size(); j++){
+	    Cluster c = channel.elementAt(j);
+	    Point p = c.getCentroid();
+	    if(p.x > region[0] && p.x - region[0] < region[2] && p.y > region[1] && p.y - region[1] < region[3]){
+		System.out.println("Center: " + p.toString() + ", Size: " + c.size() + ", Peak Location: " + c.getPixel(0).toString() + ", Peak Intensity: ");
+	    }
+	}
     }
     
     public Synapse selectSynapse(Point p){
