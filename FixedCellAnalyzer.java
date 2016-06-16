@@ -355,6 +355,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nBkgClusters++;
 		    }
 		}
+		
 		double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
 		if(((double)avgSigSize)/(ndim.getHeight()*ndim.getWidth()) < 0.01) break;
 		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
@@ -372,6 +373,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    best = globalThreshold;
 		    finished = false;
 		}
+		
 		/*
 		double ifom = maxSize*maxBkgSize;
 		if(ifom > fom){
@@ -741,8 +743,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	int minSignal = (int)Math.min(5.0 / Math.pow(resolutionXY,2),m.sum());
 	for(int i = 0; i < ndim.getWidth(); i++){
 	    for(int j = 0; j < ndim.getHeight(); j++){
-		if(used.getValue(i,j)*ndim.getPixel(w,z,t,i,j,p) < saturationThreshold) continue;
+		int value = ndim.getPixel(w,z,t,i,j,p);
+		if(used.getValue(i,j)*value < saturationThreshold) continue;
 		Cluster c = new Cluster();
+		c.setPeakIntensity(value);
+		int totI = value;
 		c.addPixel(i,j);
 		used.setValue(i,j,0);
 		cMask.setValue(i,j,1);
@@ -753,7 +758,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			try{
 			    int x = borderSatX.elementAt(0) + diArr[k];
 			    int y = borderSatY.elementAt(0) + djArr[k];
-			    int value = ndim.getPixel(w,z,t,x,y,p);
+			    value = ndim.getPixel(w,z,t,x,y,p);
 			    if(used.getValue(x,y) > 0){
 				if(value > saturationThreshold){
 				    borderSatX.addElement(x);
@@ -767,6 +772,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 				c.addPixel(x,y);
 				used.setValue(x,y,0);
 				cMask.setValue(x,y,1);
+				totI += value;
 			    }
 			}
 			catch(ArrayIndexOutOfBoundsException e){ continue; }
@@ -809,6 +815,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    c.addPixel(x,y);
 			    used.setValue(x,y,0);
 			    cMask.setValue(x,y,1);
+			    totI += pixelValue;
 			}
 			catch(ArrayIndexOutOfBoundsException e){ continue; }
 		    }
@@ -827,6 +834,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 				cMask.setValue(x,y,1);
 				used.setValue(x,y,0);
 				c.addPixel(x,y);
+				totI += ndim.getPixel(w,z,t,x,y,p);
 				unfilled = true;
 			    }
 			}
@@ -840,6 +848,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    cMask.setValue(x,y,0);
 			    used.setValue(x,y,1);
 			    c.removePixel(new Point(x,y));
+			    totI -= ndim.getPixel(w,z,t,x,y,p);
 			}
 		    }
 		}
@@ -863,6 +872,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    Point tmp = c.getPixel(0);
 		    c.setPixel(0,c.getPixel(index));
 		    c.setPixel(index,tmp);
+		    c.setIntegratedIntensity(totI);
 		    r.addPunctum(w,c);
 		}
 		else{
@@ -917,6 +927,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    if(nSat > 0) continue;
 	    clusters[i] = new Cluster();
 	    clusters[i].addPixel(peaks[i]);
+	    clusters[i].setPeakIntensity(imax);
 	    fs[i] = Functions.gaussian2D();
 	    double[] param = {imax,peaks[i].x,peaks[i].y,-0.5*(c.size()/Math.PI)/Math.log(((double)imin)/imax)};
 	    /*
@@ -999,6 +1010,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	for(int l = 0; l < np; l++){
 	    if(clusters[l] == null) continue;
 	    Cluster rc = new Cluster();
+	    rc.setPeakIntensity(clusters[l].getPeakIntensity());
 	    for(int n = 0; n < clusters[l].size(); n++){
 		Point pt = clusters[l].getPixel(n);
 		m.setValue(pt.x,pt.y,1);
@@ -1010,7 +1022,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		for(int b = 0; b < nborder; b++){
 		    int bi = borderX.elementAt(0);
 		    int bj = borderY.elementAt(0);
-		    rc.addPixel(bi,bj);
+		    rc.addPixel(bi,bj,ndim.getPixel(w,z,t,bi,bj,p));
 		    for(int k = 0; k < 8; k++){
 			int i = bi+diArr[k];
 			int j = bj+djArr[k];

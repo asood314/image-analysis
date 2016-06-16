@@ -139,7 +139,7 @@ public class ImageReport
 	    Cluster c = channel.elementAt(j);
 	    Point p = c.getCentroid();
 	    if(p.x > region[0] && p.x - region[0] < region[2] && p.y > region[1] && p.y - region[1] < region[3]){
-		System.out.println("Center: " + p.toString() + ", Size: " + c.size() + ", Peak Location: " + c.getPixel(0).toString() + ", Peak Intensity: ");
+		System.out.println("Center: " + p.toString() + ", Size: " + c.size() + ", Peak Location: " + c.getPixel(0).toString() + ", Peak Intensity: " + c.getPeakIntensity() + ", Integrated Intensity: " + c.getIntegratedIntensity());
 	    }
 	}
     }
@@ -602,12 +602,14 @@ public class ImageReport
             for(int i = 0; i < getNPuncta(c); i++){
                 Cluster clust = getPunctum(c,i);
                 writeShortToBuffer(buf,0,(short)clust.size());
+		writeShortToBuffer(buf,2,(short)clust.getPeakIntensity());
+		writeIntToBuffer(buf,4,clust.getIntegratedIntensity());
                 for(int j = 0; j < clust.size(); j++){
                     Point p = clust.getPixel(j);
-                    writeShortToBuffer(buf,4*j+2,(short)p.getX());
-                    writeShortToBuffer(buf,4*j+4,(short)p.getY());
+                    writeShortToBuffer(buf,4*j+8,(short)p.getX());
+                    writeShortToBuffer(buf,4*j+10,(short)p.getY());
                 }
-                fout.write(buf,0,4*clust.size() + 2);
+                fout.write(buf,0,4*clust.size() + 8);
             }
         }
         writeShortToBuffer(buf,0,(short)synapseCollections.size());
@@ -739,10 +741,14 @@ public class ImageReport
             int np = readShortFromBuffer(buf,0);
 	    //System.out.println(np);
             for(int i = 0; i < np; i++){
-                fin.read(buf,0,2);
+                fin.read(buf,0,8);
                 int cs = readShortFromBuffer(buf,0);
+		int pI = readShortFromBuffer(buf,2);
+		int tI = readIntFromBuffer(buf,4);
                 fin.read(buf,0,4*cs);
                 Cluster clust = new Cluster();
+		clust.setPeakIntensity(pI);
+		clust.setIntegratedIntensity(tI);
                 for(int j = 0; j < cs; j++){
                     clust.addPixel(readShortFromBuffer(buf,4*j),readShortFromBuffer(buf,4*j+2));
                 }

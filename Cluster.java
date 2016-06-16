@@ -4,16 +4,32 @@ import java.util.Vector;
 public class Cluster extends LocalizedObject
 {
     private Vector<Point> pixels;
+    private int peakIntensity;
+    private int totalIntensity;
     
     public Cluster()
     {
 	super();
         pixels = new Vector<Point>();
+	peakIntensity = 0;
+	totalIntensity = 0;
     }
     
     public void addPixel(int x, int y){ pixels.add(new Point(x,y)); }
     
     public void addPixel(Point p){ pixels.add(p); }
+
+    public void addPixel(int x, int y, int i)
+    {
+	pixels.add(new Point(x,y));
+	totalIntensity += i;
+    }
+    
+    public void addPixel(Point p, int i)
+    {
+	pixels.add(p);
+	totalIntensity += i;
+    }
     
     public void addPixelSafe(int x, int y)
     {
@@ -42,6 +58,14 @@ public class Cluster extends LocalizedObject
 	    }
 	}
     }
+
+    public void setPeakIntensity(int i){ peakIntensity = i; }
+
+    public int getPeakIntensity(){ return peakIntensity; }
+
+    public void setIntegratedIntensity(int i){ totalIntensity = i; }
+
+    public int getIntegratedIntensity(){ return totalIntensity; }
 
     public Vector<Point> getPoints(){ return pixels; }
     
@@ -101,6 +125,8 @@ public class Cluster extends LocalizedObject
     public void add(Cluster c)
     {
 	for(int i = 0; i < c.size(); i++) pixels.addElement(c.getPixel(i));
+	if(c.getPeakIntensity() > peakIntensity) peakIntensity = c.getPeakIntensity();
+	totalIntensity += c.getIntegratedIntensity();
     }
 
     public double peakToPeakDistance(Cluster c)

@@ -890,7 +890,7 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
 	    else c = r.selectPunctum(p,imPanel.getWavelength());
 	    if(c == null) return;
 	    p = c.getPixel(0);
-            System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size() + ", Peak Location: " + p.toString() + ", Peak Intensity: " + ndim.getPixel(imPanel.getWavelength(),imPanel.getZSlice(),imPanel.getTimepoint(),p.x,p.y,imPanel.getPosition()));
+            System.out.println("Center: " + c.getCentroid().toString() + ", Size: " + c.size() + ", Peak Location: " + p.toString() + ", Peak Intensity: " + c.getPeakIntensity() + ", Integrated Intensity: " + c.getIntegratedIntensity());
 	    Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	    for(int i = 0; i < c.size(); i++){
 		p = c.getPixel(i);
