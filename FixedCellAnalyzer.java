@@ -39,6 +39,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    reports[index] = new ImageReport(ndim.getNWavelengths(),ndim.getWidth(),ndim.getHeight());
 	    reports[index].setResolutionXY(resolutionXY);
 	}
+	punctaAreaThreshold = Math.PI*0.01/Math.pow(resolutionXY,2);
 	long t1 = System.currentTimeMillis();
 	double meanPost = 0.0;
 	double modePost = 0.0;
@@ -129,7 +130,6 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	System.out.println("Done signal finding in "+(diff/60)+" minutes and "+(diff%60)+" seconds.");
 	t1 = t2;
 	//punctaAreaThreshold = 1.5*0.07/Math.pow(resolutionXY,2);
-	punctaAreaThreshold = Math.PI*0.01/Math.pow(resolutionXY,2);
 	for(int w = 0; w < ndim.getNWavelengths(); w++){
 	    //System.out.println("Finding puncta for channel "+w);
 	    findSaturatedPuncta(w,z,t,p);
@@ -256,6 +256,36 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			else m.setValue(i,j,0);
 		    }
 		}
+		/*
+		boolean unfilled = true;
+		while(unfilled){
+		    unfilled = false;
+		    for(int i = 1; i < ndim.getWidth()-1; i++){
+			for(int j = 1; j < ndim.getHeight()-1; j++){
+			    if(m.getValue(i,j) > 0) continue;
+			    int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
+			    if(sum > 4){
+				m.setValue(i,j,1);
+				unfilled = true;
+			    }
+			}
+		    }
+		}
+		*/
+		boolean unpruned = true;
+		while(unpruned){
+		    unpruned = false;
+		    for(int i = 1; i < ndim.getWidth()-1; i++){
+			for(int j = 1; j < ndim.getHeight()-1; j++){
+			    if(m.getValue(i,j) < 1) continue;
+			    int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
+			    if(sum < 3){
+				m.setValue(i,j,0);
+				unpruned = true;
+			    }
+			}
+		    }
+		}
 		int maxSize = 0;
 		long avgSigSize = 0;
 		long avgSigSize2 = 0;
@@ -355,7 +385,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nBkgClusters++;
 		    }
 		}
-		
+		/*
 		double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
 		if(((double)avgSigSize)/(ndim.getHeight()*ndim.getWidth()) < 0.01) break;
 		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
@@ -373,15 +403,15 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    best = globalThreshold;
 		    finished = false;
 		}
+		*/
 		
-		/*
 		double ifom = maxSize*maxBkgSize;
 		if(ifom > fom){
 		    fom = ifom;
 		    best = globalThreshold;
 		    finished = false;
 		}
-		*/
+		
 		//System.out.println(""+globalThreshold+", "+avgSigSize+", "+nSigClusters+", "+avgSize+", "+nBkgClusters+":\t\t"+ifom);
 	    }
 	    if(step < 1.01) break;
@@ -421,7 +451,35 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	}
-	double sizeThreshold = 5;//0.15/Math.pow(resolutionXY,2);
+	boolean unfilled = true;
+	while(unfilled){
+	    unfilled = false;
+	    for(int i = 1; i < ndim.getWidth()-1; i++){
+		for(int j = 1; j < ndim.getHeight()-1; j++){
+		    if(m.getValue(i,j) > 0) continue;
+		    int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
+		    if(sum > 4){
+			m.setValue(i,j,1);
+			unfilled = true;
+		    }
+		}
+	    }
+	}
+	boolean unpruned = true;
+	while(unpruned){
+	    unpruned = false;
+	    for(int i = 1; i < ndim.getWidth()-1; i++){
+		for(int j = 1; j < ndim.getHeight()-1; j++){
+		    if(m.getValue(i,j) < 1) continue;
+		    int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
+		    if(sum < 3){
+			m.setValue(i,j,0);
+			unpruned = true;
+		    }
+		}
+	    }
+	}
+	double sizeThreshold = 2*punctaAreaThreshold;
 	Vector<Integer> borderX = new Vector<Integer>(10);
         Vector<Integer> borderY = new Vector<Integer>(10);
 	int[] clusterX = new int[4200000];
@@ -475,12 +533,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	//System.out.println("Thresholding");
         //m.threshold((int)(0.25/Math.pow(resolutionXY,2)));
 	//System.out.println("Filling in blanks");
+	/*
         for(int i = 1; i < ndim.getWidth()-1; i++){
             for(int j = 1; j < ndim.getHeight()-1; j++){
                 int sum = m.getValue(i-1,j-1) + m.getValue(i,j-1) + m.getValue(i+1,j-1) + m.getValue(i-1,j) + m.getValue(i+1,j) + m.getValue(i-1,j+1) + m.getValue(i,j+1) + m.getValue(i+1,j+1);
                 if(sum > 4) m.setValue(i,j,1);
             }
         }
+	*/
 	return m;
     }
     
