@@ -1159,7 +1159,8 @@ public class NDImage
                 npix += a;
             }
         }
-        return sum / npix;
+        if(npix > 0) return sum / npix;
+	else return 65536.0;
     }
     
     public double mean(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
@@ -1173,7 +1174,8 @@ public class NDImage
                 npix += a;
             }
         }
-        return sum / npix;
+        if(npix > 0) return sum / npix;
+	else return 65536.0;
     }
     
     public double std(int wl, int z, int t, int p)
@@ -1212,7 +1214,8 @@ public class NDImage
                 npix += a;
             }
         }
-        return Math.sqrt(sum / (npix - 1));
+        if(npix > 1) return Math.sqrt(sum / (npix - 1));
+	else return mean;
     }
     
     public double std(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
@@ -1227,7 +1230,8 @@ public class NDImage
                 npix += a;
             }
         }
-        return Math.sqrt(sum / (npix - 1));
+        if(npix > 1) return Math.sqrt(sum / (npix - 1));
+	else return mean;
     }
 
     public double[] getMedianStd(int wl, int z, int t, int p, int x1, int x2, int y1, int y2, Mask m)
@@ -1248,7 +1252,8 @@ public class NDImage
         }
 	mean = mean / target;
 	for(int i = 0; i < 4096; i++) medStd[1] += values[i]*(i - mean)*(i - mean);
-	medStd[1] = Math.sqrt(medStd[1]/(target-1));
+	if(target > 1) medStd[1] = Math.sqrt(medStd[1]/(target-1));
+	else medStd[1] = mean;
 	int sum = 0;
 	target = target/2;
 	int index;
