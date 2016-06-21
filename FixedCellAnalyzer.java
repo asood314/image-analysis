@@ -60,6 +60,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	else{
 	    //Mask m = findBackgroundMask(masterChannel,z,t,p);
 	    Mask m2 = findSignalMask(masterChannel,z,t,p,(Mask)null);
+	    if(m2.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
 	    //m = m.getInverse();
 	    if(masterMode == OVERRIDE){
 		for(int w = 0; w < ndim.getNWavelengths(); w++){
@@ -81,6 +82,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		for(int w = 0; w < ndim.getNWavelengths(); w++){
 		    if(w == masterChannel) continue;
 		    Mask m3 = findSignalMask(w,z,t,p,(Mask)null);
+		    if(m3.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
 		    m3.or(m2);
 		    reports[index].setSignalMask(w,m3);
 		}
@@ -231,6 +233,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
     {
 	Mask m = new Mask(ndim.getWidth(),ndim.getHeight());
 	double lowerLimit = ndim.mode(w,z,t,p);
+	double mode = lowerLimit;
 	double best = ndim.mean(w,z,t,p);
 	double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
 	int nsteps = 10;
@@ -242,6 +245,18 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	double fom = 0;
 	int maxClusters = 0;
 	boolean finished = false;
+	/*
+	double maxSignal = 0.0;
+	double maxBackground = 0.0;
+	double Imax = ndim.max(w,z,t,p);
+	for(int i = 0; i < ndim.getWidth(); i++){
+	    for(int j = 0; j < ndim.getHeight(); j++){
+		int value = ndim.getPixel(w,z,t,i,j,p);
+		if(value > 0) maxSignal += 1.0;
+		if(value < Imax) maxBackground += 1.0;
+	    }
+	}
+	*/
 	while(!finished){
 	    finished = true;
 	    //System.out.println(""+lowerLimit+", "+upperLimit);
@@ -385,7 +400,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			nBkgClusters++;
 		    }
 		}
-		/*
+		
 		double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
 		if(((double)avgSigSize)/(ndim.getHeight()*ndim.getWidth()) < 0.01) break;
 		if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
@@ -403,16 +418,17 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    best = globalThreshold;
 		    finished = false;
 		}
-		*/
 		
-		double ifom = maxSize*maxBkgSize;
+		/*
+		double ifom = ((double)maxSize)*maxBkgSize;
+		//double ifom = 2.0 / ((maxSignal/maxSize) + (maxBackground/avgSize));
 		if(ifom > fom){
 		    fom = ifom;
 		    best = globalThreshold;
 		    finished = false;
 		}
-		
-		//System.out.println(""+globalThreshold+", "+avgSigSize+", "+nSigClusters+", "+avgSize+", "+nBkgClusters+":\t\t"+ifom);
+		*/
+		//System.out.println(""+globalThreshold+", "+maxSize+", "+nSigClusters+", "+maxBkgSize+", "+nBkgClusters+":\t\t"+ifom);
 	    }
 	    if(step < 1.01) break;
 	    if(best < 0) break;
