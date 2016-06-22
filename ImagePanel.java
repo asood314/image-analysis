@@ -173,6 +173,8 @@ public class ImagePanel extends JPanel
 	displayImage = bim;
 	repaint();
     }
+
+    public BufferedImage getDisplayImage(){ return displayImage; }
     
     public void setMode(int m){
 	mode = m;

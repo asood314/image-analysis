@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.StringTokenizer;
 import java.util.Vector;
+import javax.imageio.ImageIO;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -195,6 +196,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         menuItem = new JMenuItem("Z-project");
         menuItem.addActionListener(this);
         menuItem.setActionCommand("zproj");
+        fileMenu.add(menuItem);
+	menuItem = new JMenuItem("Save Screenshot");
+	menuItem.addActionListener(this);
+        menuItem.setActionCommand("saveFrame");
         fileMenu.add(menuItem);
         viewMenu = new JMenu("View");
         menuBar.add(viewMenu);
@@ -505,6 +510,32 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
         }
         else if(cmd.equals("simrep")){
             analysisTools.saveImageReports(loadField.getText());
+            jd.dispose();
+        }
+	else if(cmd.equals("saveFrame")){
+            jd = new JDialog(this);
+            jd.getContentPane().setLayout(new BoxLayout(jd.getContentPane(),BoxLayout.X_AXIS));
+            loadField.setText("Enter file name");
+            loadField.setActionCommand("sframe");
+            JButton button = new JButton("Save");
+            button.addActionListener(this);
+            button.setActionCommand("sframe");
+            jd.getContentPane().add(loadField);
+            jd.getContentPane().add(button);
+            jd.setDefaultCloseOperation(DISPOSE_ON_CLOSE);
+            jd.pack();
+            jd.setVisible(true);
+        }
+        else if(cmd.equals("sframe")){
+	    String fname = loadField.getText();
+	    String ext = "";
+	    StringTokenizer st = new StringTokenizer(fname,".");
+	    while(st.hasMoreTokens()){ ext = st.nextToken(); }
+	    try{
+		File phil = new File(fname);
+		ImageIO.write(imPanel.getDisplayImage(),ext,phil);
+	    }
+	    catch(IOException ex){ ex.printStackTrace(); }
             jd.dispose();
         }
         else if(cmd.equals("loadReps")){
@@ -1134,9 +1165,11 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             val = ((b[11] & 0xff) << 24) | ((b[10] & 0xff) << 16) | ((b[9] & 0xff) << 8) | (b[8] & 0xff);
             System.out.println(val);*/
             //NDImage ndi = new NDImage(2,5,"tf8_test.tiff");
-            NDImage ndi = NDImage.loadSamanthaData("Z:\\Samantha Processed Images\\New Nikon\\Long-term Live Imaging\\SHANK\\20130113\\20130113-2\\Files to Average\\xy4/","20130113-2",4,2,6);
+	    String[] waves = {"488 Confocal","561 Confocal"};
+            NDImage ndi = NDImage.loadDiskoveryImage("Z:\\For ALEX\\plate_06212016\\slip2_pds95vamp2_xy4",2,waves,-1,-1,5);
+	    ndi = ndi.zprojection();
 	    //NDImage ndi = NDImage.loadSamanthaData("/cygdrive/z/Samantha Processed Images/New Nikon/Long-term Live Imaging/SHANK/20130113/20130113-2/Files to Average/xy4/","20130113-2",4,2,6);
-            ImageAnalyzer ia = new ImageAnalyzer(ndi,"20130113-2");
+            ImageAnalyzer ia = new ImageAnalyzer(ndi,"");
             
         }
         catch(IOException e)

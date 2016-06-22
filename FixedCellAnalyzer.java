@@ -60,7 +60,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	else{
 	    //Mask m = findBackgroundMask(masterChannel,z,t,p);
 	    Mask m2 = findSignalMask(masterChannel,z,t,p,(Mask)null);
-	    if(m2.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
+	    //if(m2.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
 	    //m = m.getInverse();
 	    if(masterMode == OVERRIDE){
 		for(int w = 0; w < ndim.getNWavelengths(); w++){
@@ -82,7 +82,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		for(int w = 0; w < ndim.getNWavelengths(); w++){
 		    if(w == masterChannel) continue;
 		    Mask m3 = findSignalMask(w,z,t,p,(Mask)null);
-		    if(m3.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
+		    //if(m3.sum() > 2000000) System.out.println("WARNING: Number of signal pixels suspiciously high");
 		    m3.or(m2);
 		    reports[index].setSignalMask(w,m3);
 		}
@@ -432,9 +432,14 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	    if(step < 1.01) break;
 	    if(best < 0) break;
-	    if(best == lowerLimit || best == upperLimit){
-		lowerLimit = best - 5*step;
-		upperLimit = best + 5*step;
+	    if(best == lowerLimit){
+		lowerLimit = best - step;
+		upperLimit = best + 9*step;
+		fom *= 0.999;
+	    }
+	    else if(best == upperLimit){
+		lowerLimit = best - 9*step;
+		upperLimit = best + step;
 		fom *= 0.999;
 	    }
 	    else{
