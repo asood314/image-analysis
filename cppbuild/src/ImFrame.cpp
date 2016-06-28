@@ -24,7 +24,7 @@ ImFrame::~ImFrame()
 
 std::vector<ImFrame*> ImFrame::load(const char* fname)
 {
-  std::ifstream fin(fname);
+  std::ifstream fin(fname,std::ifstream::binary);
   std::vector<ImFrame*> retval;
   char* buf = new char[42000000];
   fin.read(buf,4);
@@ -146,21 +146,24 @@ void ImFrame::readLittle(char* buf, std::ifstream &fin, uint32_t offset)
     }
   }
   else{
+    uint32_t nbytes,stripOff,pixel,x,y;
     for(uint32_t i = 0; i < nStrips; i++){
-      fin.seekg(stripByteCountOffsets + 4*i);
+      fin.seekg(stripByteCountOffsets);
       fin.read(buf,4);
-      uint32_t nbytes = convertToInt(buf[0],buf[1],buf[2],buf[3]);
-      fin.seekg(stripOffsets + 4*i);
+      nbytes = convertToInt(buf[0],buf[1],buf[2],buf[3]);
+      fin.seekg(stripOffsets);
       fin.read(buf,4);
-      uint32_t stripOff = convertToInt(buf[0],buf[1],buf[2],buf[3]);
+      stripOff = convertToInt(buf[0],buf[1],buf[2],buf[3]);
       fin.seekg(stripOff);
       fin.read(buf,nbytes);
-      for(uint32_t pixel = 0; pixel < nbytes; pixel += 2){
-	uint32_t y = index / m_width;
-	uint32_t x = index - m_width*y;
+      for(pixel = 0; pixel < nbytes; pixel += 2){
+	y = index / m_width;
+	x = index - m_width*y;
 	m_pixels[x][y] = convertToShort(buf[pixel],buf[pixel+1]);
 	index++;
       }
+      stripByteCountOffsets += 4;
+      stripOffsets += 4;
     }
   }
 }

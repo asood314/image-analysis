@@ -1164,10 +1164,10 @@ public class ImageAnalyzer extends JFrame implements ActionListener, MouseListen
             System.out.println(val);
             val = ((b[11] & 0xff) << 24) | ((b[10] & 0xff) << 16) | ((b[9] & 0xff) << 8) | (b[8] & 0xff);
             System.out.println(val);*/
-            //NDImage ndi = new NDImage(2,5,"tf8_test.tiff");
-	    String[] waves = {"488 Confocal","561 Confocal"};
-            NDImage ndi = NDImage.loadDiskoveryImage("Z:\\For ALEX\\plate_06212016\\slip2_pds95vamp2_xy4",2,waves,-1,-1,5);
-	    ndi = ndi.zprojection();
+            NDImage ndi = new NDImage(1,1,1,"Z:\\For ALEX\\plate_06252016\\slip1_psd95_xy1.TIF");
+	    //String[] waves = {"488 Confocal","561 Confocal"};
+            //NDImage ndi = NDImage.loadDiskoveryImage("Z:\\For ALEX\\plate_06212016\\slip2_pds95vamp2_xy4",2,waves,-1,-1,5);
+	    //ndi = ndi.zprojection();
 	    //NDImage ndi = NDImage.loadSamanthaData("/cygdrive/z/Samantha Processed Images/New Nikon/Long-term Live Imaging/SHANK/20130113/20130113-2/Files to Average/xy4/","20130113-2",4,2,6);
             ImageAnalyzer ia = new ImageAnalyzer(ndi,"");
             

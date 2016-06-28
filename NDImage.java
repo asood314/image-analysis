@@ -19,6 +19,8 @@ public class NDImage
     
     private int[][][][][][] image;
     private int nWavelengths, nZ, nT, width, height, npos;
+
+    public NDImage(){}
     
     public NDImage(int nwl, int nz, int np, String filename) throws IOException
     {
@@ -164,6 +166,280 @@ public class NDImage
     }
 
     public void readBig(RandomAccessFile fin, int nwl, int nz, int np, String order) throws IOException
+    {
+	byte[] buf = new byte[2048*2048*10];
+        int[] offsets = new int[1000000];
+        int nOffsets = 0;
+	fin.read(buf,0,4);
+        offsets[nOffsets] = this.convertToInt(buf[3],buf[2],buf[1],buf[0]);
+        while(offsets[nOffsets] > 0)
+        {
+            fin.seek(offsets[nOffsets]);
+            fin.read(buf,0,2);
+            int nTags = this.convertToShort(buf[1],buf[0]);
+            fin.seek(offsets[nOffsets] + 2 + 12*nTags);
+            nOffsets++;
+            fin.read(buf,0,4);
+            offsets[nOffsets] = this.convertToInt(buf[3],buf[2],buf[1],buf[0]);
+        }
+        //System.out.println(nOffsets);
+        nWavelengths = nwl;
+        nZ = nz;
+        npos = np;
+        nT = nOffsets / (nwl*nz*np);
+        fin.seek(offsets[0]);
+        fin.read(buf,0,2);
+        int nTags = this.convertToShort(buf[1],buf[0]);
+        width = 1;
+        height = 1;
+        for(int i = 0; i < nTags; i++)
+        {
+            fin.read(buf,0,12);
+            int tag = this.convertToShort(buf[1],buf[0]);
+	    int type = convertToShort(buf[3],buf[2]);
+	    int value = 0;
+	    if(type == 3) value = convertToShort(buf[9],buf[8]);
+	    else value = convertToInt(buf[11],buf[10],buf[9],buf[8]);
+	    //System.out.println(""+tag+","+value);
+            if(tag == 256) width = value;
+            else if(tag == 257) height = value;
+        }
+        image = new int[nWavelengths][nZ][nT][width][height][npos];
+        StringTokenizer st = new StringTokenizer(order,"wztp",true);
+        int[] wztp = {0,0,0,0};
+        int[] nwztp = {nwl,nz,nT,np};
+        int[] indices = {0,0,0,0};
+        for(int i = 0; i < 4; i++){
+            String tok = st.nextToken();
+            if(tok.equals("w")) indices[i] = 0;
+            else if(tok.equals("z")) indices[i] = 1;
+            else if(tok.equals("t")) indices[i] = 2;
+            else if(tok.equals("p")) indices[i] = 3;
+        }
+        for(int ifd = 0; ifd < nOffsets; ifd++)
+        {
+            fin.seek(offsets[ifd]);
+            fin.read(buf,0,2);
+            nTags = this.convertToShort(buf[1],buf[0]);
+            int nStrips = 0;
+            int stripOffsets = 0;
+            int stripByteCountOffsets = 0;
+            for(int i = 0; i < nTags; i++)
+            {
+                fin.read(buf,0,12);
+                int tag = this.convertToShort(buf[1],buf[0]);
+		int type = convertToShort(buf[3],buf[2]);
+                if(tag == 273){
+		    nStrips = this.convertToInt(buf[7],buf[6],buf[5],buf[4]);
+		    if(type == 4) stripOffsets = this.convertToInt(buf[11],buf[10],buf[9],buf[8]);
+		    else if(type == 3) stripOffsets = this.convertToShort(buf[9],buf[8]);
+		    else System.out.println("Something's wrong.");
+		}
+                else if(tag == 279){
+                    if(type == 4) stripByteCountOffsets = this.convertToInt(buf[11],buf[10],buf[9],buf[8]);
+		    else if(type == 3) stripByteCountOffsets = this.convertToShort(buf[9],buf[8]);
+		    else System.out.println("Something's wrong.");
+                }
+            }
+            wztp[indices[0]] = ifd % nwztp[indices[0]];
+            wztp[indices[1]] = (ifd % (nwztp[indices[1]]*nwztp[indices[0]])) / nwztp[indices[0]];
+            wztp[indices[2]] = (ifd % (nwztp[indices[2]]*nwztp[indices[1]]*nwztp[indices[0]])) / (nwztp[indices[1]]*nwztp[indices[0]]);
+            wztp[indices[3]] = ifd / (nwztp[indices[2]]*nwztp[indices[1]]*nwztp[indices[0]]);
+            int pos = wztp[3];
+            int t = wztp[2];
+            int z = wztp[1];
+            int wl = wztp[0];
+            //System.out.println(t+", "+z+", "+wl);
+            //System.out.println(nStrips);
+            int index = 0;
+	    if(nStrips == 1){
+                int nbytes = stripByteCountOffsets;
+                fin.seek(stripOffsets);
+                fin.read(buf,0,nbytes);
+                for(int pixel = 0; pixel < nbytes; pixel += 2)
+                {
+                    int y = index / width;
+                    int x = index - width*y;
+                    //System.out.println(x);
+                    //System.out.println(y);
+                    image[wl][z][t][x][y][pos] = this.convertToShort(buf[pixel+1],buf[pixel]);
+                    index++;
+                }
+            }
+	    else{
+		for(int i = 0; i < nStrips; i++){
+		    fin.seek(stripByteCountOffsets + 4*i);
+		    fin.read(buf,0,4);
+		    int nbytes = this.convertToInt(buf[3],buf[2],buf[1],buf[0]);
+		    //System.out.println(nbytes);
+		    fin.seek(stripOffsets + 4*i);
+		    fin.read(buf,0,4);
+		    int stripOff = this.convertToInt(buf[3],buf[2],buf[1],buf[0]);
+		    fin.seek(stripOff);
+		    //System.out.println(""+nOffsets+","+ifd+","+width+","+height+","+nStrips+","+stripOffsets+","+stripByteCountOffsets+","+i+","+nbytes+","+stripOff);
+		    try{
+			fin.read(buf,0,nbytes);
+		    }
+		    catch(IndexOutOfBoundsException ex){
+			return;
+		    }
+		    for(int pixel = 0; pixel < nbytes; pixel += 2){
+			int y = index / width;
+			int x = index - width*y;
+			//System.out.println(x);
+			//System.out.println(y);
+			image[wl][z][t][x][y][pos] = this.convertToShort(buf[pixel+1],buf[pixel]);
+			index++;
+		    }
+		}
+	    }
+        }
+    }
+
+    public void initDebug(int nwl, int nz, int np, String filename, String order, int nb) throws IOException
+    {
+        RandomAccessFile fin = new RandomAccessFile(filename,"r");
+	byte[] buf = new byte[nb];
+        fin.read(buf,0,nb);
+	int type = convertToShort(buf[2],buf[3]);
+        if(type != 42){
+	    System.out.println(type);
+	    type = convertToShort(buf[3],buf[2]);
+	    if(type != 42){
+		System.out.println(type);
+		System.out.println("ERROR: Can't find right byte order.");
+		String msg = "";
+		for(int i = 0; i < nb; i++) msg+= buf[i];
+		System.out.println(msg);
+	    }
+	    else readBigDebug(fin,nwl,nz,np,order);
+	}
+	else readLittleDebug(fin,nwl,nz,np,order);
+	fin.close();
+        //System.out.println(image[0][0][0][0][0]);
+        //System.out.println(image[0][0][0][1][0]);
+    }
+    
+    public void readLittleDebug(RandomAccessFile fin, int nwl, int nz, int np, String order) throws IOException
+    {
+	byte[] buf = new byte[2048*2048*10];
+        int[] offsets = new int[1000000];
+        int nOffsets = 0;
+	fin.read(buf,0,4);
+        offsets[nOffsets] = this.convertToInt(buf[0],buf[1],buf[2],buf[3]);
+        while(offsets[nOffsets] > 0)
+        {
+            fin.seek(offsets[nOffsets]);
+            fin.read(buf,0,2);
+            int nTags = this.convertToShort(buf[0],buf[1]);
+            fin.seek(offsets[nOffsets] + 2 + 12*nTags);
+            nOffsets++;
+            fin.read(buf,0,4);
+            offsets[nOffsets] = this.convertToInt(buf[0],buf[1],buf[2],buf[3]);
+        }
+        System.out.println(nOffsets);
+        nWavelengths = nwl;
+        nZ = nz;
+        npos = np;
+        nT = nOffsets / (nwl*nz*np);
+        fin.seek(offsets[0]);
+        fin.read(buf,0,2);
+        int nTags = this.convertToShort(buf[0],buf[1]);
+        width = 1;
+        height = 1;
+        for(int i = 0; i < nTags; i++)
+        {
+            fin.read(buf,0,12);
+            int tag = this.convertToShort(buf[0],buf[1]);
+	    System.out.println("Tag "+tag+": "+convertToInt(buf[8],buf[9],buf[10],buf[11]));
+            if(tag == 256) width = this.convertToInt(buf[8],buf[9],buf[10],buf[11]);
+            else if(tag == 257) height = this.convertToInt(buf[8],buf[9],buf[10],buf[11]);
+        }
+	System.out.println("width: "+width+"height: "+height);
+        image = new int[nWavelengths][nZ][nT][width][height][npos];
+        StringTokenizer st = new StringTokenizer(order,"wztp",true);
+        int[] wztp = {0,0,0,0};
+        int[] nwztp = {nwl,nz,nT,np};
+        int[] indices = {0,0,0,0};
+        for(int i = 0; i < 4; i++){
+            String tok = st.nextToken();
+            if(tok.equals("w")) indices[i] = 0;
+            else if(tok.equals("z")) indices[i] = 1;
+            else if(tok.equals("t")) indices[i] = 2;
+            else if(tok.equals("p")) indices[i] = 3;
+        }
+        for(int ifd = 0; ifd < nOffsets; ifd++)
+        {
+            fin.seek(offsets[ifd]);
+            fin.read(buf,0,2);
+            nTags = this.convertToShort(buf[0],buf[1]);
+	    System.out.println("Offset: "+offsets[ifd]+", nTags: "+nTags);
+            int nStrips = 0;
+            int stripOffsets = 0;
+            int stripByteCountOffsets = 0;
+            for(int i = 0; i < nTags; i++)
+            {
+                fin.read(buf,0,12);
+                int tag = this.convertToShort(buf[0],buf[1]);
+                if(tag == 273){
+                    nStrips = this.convertToInt(buf[4],buf[5],buf[6],buf[7]);
+                    stripOffsets = this.convertToInt(buf[8],buf[9],buf[10],buf[11]);
+                }
+                else if(tag == 279){
+                    stripByteCountOffsets = this.convertToInt(buf[8],buf[9],buf[10],buf[11]);
+                }
+            }
+            wztp[indices[0]] = ifd % nwztp[indices[0]];
+            wztp[indices[1]] = (ifd % (nwztp[indices[1]]*nwztp[indices[0]])) / nwztp[indices[0]];
+            wztp[indices[2]] = (ifd % (nwztp[indices[2]]*nwztp[indices[1]]*nwztp[indices[0]])) / (nwztp[indices[1]]*nwztp[indices[0]]);
+            wztp[indices[3]] = ifd / (nwztp[indices[2]]*nwztp[indices[1]]*nwztp[indices[0]]);
+            int pos = wztp[3];
+            int t = wztp[2];
+            int z = wztp[1];
+            int wl = wztp[0];
+            //System.out.println(t+", "+z+", "+wl);
+            System.out.println("nStrips: "+nStrips+", stripOffsets: "+stripOffsets+", stripByteCountOffsets: "+stripByteCountOffsets);
+            int index = 0;
+	    if(nStrips == 1){
+                int nbytes = stripByteCountOffsets;
+                fin.seek(stripOffsets);
+                fin.read(buf,0,nbytes);
+                for(int pixel = 0; pixel < nbytes; pixel += 2)
+                {
+                    int y = index / width;
+                    int x = index - width*y;
+                    //System.out.println(x);
+                    //System.out.println(y);
+                    image[wl][z][t][x][y][pos] = this.convertToShort(buf[pixel],buf[pixel+1]);
+                    index++;
+                }
+            }
+	    else{
+		for(int i = 0; i < nStrips; i++){
+		    fin.seek(stripByteCountOffsets + 4*i);
+		    fin.read(buf,0,4);
+		    int nbytes = this.convertToInt(buf[0],buf[1],buf[2],buf[3]);
+		    //System.out.println(nbytes);
+		    fin.seek(stripOffsets + 4*i);
+		    fin.read(buf,0,4);
+		    int stripOff = this.convertToInt(buf[0],buf[1],buf[2],buf[3]);
+		    fin.seek(stripOff);
+		    System.out.println("nbytes: "+nbytes+", stripOff: "+stripOff);
+		    fin.read(buf,0,nbytes);
+		    for(int pixel = 0; pixel < nbytes; pixel += 2){
+			int y = index / width;
+			int x = index - width*y;
+			//System.out.println(x);
+			//System.out.println(y);
+			image[wl][z][t][x][y][pos] = this.convertToShort(buf[pixel],buf[pixel+1]);
+			index++;
+		    }
+		}
+	    }
+        }
+    }
+
+    public void readBigDebug(RandomAccessFile fin, int nwl, int nz, int np, String order) throws IOException
     {
 	byte[] buf = new byte[2048*2048*10];
         int[] offsets = new int[1000000];

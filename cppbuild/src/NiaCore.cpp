@@ -143,5 +143,6 @@ void NiaCore::on_menu_load()
   int result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     m_viewer.setData(m_fileManager.load());
+    m_fileManager.clearInputFiles();
   }
 }

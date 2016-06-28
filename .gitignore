@@ -6,3 +6,5 @@ My*.java
 AyannaImages.*
 JohnPaulImages.*
 ClaireImages.*
+cppbuild/obj/*
+cppbuild/launcher*

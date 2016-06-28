@@ -751,6 +751,9 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			}
 		    }
 		}
+		//boolean unpruned = true;
+		//while(unpruned){
+		//unpruned = false;
 		for(int i = x1; i < x2; i++){
 		    for(int j = y1; j < y2; j++){
 			if(cMask.getValue(i,j) < 1 || m.getValue(i,j) < 1) continue;
@@ -761,9 +764,11 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 			    //m2.setValue(i,j,1);
 			    sumI -= ndim.getPixel(w,z,t,i,j,p);
 			    c.removePixel(new Point(i,j));
+			    //unpruned = true;
 			}
 		    }
 		}
+		    //}
 		if(sumI < minIntensity){//c.size() < 2){
 		    for(int i = c.size()-1; i >=0; i--){
 			Point pt = c.getPixel(i);

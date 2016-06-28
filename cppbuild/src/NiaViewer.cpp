@@ -14,12 +14,20 @@ NiaViewer::NiaViewer() :
 
 NiaViewer::~NiaViewer()
 {
-  if(m_data) delete m_data;
+  if(m_data){
+    delete m_data;
+    uint8_t* buf = m_pixbuf->get_pixels();
+    if(buf) delete[] buf;
+  }
 }
 
 void NiaViewer::setData(ImSeries* data)
 {
-  if(m_data) delete m_data;
+  uint8_t* buf = NULL;
+  if(m_data){
+    delete m_data;
+    buf = m_pixbuf->get_pixels();
+  }
   m_data = data;
   m_view_w = 0;
   m_view_z = 0;
@@ -27,15 +35,13 @@ void NiaViewer::setData(ImSeries* data)
   m_view_t = 0;
   if(m_mode == GRAY){
     autoscaleGray();
-    //void* buf = m_pixbuf->get_data();
     m_pixbuf = createPixbuf(m_data->fourLocation(0,0)->frame(0,0));
-    //if(buf) free(buf);
+    if(buf) delete[] buf;
   }
   else if(m_mode == RGB){
     autoscaleRGB();
-    //void* buf = m_pixbuf->get_data();
     m_pixbuf = createPixbuf(m_data->fourLocation(0,0));
-    //if(buf) free(buf);
+    if(buf) delete[] buf;
   }
   m_displayImage.set(m_pixbuf);
 }
@@ -110,15 +116,15 @@ void NiaViewer::nextTimepoint()
 
 void NiaViewer::updateImage()
 {
+  if(!m_data) return;
+  uint8_t* buf = m_pixbuf->get_pixels();
   if(m_mode == GRAY){
-    //void* buf = m_pixbuf->get_data();
     m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z));
-    //if(buf) free(buf);
+    if(buf) delete[] buf;
   }
   else if(m_mode == RGB){
-    //void* buf = m_pixbuf->get_data();
     m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t));
-    //if(buf) free(buf);
+    if(buf) delete[] buf;
   }
   m_displayImage.set(m_pixbuf);
 }
@@ -138,7 +144,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)
     }
   }
   Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, frame->width(), frame->height(), frame->width()*3);
-  delete[] buf;
+  //delete[] buf;
   return retval;
 }
 
@@ -228,7 +234,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
     }
   }
   Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, width, height, width*3);
-  delete[] buf;
+  //delete[] buf;
   return retval;
 }
 
