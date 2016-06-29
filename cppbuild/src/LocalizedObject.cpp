@@ -40,7 +40,7 @@ double findMaxDistance(std::vector<LocalizedObject*> objs)
   double max = 0.0;
   for(std::vector<LocalizedObject*>::iterator it = objs.begin(); it != objs.end(); it++){
     for(std::vector<LocalizedObject*>::iterator jt = it+1; jt != objs.end(); jt++){
-      double dist = (*it)->distanceTo(**jt);
+      double dist = (*it)->distanceTo((*jt)->center());
       if(dist > max) max = dist;
     }
   }

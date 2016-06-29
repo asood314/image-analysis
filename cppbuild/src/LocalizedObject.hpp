@@ -19,9 +19,9 @@ protected:
 public:
   LocalizedObject(){}
   virtual ~LocalizedObject(){}
-  virtual void computeCenter();
-  virtual bool contains(Point pt);
-  virtual std::vector<Point> getPoints();
+  virtual void computeCenter(){}
+  virtual bool contains(Point pt){ return false; }
+  virtual std::vector<Point> getPoints(){ return std::vector<Point>(); }
   uint32_t overlapWith(LocalizedObject& obj);
   static uint32_t findOverlap(std::vector<LocalizedObject*> objs);
   double distanceTo(Point pt);

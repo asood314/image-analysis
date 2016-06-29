@@ -45,7 +45,7 @@ double Synapse::maxPunctaDistance(std::vector<uint8_t> indices)
   std::vector<LocalizedObject*> c;
   for(std::vector<uint8_t>::iterator it = indices.begin(); it != indices.end(); it++)
     c.push_back(dynamic_cast<LocalizedObject*>(m_puncta.at(*it)));
-  return LocalizedObject::findMaxDistance(c);
+  return 0.0;//LocalizedObject::findMaxDistance(c);
 }
 
 bool Synapse::isColocalized()
