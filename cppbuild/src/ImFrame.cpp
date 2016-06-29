@@ -134,7 +134,7 @@ void ImFrame::readLittle(char* buf, std::ifstream &fin, uint32_t offset)
     }
   }
   uint32_t index = 0;
-  if(true){//nStrips == 1){
+  if(nStrips == 1){
     uint32_t nbytes = stripByteCountOffsets;
     fin.seekg(stripOffsets);
     fin.read(buf,nbytes);
