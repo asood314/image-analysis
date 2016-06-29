@@ -24,11 +24,8 @@ protected:
 
   //signal handlers
   void on_menu_load();
-  void on_channel0();
-  void on_channel1();
-  void on_channel2();
-  void on_modeRGB();
 
+  
 public:
   NiaCore();
   NiaCore(ImSeries* ser);

@@ -28,10 +28,10 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("quit","Quit"));
   m_refActionGroup->add(Gtk::Action::create("viewMenu","View"));
   m_refActionGroup->add(Gtk::Action::create("single","Single Wavelength"));
-  m_refActionGroup->add(Gtk::Action::create("chan0","Channel 0"),Gtk::AccelKey("<control>0"),sigc::mem_fun(*this, &NiaCore::on_channel0));
-  m_refActionGroup->add(Gtk::Action::create("chan1","Channel 1"),Gtk::AccelKey("<control>1"),sigc::mem_fun(*this, &NiaCore::on_channel1));
-  m_refActionGroup->add(Gtk::Action::create("chan2","Channel 2"),Gtk::AccelKey("<control>2"),sigc::mem_fun(*this, &NiaCore::on_channel2));
-  m_refActionGroup->add(Gtk::Action::create("composite","Color Composite"),Gtk::AccelKey("<control>C"),sigc::mem_fun(*this, &NiaCore::on_modeRGB));
+  m_refActionGroup->add(Gtk::Action::create("chan0","Channel 0"),Gtk::AccelKey("<control>0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),0));
+  m_refActionGroup->add(Gtk::Action::create("chan1","Channel 1"),Gtk::AccelKey("<control>1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),1));
+  m_refActionGroup->add(Gtk::Action::create("chan2","Channel 2"),Gtk::AccelKey("<control>2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),2));
+  m_refActionGroup->add(Gtk::Action::create("composite","Color Composite"),Gtk::AccelKey("<control>C"),sigc::bind<NiaViewer::ImageMode>(sigc::mem_fun(m_viewer, &NiaViewer::setMode),NiaViewer::RGB));
   m_refActionGroup->add(Gtk::Action::create("setRed","Set Red Channel"));
   m_refActionGroup->add(Gtk::Action::create("redChan0","Channel 0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),0));
   m_refActionGroup->add(Gtk::Action::create("redChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),1));
@@ -45,12 +45,12 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
   m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
   m_refActionGroup->add(Gtk::Action::create("navMenu","Navigate"));
-  m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey("<control>Z"),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
-  m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey("<control>X"),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
-  m_refActionGroup->add(Gtk::Action::create("prevT","Previous Timepoint"),Gtk::AccelKey("<control>V"),sigc::mem_fun(m_viewer, &NiaViewer::prevTimepoint));
-  m_refActionGroup->add(Gtk::Action::create("nextT","Next Timepoint"),Gtk::AccelKey("<control>B"),sigc::mem_fun(m_viewer, &NiaViewer::nextTimepoint));
-  m_refActionGroup->add(Gtk::Action::create("prevZ","Previous Z-slice"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::prevZ));
-  m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey("<control>W"),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
+  m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey(GDK_KEY_Left,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
+  m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey(GDK_KEY_Right,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
+  m_refActionGroup->add(Gtk::Action::create("prevT","Previous Timepoint"),Gtk::AccelKey(GDK_KEY_Left,Gdk::CONTROL_MASK & Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevTimepoint));
+  m_refActionGroup->add(Gtk::Action::create("nextT","Next Timepoint"),Gtk::AccelKey(GDK_KEY_Right,Gdk::CONTROL_MASK & Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextTimepoint));
+  m_refActionGroup->add(Gtk::Action::create("prevZ","Previous Z-slice"),Gtk::AccelKey(GDK_KEY_Down,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevZ));
+  m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
 
   m_refUIManager = Gtk::UIManager::create();
   m_refUIManager->insert_action_group(m_refActionGroup);
@@ -104,27 +104,6 @@ void NiaCore::init()
   m_vbox.pack_start(m_viewer, Gtk::PACK_EXPAND_WIDGET);
 
   show_all_children();
-}
-
-void NiaCore::on_channel0()
-{
-  m_viewer.setWavelength(0);
-}
-
-void NiaCore::on_channel1()
-{
-  m_viewer.setWavelength(1);
-}
-
-void NiaCore::on_channel2()
-{
-  m_viewer.setWavelength(2);
-}
-
-void NiaCore::on_modeRGB()
-{
-  m_viewer.setMode(NiaViewer::RGB);
-  m_viewer.autoscale();
 }
 
 void NiaCore::on_menu_load()

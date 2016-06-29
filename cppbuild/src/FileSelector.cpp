@@ -29,7 +29,7 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   m_manualButton.set_active();
   m_orderField.set_max_length(5);
   m_orderField.set_width_chars(10);
-  m_orderField.set_text("PTWZ");
+  m_orderField.set_text("WZPT");
   m_hbox1.pack_start(m_diskoveryButton, Gtk::PACK_SHRINK);
   m_hbox1.pack_start(m_manualButton, Gtk::PACK_SHRINK);
   m_vbox1.pack_end(m_orderField, Gtk::PACK_SHRINK);
