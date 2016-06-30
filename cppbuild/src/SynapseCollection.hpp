@@ -30,7 +30,7 @@ public:
   void addRequiredColocalizationByIndex(std::vector<uint8_t> indices){ m_requiredColocalizations.push_back(indices); }
   std::vector<uint8_t> getRequiredColocalization(uint8_t index);
   std::vector<uint8_t> getRequiredColocalizationByIndex(uint8_t index){ return m_requiredColocalizations.at(index); }
-  uint8_t nRequirements(){ return m_requiredColocalizations.size(); }
+  uint8_t nRequirements();
   void setOverlapThreshold(uint32_t threshold){ m_overlapThreshold = threshold; }
   uint32_t overlapThreshold(){ return m_overlapThreshold; }
   void setDistanceThreshold(double threshold){ m_distanceThreshold = threshold; }
@@ -42,7 +42,7 @@ public:
   uint8_t getChannel(uint8_t index){ return m_channels.at(index); }
   uint8_t getChannelIndex(uint8_t chan);
   void setDescription(std::string msg){ m_description = msg; }
-  std::string descripton(){ return m_description; }
+  std::string description(){ return m_description; }
   bool computeColocalization(Synapse* s);
 
 };

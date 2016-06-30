@@ -19,7 +19,7 @@ public:
   void addPoint(uint16_t x, uint16_t y, uint16_t i);
   void addPoint(LocalizedObject::Point pt, uint16_t i);
   LocalizedObject::Point getPoint(uint32_t index){ return m_points.at(index); }
-  void setPoint(uint32_t index, LocalizedObject::Point pt){ m_points.assign(index,pt); }
+  void setPoint(uint32_t index, LocalizedObject::Point pt){ m_points.at(index) = pt; }
   void removePoint(uint32_t index){ m_points.erase(m_points.begin()+index); }
   void removePoint(LocalizedObject::Point pt);
   void setPeakIntensity(uint16_t i){ m_peak = i; }

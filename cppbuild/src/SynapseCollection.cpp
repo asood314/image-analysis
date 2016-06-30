@@ -53,6 +53,12 @@ std::vector<uint8_t> SynapseCollection::getRequiredColocalization(uint8_t index)
   return chans;
 }
 
+uint8_t SynapseCollection::nRequirements()
+{
+  if(m_requireAllColocalized) return 1;
+  return m_requiredColocalizations.size();
+}
+
 uint8_t SynapseCollection::getChannelIndex(uint8_t chan)
 {
   uint8_t index = 0;

@@ -3,6 +3,12 @@ CFLAGS=-g -mms-bitfields -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtkmm-
 LIBS=-L/usr/x86_64-w64-mingw32/sys-root/mingw/lib -lgtkmm-2.4 -latkmm-1.6 -lgdkmm-2.4 -lgiomm-2.4 -lpangomm-1.4 -lgtk-win32-2.0 -lglibmm-2.4 -lcairomm-1.0 -lsigc-2.0 -lgdk-win32-2.0 -lpangowin32-1.0 -lgdi32 -lpangocairo-1.0 -lgio-2.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lintl -lfontconfig -lfreetype -lboost_filesystem-mt -lboost_system-mt
 
 all:
+	x86_64-w64-mingw32-g++ src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/Cluster.cpp -o obj/Cluster.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/Mask.cpp -o obj/Mask.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11 $(CFLAGS)
