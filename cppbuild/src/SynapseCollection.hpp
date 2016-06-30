@@ -24,6 +24,7 @@ public:
   Synapse* getSynapse(uint32_t index){ return m_synapses.at(index); }
   void removeSynapse(uint32_t index);
   uint32_t nSynapses(){ return m_synapses.size(); }
+  std::vector<Synapse*> synapses(){ return m_synapses; }
   void setRequireAll(bool tf){ m_requireAllColocalized = tf; }
   bool allRequired(){ return m_requireAllColocalized; }
   void addRequiredColocalization(std::vector<uint8_t> chans);

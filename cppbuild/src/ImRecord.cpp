@@ -493,6 +493,72 @@ void ImRecord::write(std::ofstream& fout)
       fout.write(buf,offset);
     }
   }
+  buf[0] = (char)m_synapseCollections.size();
+  fout.write(buf,1);
+  for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
+    std::string d = (*it)->description();
+    offset = 0;
+    NiaUtils::writeShortToBuffer(buf,offset,d.length());
+    for(uint16_t i = 0; i < d.length(); i++){
+      buf[offset] = d[i];
+      offset++;
+    }
+    buf[offset] = (char)(*it)->nChannels();
+    offset++;
+    for(std::vector<uint8_t>::iterator jt = (*it)->channels().begin(); jt != (*it)->channels().end(); jt++){
+      buf[offset] = (char)(*jt);
+      offset++;
+    }
+    NiaUtils::writeIntToBuffer(buf,offset,(*it)->nSynapses());
+    offset += 4;
+    for(std::vector<Synapse*>::iterator jt = (*it)->synapses().begin(); jt != (*it)->synapses().end(); jt++){
+      NiaUtils::writeDoubleToBuffer(buf,offset,(*jt)->colocalizationScore());
+      offset += 4;
+      for(uint8_t i = 0; i < (*it)->nChannels(); i++){
+	NiaUtils::writeIntToBuffer(buf,offset,(*jt)->getPunctumIndex(i));
+	offset += 4;
+      }
+    }
+    NiaUtils::writeIntToBuffer(buf,offset,(*it)->overlapThreshold());
+    offset += 4;
+    NiaUtils::writeDoubleToBuffer(buf,offset,(*it)->distanceThreshold());
+    offset += 4;
+    buf[offset] = (char)(*it)->useOverlap();
+    offset++;
+    if((*it)->allRequired()){
+      buf[offset] = 1;
+      offset++;
+    }
+    else{
+      buf[offset] = 0;
+      buf[offset+1] = (char)(*it)->nRequirements();
+      offset += 2;
+      for(uint8_t i = 0; i < (*it)->nRequirements(); i++){
+	std::vector<uint8_t> reqs = (*it)->getRequiredColocalizationByIndex(i);
+	buf[offset] = (char)reqs.size();
+	offset++;
+	for(std::vector<uint8_t>::iterator jt = reqs.begin(); jt != reqs.end(); jt++){
+	  buf[offset] = (char)(*jt);
+	  offset++;
+	}
+      }
+    }
+    fout.write(buf,offset);
+  }
+  buf[0] = (char)nRegions();
+  offset = 1;
+  for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){
+    buf[offset] = (*it)->nVertices();
+    offset++;
+    std::vector<LocalizedObject::Point> verts = (*it)->vertices();
+    for(std::vector<LocalizedObject::Point>::iterator jt = verts.begin(); jt != verts.end(); jt++){
+      NiaUtils::writeShortToBuffer(buf,offset,jt->x);
+      NiaUtils::writeShortToBuffer(buf,offset+2,jt->y);
+      offset += 4;
+    }
+  }
+  fout.write(buf,offset);
+  delete[] buf;
 }
 
 void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
@@ -505,7 +571,7 @@ void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
     retval = retval | ((m->getValue(i,y) & 0x01) << nb);
     nb++;
   }
-  while(nb < 64){
+  while(nb < 64 && y < m_imHeight){
     x = 0;
     y++;
     for(uint16_t i = x; nb < 64 && i < m_imWidth; i++){
@@ -526,6 +592,187 @@ void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
 
 void ImRecord::read(std::ifstream& fin)
 {
+  char* buf = new char[400000];
+  fin.read(buf,9);
+  m_nchannels = (uint8_t)buf[0];
+  m_imWidth = NiaUtils::convertToShort(buf[1],buf[2]);
+  m_imHeight = NiaUtils::convertToShort(buf[3],buf[4]);
+  m_resolutionXY = NiaUtils::convertToDouble(buf[5],buf[6],buf[7],buf[8]);
+  fin.read(buf,2*m_nchannels);
+  uint64_t offset = 0;
+  for(uint8_t chan = 0; chan < m_nchannels; chan++){
+    m_thresholds.push_back(NiaUtils::convertToShort(buf[offset],buf[offset+1]));
+    offset += 2;
+  }
+  uint32_t npackets = (m_imWidth*m_imHeight) / 8;
+  if((m_imWidth*m_imHeight) % 8 > 0) npackets++;
+  for(uint8_t chan = 0; chan < m_nchannels; chan++){
+    fin.read(buf,1);
+    if((uint8_t)buf[0] > 0){
+      Mask* m = new Mask(m_imWidth,m_imHeight);
+      uint32_t index = 0;
+      while(npackets > 19999){
+	fin.read(buf,160000);
+	unpack(buf,160000,m,index);
+	index += 1280000;
+	npackets -= 20000;
+      }
+      fin.read(buf,8*npackets);
+      unpack(buf,8*npackets,m,index);
+      m_signalMasks.push_back(m);
+    }
+    else m_signalMasks.push_back(NULL);
+
+    std::vector<Cluster*> clusters;
+    fin.read(buf,4);
+    uint32_t nClusters = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+    for(uint32_t i = 0; i < nClusters; i++){
+      Cluster* c = new Cluster();
+      fin.read(buf,8);
+      uint16_t npix = NiaUtils::convertToShort(buf[0],buf[1]);
+      c->setPeakIntensity(NiaUtils::convertToShort(buf[2],buf[3]));
+      c->setIntegratedIntensity(NiaUtils::convertToInt(buf[4],buf[5],buf[6],buf[7]));
+      fin.read(buf,4*npix);
+      offset = 0;
+      for(uint16_t j = 0; j < npix; j++){
+	c->addPoint(NiaUtils::convertToShort(buf[offset],buf[offset+1]),NiaUtils::convertToShort(buf[offset+2],buf[offset+3]));
+	offset += 4;
+      }
+      clusters.push_back(c);
+    }
+    m_puncta.push_back(clusters);
+  }
+
+  fin.read(buf,1);
+  for(uint8_t icol = 0; icol < (uint8_t)buf[0]; icol++){
+    fin.read(buf,2);
+    uint16_t len = NiaUtils::convertToShort(buf[0],buf[1]);
+    fin.read(buf,len+1);
+    std::string d = "";
+    d.append(buf,len);
+    uint8_t nchan = (uint8_t)buf[len];
+    fin.read(buf,nchan);
+    std::vector<uint8_t> chans;
+    for(uint8_t i = 0; i < nchan; i++) chans.push_back((uint8_t)buf[i]);
+    SynapseCollection* sc = new SynapseCollection(chans);
+    fin.read(buf,4);
+    uint32_t nsyn = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+    fin.read(buf,4*(nchan+1)*nsyn);
+    offset = 0;
+    for(uint32_t i = 0; i < nsyn; i++){
+      Synapse* s = new Synapse();
+      s->setColocalizationScore(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      for(std::vector<uint8_t>::iterator it = chans.begin(); it != chans.end(); it++){
+	uint32_t index = NiaUtils::convertToInt(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]);
+	s->addPunctum(m_puncta.at(*it).at(index),index);
+	offset += 4;
+      }
+      sc->addSynapse(s);
+    }
+    fin.read(buf,10);
+    sc->setOverlapThreshold(NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]));
+    sc->setDistanceThreshold(NiaUtils::convertToDouble(buf[4],buf[5],buf[6],buf[7]));
+    sc->setUseOverlap((uint8_t)buf[8] > 0);
+    sc->setRequireAll((uint8_t)buf[9] > 0);
+    if(!sc->allRequired()){
+      fin.read(buf,1);
+      uint8_t nreqs = (uint8_t)buf[0];
+      for(uint8_t i = 0; i < nreqs; i++){
+	std::vector<uint8_t> reqs;
+	fin.read(buf,1);
+	uint8_t n = (uint8_t)buf[0];
+	fin.read(buf,n);
+	for(uint8_t j = 0; j < n; j++) reqs.push_back((uint8_t)buf[j]);
+	sc->addRequiredColocalizationByIndex(reqs);
+      }
+    }
+    m_synapseCollections.push_back(sc);
+  }
+  
+  fin.read(buf,1);
+  uint8_t nROI = (uint8_t)buf[0];
+  for(uint8_t i = 0; i < nROI; i++){
+    Region* r = new Region();
+    fin.read(buf,1);
+    uint8_t nVerts = (uint8_t)buf[0];
+    fin.read(buf,4*nVerts);
+    for(uint8_t j = 0; j < nVerts; j++){
+      LocalizedObject::Point pt;
+      pt.x = NiaUtils::convertToShort(buf[offset],buf[offset+1]);
+      pt.y = NiaUtils::convertToShort(buf[offset+2],buf[offset+3]);
+      r->addVertex(pt);
+      offset += 4;
+    }
+    m_regions.push_back(r);
+  }
+
+  delete[] buf;
+}
+
+void ImRecord::unpack(char* buf, uint64_t offset, Mask* m, uint32_t index)
+{
+  uint16_t x = index % m_imWidth;
+  uint16_t y = index / m_imWidth;
+  for(uint64_t i = 0; i < offset; i++){
+    uint8_t next = (uint8_t)buf[i];
+    m->setValue(x,y,(next & 0x01));
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x02)>>1);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x04)>>2);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x08)>>3);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x10)>>4);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x20)>>5);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x40)>>6);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+    m->setValue(x,y,(next & 0x80)>>7);
+    x++;
+    if(x >= m_imWidth){
+      x = 0;
+      y++;
+      if(y >= m_imHeight) return;
+    }
+  }
 }
 
 void ImRecord::loadMetaMorphRegions(std::string filename)

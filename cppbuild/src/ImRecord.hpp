@@ -67,6 +67,7 @@ public:
   void write(std::ofstream& fout);
   void pack(char* buf, uint64_t& offset, Mask* m, uint32_t index);
   void read(std::ifstream& fin);
+  void unpack(char* buf, uint64_t offset, Mask* m, uint32_t index);
   void loadMetaMorphRegions(std::string filename);
   void loadMetaMorphTraces(std::string filename, uint8_t chan, bool overwrite);
   

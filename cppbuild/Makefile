@@ -5,6 +5,8 @@ all:
 	g++ -g src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11
 	g++ -g src/Mask.cpp -o obj/Mask.o -c -std=c++11
+	g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
+	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
 	g++ -g src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
@@ -31,6 +33,8 @@ back:
 	g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	g++ src/Region.cpp -o obj/Region.o -c -std=c++11
 	g++ src/Mask.cpp -o obj/Mask.o -c -std=c++11
+	g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
+	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
 
 exec:
 	g++ src/main.cpp -o obj/main.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`

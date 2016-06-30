@@ -1,6 +1,6 @@
 #include "Region.hpp"
 
-bool Region::contains(LocalizedObject::Point& pt)
+bool Region::contains(LocalizedObject::Point pt)
 {
   bool inside = false;
   for(std::vector<LocalizedObject::Point>::iterator it = m_vertices.begin(); it != m_vertices.end()-1; it++){
