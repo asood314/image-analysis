@@ -4,6 +4,8 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include "NiaUtils.hpp"
+#include "Mask.hpp"
 
 class ImFrame
 {
@@ -26,9 +28,25 @@ public:
   uint32_t width(){ return m_width; }
   uint32_t height(){ return m_height; }
 
-  static uint16_t convertToShort(char c0, char c1);
-  static uint32_t convertToInt(char c0, char c1, char c2, char c3);
+  double mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+  double mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
+  double median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+  double median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
+  double mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+  double mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
+  double std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
+  double std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
+  void getMedianStd(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m, double& med, double& std);
 
+  double mean(){ return mean(0,m_width,0,m_height); }
+  double mean(Mask* m){ return mean(0,m_width,0,m_height,m); }
+  double median(){ return median(0,m_width,0,m_height); }
+  double median(Mask* m){ return median(0,m_width,0,m_height,m); }
+  double mode(){ return mode(0,m_width,0,m_height); }
+  double mode(Mask* m){ return mode(0,m_width,0,m_height,m); }
+  double std(){ return std(0,m_width,0,m_height); }
+  double std(Mask* m){ return std(0,m_width,0,m_height,m); }
+  
 };
 
 #endif

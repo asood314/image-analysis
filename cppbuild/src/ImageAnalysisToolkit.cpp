@@ -1,0 +1,967 @@
+#include "ImageAnalysisToolkit.hpp"
+
+ImageAnalysisToolkit::ImageAnalysisToolkit()
+{
+  m_master = 255;
+  m_mode = OVERRIDE;
+  m_punctaFindingIterations = 10;
+  m_localWindowIncrement = 10;
+  m_minPunctaRadius = 0.1;
+  m_reclusterThreshold = 3.0;
+  m_noiseRemovalThreshold = 2.0;
+  m_peakThreshold = 3.0;
+  m_floorThreshold = 2.0;
+  m_saturationThreshold = 4094;
+}
+
+ImageAnalysisToolkit::~ImageAnalysisToolkit()
+{
+}
+
+void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int zplane)
+{
+  ImStack* analysisStack = stack;
+  if(zplane < 0){
+    analysisStack = stack->zprojection();
+    zplane = 0;
+  }
+
+  if(m_master == 255){
+    for(uint8_t w = 0; w < analysisStack->nwaves(); w++) findSignal(analysisStack->frame(w,zplane),rec,w);
+  }
+  else{
+    findSignal(analysisStack->frame(m_master,zplane),rec,m_master);
+    Mask* m = rec->getSignalMask(m_master);
+    if(m_mode == OVERRIDE){
+      for(uint8_t w = 0; w < analysisStack->nwaves(); w++){
+	ImFrame* f = analysisStack->frame(w,zplane);
+	double mean = f->mean(m);
+	double std = f->std(m);
+	double threshold = mean + std;
+	Mask* m2 = m->getCopy();
+	for(uint16_t i = 0; i < f->width(); i++){
+	  for(uint16_t j = 0; j < f->height(); j++){
+	    if(f->getPixel(i,j) > threshold) m2->setValue(i,j,1);
+	  }
+	}
+	rec->setSignalMask(w,m2);
+      }
+    }
+    else{ //m_mode == OR
+      for(uint8_t w = 0; w < analysisStack->nwaves(); w++){
+	if(w == m_master) continue;
+	findSignal(analysisStack->frame(w,zplane),rec,w);
+	Mask* m2 = rec->getSignalMask(w);
+	m2->OR(*m);
+      }
+    }
+  }
+
+  for(uint8_t w = 0; w < analysisStack->nwaves(); w++) findPuncta(analysisStack->frame(w,zplane),rec,w);
+
+  findSynapses(rec);
+}
+
+void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t chan)
+{
+  uint16_t globalThreshold = findThreshold(frame);
+  Mask* m = new Mask(frame->width(),frame->height());
+  for(uint16_t i = 0; i < frame->width(); i++){
+    for(uint16_t j = 0; j < frame->height(); j++){
+      if(frame->getPixel(i,j) > globalThreshold){
+	m->setValue(i,j,1);
+      }
+    }
+  }
+  bool unfilled = true;
+  while(unfilled){
+    unfilled = false;
+    for(uint16_t i = 1; i < frame->width()-1; i++){
+      for(uint16_t j = 1; j < frame->height()-1; j++){
+	if(m->getValue(i,j) > 0) continue;
+	uint8_t sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	if(sum > 4){
+	  m->setValue(i,j,1);
+	  unfilled = true;
+	}
+      }
+    }
+  }
+  bool unpruned = true;
+  while(unpruned){
+    unpruned = false;
+    for(uint16_t i = 1; i < frame->width()-1; i++){
+      for(uint16_t j = 1; j < frame->height()-1; j++){
+	if(m->getValue(i,j) < 1) continue;
+	uint8_t sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	if(sum < 3){
+	  m->setValue(i,j,0);
+	  unpruned = true;
+	}
+      }
+    }
+  }
+  uint32_t sizeThreshold = (uint32_t)(m_noiseRemovalThreshold*3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY()));
+  std::vector<uint16_t> borderX;
+  std::vector<uint16_t> borderY;
+  std::vector<uint16_t> clusterX;
+  std::vector<uint16_t> clusterY;
+  Mask* used = m->getCopy();
+  for(uint16_t i = 0; i < frame->width(); i++){
+    for(uint16_t j = 0; j < frame->height(); j++){
+      if(used->getValue(i,j) != 1) continue;
+      clusterX.push_back(i);
+      clusterY.push_back(j);
+      borderX.push_back(i);
+      borderY.push_back(j);
+      used->setValue(i,j,0);
+      uint32_t size = 1;
+      while(borderX.size() > 0){
+	uint16_t bi = borderX.at(0);
+	uint16_t bj = borderY.at(0);
+	for(uint16_t di = bi-1; di < bi+2; di++){
+	  if(di >= frame->width()) continue;
+	  for(uint16_t dj = bj-1; dj < bj+2; dj++){
+	    if(dj >= frame->height()) continue;
+	    uint8_t val = used->getValue(di,dj);
+	    if(val > 0){
+	      used->setValue(di,dj,0);
+	      clusterX.push_back(di);
+	      clusterY.push_back(dj);
+	      borderX.push_back(di);
+	      borderY.push_back(dj);
+	      size++;
+	    }
+	  }
+	}
+	borderX.erase(borderX.begin());
+	borderY.erase(borderY.begin());
+      }
+      if(size < sizeThreshold){
+	for(int k = 0; k < size; k++){
+	  m->setValue(clusterX.at(k),clusterY.at(k),0);
+	}
+      }
+    }
+  }
+  rec->setSignalMask(chan,m);
+  delete used;
+}
+
+uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
+{
+  Mask* m = new Mask(frame->width(),frame->height());
+  double lowerLimit = frame->mode();
+  double mode = lowerLimit;
+  double best = frame->mean();
+  double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
+  int nsteps = 10;
+  double step = (upperLimit - lowerLimit) / nsteps;
+  if(step < 1.0){
+    step = 1.0;
+    nsteps = (int)(upperLimit - lowerLimit);
+  }
+  double fom = 0;
+  int maxClusters = 0;
+  bool finished = false;
+  while(!finished){
+    finished = true;
+    for(int istep = 0; istep < nsteps+1; istep++){
+      double globalThreshold = lowerLimit + istep*step;
+      for(uint16_t i = 0; i < frame->width(); i++){
+	for(uint16_t j = 0; j < frame->height(); j++){
+	  uint16_t value = frame->getPixel(i,j);
+	  if(value > globalThreshold){
+	    m->setValue(i,j,1);
+	  }
+	  else m->setValue(i,j,0);
+	}
+      }
+      bool unpruned = true;
+      while(unpruned){
+	unpruned = false;
+	for(uint16_t i = 1; i < frame->width()-1; i++){
+	  for(uint16_t j = 1; j < frame->height()-1; j++){
+	    if(m->getValue(i,j) < 1) continue;
+	    uint8_t sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	    if(sum < 3){
+	      m->setValue(i,j,0);
+	      unpruned = true;
+	    }
+	  }
+	}
+      }
+      int maxSize = 0;
+      long avgSigSize = 0;
+      long avgSigSize2 = 0;
+      int nSigClusters = 0;
+      std::vector<uint16_t> borderX;
+      std::vector<uint16_t> borderY;
+      Mask* subMask = m->getCopy();
+      for(uint16_t i = 0; i < frame->width(); i++){
+	for(uint16_t j = 0; j < frame->height(); j++){
+	  if(subMask->getValue(i,j) != 1) continue;
+	  borderX.push_back(i);
+	  borderY.push_back(j);
+	  subMask->setValue(i,j,0);
+	  long size = 1;
+	  while(borderX.size() > 0){
+	    uint16_t bi = borderX.at(0);
+	    uint16_t bj = borderY.at(0);
+	    for(uint16_t di = bi-1; di < bi+2; di++){
+	      if(di >= frame->width()) continue;
+	      for(uint16_t dj = bj-1; dj < bj+2; dj++){
+		if(dj >= frame->height()) continue;
+		uint16_t val = m->getValue(di,dj);
+		if(val > 0 && subMask->getValue(di,dj) == 1){
+		  subMask->setValue(di,dj,0);
+		  borderX.push_back(di);
+		  borderY.push_back(dj);
+		  size++;
+		}
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	  if(size > maxSize){
+	    maxSize = (int)size;
+	    //  maxCluster = c;
+	  }
+	  avgSigSize += size;
+	  avgSigSize2 += size*size;
+	  nSigClusters++;
+	}
+      }
+
+      int maxBkgSize = 0;
+      int avgSize = 0;
+      int nBkgClusters = 0;
+      subMask->copy(*m);
+      for(uint16_t i = 0; i < frame->width(); i++){
+	for(uint16_t j = 0; j < frame->height(); j++){
+	  if(subMask->getValue(i,j) != 0) continue;
+	  borderX.push_back(i);
+	  borderY.push_back(j);
+	  subMask->setValue(i,j,1);
+	  int size = 1;
+	  while(borderX.size() > 0){
+	    uint16_t bi = borderX.at(0);
+	    uint16_t bj = borderY.at(0);
+	    for(uint16_t di = bi-1; di < bi+2; di++){
+	      if(di >= frame->width()) continue;
+	      for(uint16_t dj = bj-1; dj < bj+2; dj++){
+		if(dj >= frame->height()) continue;
+		int val = m->getValue(di,dj);
+		if(val < 1 && subMask->getValue(di,dj) == 0){
+		  subMask->setValue(di,dj,1);
+		  borderX.push_back(di);
+		  borderY.push_back(dj);
+		  size++;
+		}
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	  if(size > maxBkgSize){
+	    maxBkgSize = size;
+	  }
+	  avgSize += size;
+	  nBkgClusters++;
+	}
+      }
+
+      
+      double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
+      if(((double)avgSigSize)/(frame->height()*frame->width()) < 0.01) break;
+      if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+      else ifom = 0;
+      if(nSigClusters >= maxClusters){
+	fom = ifom;
+	maxClusters = nSigClusters;
+	best = globalThreshold;
+	finished = false;
+      }
+      else if(ifom > fom){
+	fom = ifom;
+	best = globalThreshold;
+	finished = false;
+      }
+      delete subMask;
+    }
+    if(step < 1.01) break;
+    if(best < 0) break;
+    if(best == lowerLimit){
+      lowerLimit = best - step;
+      upperLimit = best + 9*step;
+      fom *= 0.999;
+    }
+    else if(best == upperLimit){
+      lowerLimit = best - 9*step;
+      upperLimit = best + step;
+      fom *= 0.999;
+    }
+    else{
+      lowerLimit = best - step;
+      upperLimit = best + step;
+      step = (upperLimit - lowerLimit) / nsteps;
+      if(step < 1.0){
+	step = 1.0;
+	nsteps = (int)(upperLimit - lowerLimit);
+      }
+    }
+  }
+  delete m;
+  return (uint16_t)best;
+}
+
+void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan)
+{
+  findSaturatedPuncta(frame,rec,chan);
+  
+  Mask* m = rec->getSignalMask(chan);
+  std::vector<LocalizedObject::Point> localMaxima;
+  std::vector<LocalizedObject::Point> upperLeft;
+  std::vector<LocalizedObject::Point> lowerRight;
+  std::vector<uint16_t> intensities;
+  int minSignal = (int)std::min(5.0 / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
+  int initialWindowSize = (int)(sqrt(minSignal) / 2);
+  for(uint16_t i = 0; i < frame->width(); i++){
+    for(uint16_t j = 0; j < frame->height(); j++){
+      if(m->getValue(i,j) < 1){
+	continue;
+      }
+      uint16_t x1 = std::max(i-m_localWindowIncrement,0);
+      uint16_t x2 = std::min((int)frame->width(),i+m_localWindowIncrement);
+      uint16_t y1 = std::max(j-m_localWindowIncrement,0);
+      uint16_t y2 = std::min((int)frame->height(),j+m_localWindowIncrement);
+      
+      uint16_t val = frame->getPixel(i,j);
+      bool isMax = true;
+      for(uint16_t di = i-1; di < i+2; di++){
+	if(di >= frame->width()) continue;
+	for(uint16_t dj = j-1; dj < j+2; dj++){
+	  if(dj >= frame->height()) continue;
+	  if(frame->getPixel(di,dj) > val){
+	    isMax = false;
+	    break;
+	  }
+	}
+      }
+      if(!isMax) continue;
+		
+      localMaxima.push_back(LocalizedObject::Point(i,j));
+      intensities.push_back(val);
+      //int x1 = Math.std::max(i-initialWindowSize,0);
+      //int x2 = Math.std::min(ndim.getWidth(),i+initialWindowSize);
+      //int y1 = Math.std::max(j-initialWindowSize,0);
+      //int y2 = Math.std::min(ndim.getHeight(),j+initialWindowSize);
+      int nSignal = m->sum(x1,x2,y1,y2);
+      while(nSignal < minSignal){
+	//int step = (int)(Math.sqrt(minSignal/nSignal - 1) * initialWindowSize) + 1;
+	x1 = std::max(x1-m_localWindowIncrement,0);
+	x2 = std::min((int)frame->width(),x2+m_localWindowIncrement);
+	y1 = std::max(y1-m_localWindowIncrement,0);
+	y2 = std::min((int)frame->height(),y2+m_localWindowIncrement);
+	//x1 = Math.std::max(x1-step,0);
+	//x2 = Math.std::min(ndim.getWidth(),x2+step);
+	//y1 = Math.std::max(y1-step,0);
+	//y2 = Math.std::min(ndim.getHeight(),y2+step);
+	nSignal = m->sum(x1,x2,y1,y2);
+      }
+      upperLeft.push_back(LocalizedObject::Point(x1,y1));
+      lowerRight.push_back(LocalizedObject::Point(x2,y2));
+    }
+  }
+  for(uint32_t i = 0; i < intensities.size(); i++){
+    uint16_t max = intensities.at(i);
+    uint16_t imax = i;
+    for(uint32_t j = i+1; j < intensities.size(); j++){
+      if(intensities.at(j) > max){
+	max = intensities.at(j);
+	imax = j;
+      }
+    }
+    intensities.at(imax) = intensities.at(i);
+    intensities.at(i) = max;
+    LocalizedObject::Point temp = localMaxima.at(i);
+    localMaxima.at(i) = localMaxima.at(imax);
+    localMaxima.at(imax) = temp;
+    temp = upperLeft.at(i);
+    upperLeft.at(i) = upperLeft.at(imax);
+    upperLeft.at(imax) = temp;
+    temp = lowerRight.at(i);
+    lowerRight.at(i) = lowerRight.at(imax);
+    lowerRight.at(imax) = temp;
+  }
+
+  int32_t nRemoved = -1;
+  int32_t nNew = 0;
+  uint8_t count = 0;
+  Mask* cMask = new Mask(frame->width(),frame->height());
+  Mask* used = m->getCopy();
+  used->subtract(*(rec->getPunctaMask(chan,false)));
+  double punctaAreaThreshold = 3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY());
+  uint32_t retryThreshold = (uint32_t)(m_reclusterThreshold*punctaAreaThreshold) + 1;
+  while(nNew > nRemoved && count < m_punctaFindingIterations){
+    nRemoved = 0;
+    int32_t nPuncta = (int32_t)rec->nPuncta(chan);
+    for(int32_t j = nPuncta-1; j >= nPuncta-nNew; j--){
+      Cluster* c = rec->getPunctum(chan,j);
+      if(c->size() < retryThreshold){
+	std::vector<LocalizedObject::Point> pts = c->getPoints();
+	for(std::vector<LocalizedObject::Point>::iterator it = pts.begin(); it != pts.end(); it++){
+	  used->setValue(it->x,it->y,1);
+	}
+	rec->removePunctum(chan,j);
+	nRemoved++;
+      }
+    }
+
+    nNew = 0;
+    for(uint32_t s = 0; s < localMaxima.size(); s++){
+      LocalizedObject::Point lm = localMaxima.at(s);
+      if(used->getValue(lm.x,lm.y) == 0) continue;
+      LocalizedObject::Point ul = upperLeft.at(s);
+      LocalizedObject::Point lr = lowerRight.at(s);
+      uint16_t Imax = frame->getPixel(lm.x,lm.y);
+      double localMedian;
+      double localStd;
+      frame->getMedianStd(ul.x,lr.x,ul.y,lr.y,used,localMedian,localStd);
+      double minThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold*localStd);
+      double localThreshold = localMedian + m_peakThreshold*localStd;
+      double minIntensity = punctaAreaThreshold*(localMedian + m_floorThreshold*localStd);
+      if(Imax < localThreshold) continue;
+      localThreshold = Imax;
+      Cluster* c = new Cluster();
+      std::vector<uint16_t> borderX;
+      std::vector<uint16_t> borderY;
+      std::vector<uint16_t> borderVal;
+      borderX.push_back(lm.x);
+      borderY.push_back(lm.y);
+      borderVal.push_back(Imax);
+      used->setValue(lm.x,lm.y,0);
+      cMask->setValue(lm.x,lm.y,1);
+      double sumI = Imax;
+      while(borderX.size() > 0){
+	uint32_t nborder = borderX.size();
+	for(uint32_t b = 0; b < nborder; b++){
+	  uint16_t bi = borderX.at(0);
+	  uint16_t bj = borderY.at(0);
+	  c->addPoint(bi,bj);
+	  double upperLimit = Imax;
+	  if((borderVal.at(0) - minThreshold)/(Imax - minThreshold) < 0.3) upperLimit = borderVal.at(0);
+	  for(uint16_t di = bi-1; di < bi+2; di++){
+	    if(di >= frame->width()) continue;
+	    for(uint16_t dj = bj-1; dj < bj+2; dj++){
+	      if(dj >= frame->height()) continue;
+	      double val = used->getValue(di,dj)*((double)frame->getPixel(di,dj) - minThreshold) / (upperLimit - minThreshold);
+	      if(val < 0.001 || val > 1.0) continue;
+	      used->setValue(di,dj,0);
+	      borderX.push_back(di);
+	      borderY.push_back(dj);
+	      borderVal.push_back(frame->getPixel(di,dj));
+	      sumI += frame->getPixel(di,dj);
+	      cMask->setValue(di,dj,1);
+	    }
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	  borderVal.erase(borderVal.begin());
+	}
+      }
+      bool unfilled = true;
+      int size = (int)c->size();
+      int x1 = std::max(1,lm.x - size);
+      int x2 = std::min((int)frame->width()-1,lm.x + size);
+      int y1 = std::max(1,lm.y - size);
+      int y2 = std::min((int)frame->height()-1,lm.y + size);
+      while(unfilled){
+	unfilled = false;
+	for(int i = x1; i < x2; i++){
+	  for(int j = y1; j < y2; j++){
+	    if(cMask->getValue(i,j) > 0 || m->getValue(i,j) < 1) continue;
+	    int sum = cMask->getValue(i-1,j-1) + cMask->getValue(i,j-1) + cMask->getValue(i+1,j-1) + cMask->getValue(i-1,j) + cMask->getValue(i+1,j) + cMask->getValue(i-1,j+1) + cMask->getValue(i,j+1) + cMask->getValue(i+1,j+1);
+	    if(sum > 4){
+	      cMask->setValue(i,j,1);
+	      used->setValue(i,j,0);
+	      c->addPoint(i,j);
+	      sumI += frame->getPixel(i,j);
+	      unfilled = true;
+	    }
+	  }
+	}
+      }
+      for(int i = x1; i < x2; i++){
+	for(int j = y1; j < y2; j++){
+	  if(cMask->getValue(i,j) < 1 || m->getValue(i,j) < 1) continue;
+	  int sum = cMask->getValue(i-1,j-1) + cMask->getValue(i,j-1) + cMask->getValue(i+1,j-1) + cMask->getValue(i-1,j) + cMask->getValue(i+1,j) + cMask->getValue(i-1,j+1) + cMask->getValue(i,j+1) + cMask->getValue(i+1,j+1);
+	  if(sum < 3){
+	    cMask->setValue(i,j,0);
+	    used->setValue(i,j,1);
+	    sumI -= frame->getPixel(i,j);
+	    c->removePoint(LocalizedObject::Point(i,j));
+	  }
+	}
+      }
+      if(sumI < minIntensity){
+	for(int i = c->size()-1; i >=0; i--){
+	  LocalizedObject::Point pt = c->getPoint(i);
+	  used->setValue(pt.x,pt.y,1);
+	  cMask->setValue(pt.x,pt.y,0);
+	}
+	delete c;
+	continue;
+      }
+      c->computeCenter();
+      if(c->contains(c->center())){
+	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
+	  LocalizedObject::Point seed = c->getPoint(0);
+	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << std::endl;
+	  for(int i = c->size()-1; i >=0; i--){
+	    LocalizedObject::Point pt = c->getPoint(i);
+	    cMask->setValue(pt.x,pt.y,0);
+	  }
+	  delete c;
+	  continue;
+	}
+	rec->addPunctum(chan,c);
+	nNew++;
+	for(int i = c->size()-1; i >=0; i--){
+	  LocalizedObject::Point pt = c->getPoint(i);
+	  cMask->setValue(pt.x,pt.y,0);
+	}
+      }
+      else{
+	for(int i = c->size()-1; i >=0; i--){
+	  LocalizedObject::Point pt = c->getPoint(i);
+	  used->setValue(pt.x,pt.y,1);
+	  cMask->setValue(pt.x,pt.y,0);
+	}
+	delete c;
+      }
+    }
+    count++;
+  }
+  delete cMask;
+  delete used;
+
+  resolveOverlaps(frame,rec,chan);
+  //return count;
+}
+
+void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan)
+{
+  Mask* m = rec->getSignalMask(chan);
+  Mask* used = m->getCopy();
+  Mask* cMask = new Mask(frame->width(),frame->height());
+  std::vector<uint16_t> borderSatX;
+  std::vector<uint16_t> borderSatY;
+  std::vector<uint16_t> borderUnsatX;
+  std::vector<uint16_t> borderUnsatY;
+  std::vector<uint16_t> borderVal;
+  uint32_t minMinSignal = (uint32_t)std::min(5.0 / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
+  for(uint16_t i = 0; i < frame->width(); i++){
+    for(uint16_t j = 0; j < frame->height(); j++){
+      uint16_t value = frame->getPixel(i,j);
+      if(used->getValue(i,j)*value < m_saturationThreshold) continue;
+      Cluster* c = new Cluster();
+      c->setPeakIntensity(value);
+      uint32_t totI = value;
+      c->addPoint(i,j);
+      used->setValue(i,j,0);
+      cMask->setValue(i,j,1);
+      borderSatX.push_back(i);
+      borderSatY.push_back(j);
+      while(borderSatX.size() > 0){
+	uint16_t bi = borderSatX.at(0);
+	uint16_t bj = borderSatY.at(0);
+	for(uint16_t x = bi-1; x < bi+2; x++){
+	  if(x >= frame->width()) continue;
+	  for(uint16_t y = bj-1; y < bj+2; y++){
+	    if(y >= frame->height()) continue;
+	    value = frame->getPixel(x,y);
+	    if(used->getValue(x,y) > 0){
+	      if(value > m_saturationThreshold){
+		borderSatX.push_back(x);
+		borderSatY.push_back(y);
+	      }
+	      else{
+		borderUnsatX.push_back(x);
+		borderUnsatY.push_back(y);
+		borderVal.push_back(value);
+	      }
+	      c->addPoint(x,y);
+	      used->setValue(x,y,0);
+	      cMask->setValue(x,y,1);
+	      totI += value;
+	    }
+	  }
+	}
+	borderSatX.erase(borderSatX.begin());
+	borderSatY.erase(borderSatY.begin());
+      }
+
+      c->computeCenter();
+      LocalizedObject::Point center = c->center();
+      int x1 = std::max(center.x-m_localWindowIncrement,0);
+      int x2 = std::min((int)frame->width(),center.x+m_localWindowIncrement);
+      int y1 = std::max(center.y-m_localWindowIncrement,0);
+      int y2 = std::min((int)frame->height(),center.y+m_localWindowIncrement);
+      int nSignal = m->sum(x1,x2,y1,y2);
+      int minSignal = std::max(minMinSignal,4*c->size());
+      while(nSignal < minSignal){
+	x1 = std::max(x1-m_localWindowIncrement,0);
+	x2 = std::min((int)frame->width(),x2+m_localWindowIncrement);
+	y1 = std::max(y1-m_localWindowIncrement,0);
+	y2 = std::min((int)frame->height(),y2+m_localWindowIncrement);
+	nSignal = m->sum(x1,x2,y1,y2);
+      }
+      uint16_t Imax = m_saturationThreshold;
+      double localMedian = frame->median(x1,x2,y1,y2,used);
+      double localStd = frame->std(x1,x2,y1,y2,used);
+      double localThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold*localStd);
+      while(borderUnsatX.size() > 0){
+	uint16_t upperLimit = Imax;
+	if((borderVal.at(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.at(0);
+	if(upperLimit <= localThreshold){
+	  borderUnsatX.erase(borderUnsatX.begin());
+	  borderUnsatY.erase(borderUnsatY.begin());
+	  borderVal.erase(borderVal.begin());
+	  continue;
+	}
+	uint16_t bi = borderUnsatX.at(0);
+	uint16_t bj = borderUnsatY.at(0);
+	for(uint16_t x = bi-1; x < bi+2; x++){
+	  if(x >= frame->width()) continue;
+	  for(uint16_t y = bj-1; y < bj+2; y++){
+	    if(y >= frame->height()) continue;
+	    uint16_t pixelValue = frame->getPixel(x,y);
+	    double val = used->getValue(x,y)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
+	    if(val < 0.001 || val > 1.0) continue;
+	    borderUnsatX.push_back(x);
+	    borderUnsatY.push_back(y);
+	    borderVal.push_back(pixelValue);
+	    c->addPoint(x,y);
+	    used->setValue(x,y,0);
+	    cMask->setValue(x,y,1);
+	    totI += pixelValue;
+	  }
+	}
+	borderUnsatX.erase(borderUnsatX.begin());
+	borderUnsatY.erase(borderUnsatY.begin());
+	borderVal.erase(borderVal.begin());
+      }
+
+      bool unfilled = true;
+      while(unfilled){
+	unfilled = false;
+	for(uint16_t x = x1+1; x < x2-1; x++){
+	  for(uint16_t y = y1+1; y < y2-1; y++){
+	    if(cMask->getValue(x,y) > 0 || m->getValue(x,y) < 1) continue;
+	    int sum = cMask->getValue(x-1,y-1) + cMask->getValue(x,y-1) + cMask->getValue(x+1,y-1) + cMask->getValue(x-1,y) + cMask->getValue(x+1,y) + cMask->getValue(x-1,y+1) + cMask->getValue(x,y+1) + cMask->getValue(x+1,y+1);
+	    if(sum > 4){
+	      cMask->setValue(x,y,1);
+	      used->setValue(x,y,0);
+	      c->addPoint(x,y);
+	      totI += frame->getPixel(x,y);
+	      unfilled = true;
+	    }
+	  }
+	}
+      }
+      for(uint16_t x = x1+1; x < x2-1; x++){
+	for(uint16_t y = y1+1; y < y2-1; y++){
+	  if(cMask->getValue(x,y) < 1 || m->getValue(x,y) < 1 || frame->getPixel(x,y) > m_saturationThreshold) continue;
+	  int sum = cMask->getValue(x-1,y-1) + cMask->getValue(x,y-1) + cMask->getValue(x+1,y-1) + cMask->getValue(x-1,y) + cMask->getValue(x+1,y) + cMask->getValue(x-1,y+1) + cMask->getValue(x,y+1) + cMask->getValue(x+1,y+1);
+	  if(sum < 3){
+	    cMask->setValue(x,y,0);
+	    used->setValue(x,y,1);
+	    c->removePoint(LocalizedObject::Point(x,y));
+	    totI -= frame->getPixel(x,y);
+	  }
+	}
+      }
+
+      if(c->size() < 2){
+	for(int x = c->size()-1; x >=0; x--){
+	  LocalizedObject::Point pt = c->getPoint(x);
+	  used->setValue(pt.x,pt.y,1);
+	}
+	cMask->clear(x1,x2,y1,y2);
+	delete c;
+	continue;
+      }
+      center = c->center();
+      int index = c->indexOf(center);
+      if(!(index < 0)){
+	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
+	  LocalizedObject::Point seed = c->getPoint(0);
+	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," + seed.y << ")" << std::endl;
+	  cMask->clear(x1,x2,y1,y2);
+	  delete c;
+	  continue;
+	}
+	LocalizedObject::Point tmp = c->getPoint(0);
+	c->setPoint(0,c->getPoint(index));
+	c->setPoint(index,tmp);
+	c->setIntegratedIntensity(totI);
+	rec->addPunctum(chan,c);
+      }
+      else{
+	for(int x = c->size()-1; x >=0; x--){
+	  LocalizedObject::Point pt = c->getPoint(x);
+	  used->setValue(pt.x,pt.y,1);
+	}
+	delete c;
+      }
+      cMask->clear(x1,x2,y1,y2);
+      borderSatX.clear();
+      borderSatY.clear();
+      borderUnsatX.clear();
+      borderUnsatY.clear();
+      borderVal.clear();
+    }
+  }
+  delete used;
+  delete cMask;
+}
+
+void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_t chan)
+{
+  std::vector<Cluster*> clusters = rec->puncta(chan);
+  std::vector<Cluster*> unsatClusters;
+  std::vector<Cluster*> satClusters;
+  std::vector<Cluster*> newClusters;
+  std::vector<Gaus2D> fs;
+  Mask* m = rec->getPunctaMask(chan,false);
+  for(std::vector<Cluster*>::iterator it = clusters.begin(); it != clusters.end(); it++){
+    uint16_t imax = (*it)->peak();
+    if(imax > m_saturationThreshold){
+      satClusters.push_back(*it);
+      std::vector<LocalizedObject::Point> pts = (*it)->getPoints();
+      for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++){
+	m->setValue(jt->x,jt->y,0);
+      }
+    }
+    else{
+      unsatClusters.push_back(*it);
+      LocalizedObject::Point peak = (*it)->getPoint(0);
+      LocalizedObject::Point trough = (*it)->getPoint((*it)->size()-1);
+      fs.push_back(Gaus2D(imax,peak.x,peak.y,(-0.5*(*it)->size()/3.14159)/log(double(frame->getPixel(trough.x,trough.y))/imax)));
+      Cluster* c = new Cluster();
+      c->addPoint(peak);
+      c->setPeakIntensity(imax);
+      c->computeCenter();
+      newClusters.push_back(c);
+      m->setValue(peak.x,peak.y,0);
+    }
+  }
+
+
+  double maxDist = 5.0 / (rec->resolutionXY()*rec->resolutionXY());
+  for(int i = 0; i < frame->width(); i++){
+    for(int j = 0; j < frame->height(); j++){
+      if(m->getValue(i,j) < 1) continue;
+      int value = frame->getPixel(i,j);
+      double maxDiff = -10.0;
+      int maxK = -1;
+      double minDiff = 999999.0;
+      int minK = -1;
+      double minDist = 9999999.0;
+      int distK = -1;
+      for(uint32_t k = 0; k < newClusters.size(); k++){
+	double kdist = newClusters.at(k)->distanceTo(LocalizedObject::Point(i,j));
+	if(kdist > maxDist) continue;
+	if(kdist < minDist){
+	  minDist = kdist;
+	  distK = k;
+	}
+	double kDiff = fs.at(k).calculate(i,j)/value - 1.0;
+	if(kDiff > maxDiff){
+	  maxDiff = kDiff;
+	  maxK = k;
+	}
+	if(fabs(kDiff) < fabs(minDiff)){
+	  minDiff = kDiff;
+	  minK = k;
+	}
+      }
+      if(minDiff > -0.1 && minK >= 0) newClusters.at(minK)->addPoint(i,j);
+      else if(maxDiff > -1.0) newClusters.at(maxK)->addPoint(i,j);
+      else if(distK >= 0) newClusters.at(distK)->addPoint(i,j);
+    }
+  }
+  
+  m->clear(0,frame->width(),0,frame->height());
+  std::vector<uint16_t> borderX;
+  std::vector<uint16_t> borderY;
+  for(std::vector<Cluster*>::iterator it = newClusters.begin(); it != newClusters.end(); it++){
+    std::vector<LocalizedObject::Point> pts = (*it)->getPoints();
+    for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++) m->setValue(jt->x,jt->y,1);
+    LocalizedObject::Point peak = *(pts.begin());
+    (*it)->clearPoints();
+    borderX.push_back(peak.x);
+    borderY.push_back(peak.y);
+    while(borderX.size() > 0){
+      uint16_t nborder = borderX.size();
+      for(uint16_t b = 0; b < nborder; b++){
+	uint16_t bi = borderX.at(0);
+	uint16_t bj = borderY.at(0);
+	(*it)->addPoint(bi,bj,frame->getPixel(bi,bj));
+	for(uint16_t i = bi-1; i < bi+2; i++){
+	  if(i >= frame->width()) continue;
+	  for(uint16_t j = bj-1; j < bj+2; j++){
+	    if(j >= frame->height()) continue;
+	    if(m->getValue(i,j) > 0){
+	      m->setValue(i,j,0);
+	      borderX.push_back(i);
+	      borderY.push_back(j);
+	    }
+	  }
+	}
+	borderX.erase(borderX.begin());
+	borderY.erase(borderY.begin());
+      }
+    }
+    for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++) m->setValue(jt->x,jt->y,0);
+  }
+
+  rec->clearPuncta(chan);
+  for(std::vector<Cluster*>::iterator it = satClusters.begin(); it != satClusters.end(); it++) rec->addPunctum(chan,*it);
+  double punctaAreaThreshold = 3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY());
+  uint32_t areaThreshold = (uint32_t)(m_reclusterThreshold*punctaAreaThreshold);
+  for(std::vector<Cluster*>::iterator it = newClusters.begin(); it != newClusters.end(); it++){
+    if((*it)->size() > areaThreshold){
+      rec->addPunctum(chan, *it);
+      continue;
+    }
+    int maxBorder = 0;
+    int iSize = (*it)->size();
+    for(std::vector<Cluster*>::iterator jt = newClusters.begin(); jt != it; jt++){
+      int jSize = (*jt)->size();
+      if(jSize < 2*iSize) continue;
+      if((*it)->distanceTo(**jt) > iSize+jSize) continue;
+      int jBorder = (*jt)->getBorderLength(*it);
+      if(jBorder > maxBorder){
+	maxBorder = jBorder;
+      }
+    }
+    for(std::vector<Cluster*>::iterator jt = it+1; jt != newClusters.end(); jt++){
+      int jSize = (*jt)->size();
+      if(jSize < 2*iSize) continue;
+      if((*it)->distanceTo(**jt) > iSize+jSize) continue;
+      int jBorder = (*jt)->getBorderLength(*it);
+      if(jBorder > maxBorder){
+	maxBorder = jBorder;
+      }
+    }
+    if(maxBorder > sqrt(iSize)){
+      delete *it;
+      continue;
+    }
+    if(iSize > 3) rec->addPunctum(chan,*it);
+  }
+  delete m;
+}
+
+void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
+{
+  int nSynapses = 0;
+  for(int icol = 0; icol < rec->nSynapseCollections(); icol++){
+    SynapseCollection* sc = rec->getSynapseCollection(icol);
+    std::vector<uint8_t> chan = sc->channels();
+    uint8_t nchans = sc->nChannels();
+    int* np = new int[nchans];
+    int* pi = new int[nchans];
+    int maxIndex = 1;
+    for(int i = 0; i < nchans; i++){
+      np[i] = rec->nPuncta(chan.at(i));
+      pi[i] = 0;
+    }
+    for(int i = 1; i < nchans; i++) maxIndex *= np[i];
+    for(int j = 0; j < np[0]; j++){
+      Synapse* best = NULL;
+      double bestScore = -999;
+      Cluster* c = rec->getPunctum(chan.at(0),j);
+      int sumpi = 1;
+      while(sumpi > 0){
+	Synapse* s = new Synapse();
+	s->addPunctum(rec->getPunctum(chan.at(0),j),j);
+	bool potentialSynapse = true;
+	for(int i = 1; i < nchans; i++){
+	  Cluster* c2 = rec->getPunctum(chan.at(i),pi[i]);
+	  if(c->peakToPeakDistance2(c2) > 2*(c->size()+c2->size())){
+	    potentialSynapse = false;
+	    for(int k = i; k > 0; k--){
+	      pi[k]++;
+	      if(pi[k] < np[k]) break;
+	      pi[k] = 0;
+	    }
+	    for(int k = i+1; k < nchans; k++) pi[k] = 0;
+	    break;
+	  }
+	  s->addPunctum(c2,pi[i]);
+	}
+	if(potentialSynapse){
+	  if(sc->computeColocalization(s)){
+	    if(s->colocalizationScore() > bestScore){
+	      bestScore = s->colocalizationScore();
+	      best = s;
+	    }
+	  }
+	  for(int i = nchans-1; i > 0; i--){
+	    pi[i]++;
+	    if(pi[i] < np[i]) break;
+	    pi[i] = 0;
+	  }
+	}
+	sumpi = 0;
+	for(int i = 1; i < nchans; i++) sumpi += pi[i];
+      }
+      if(best){
+	sc->addSynapse(best);
+	nSynapses++;
+      }
+    }
+    delete[] np;
+    delete[] pi;
+  }
+}
+
+void ImageAnalysisToolkit::write(std::ofstream& fout)
+{
+  char* buf = new char[26];
+  buf[0] = (char)m_master;
+  if(m_mode == OVERRIDE) buf[1] = (char)0;
+  else buf[1] = (char)1;
+  buf[2] = (char)m_punctaFindingIterations;
+  buf[3] = (char)m_localWindowIncrement;
+  NiaUtils::writeDoubleToBuffer(buf,4,m_minPunctaRadius);
+  NiaUtils::writeDoubleToBuffer(buf,8,m_reclusterThreshold);
+  NiaUtils::writeDoubleToBuffer(buf,12,m_noiseRemovalThreshold);
+  NiaUtils::writeDoubleToBuffer(buf,16,m_peakThreshold);
+  NiaUtils::writeDoubleToBuffer(buf,20,m_floorThreshold);
+  NiaUtils::writeShortToBuffer(buf,24,m_saturationThreshold);
+  fout.write(buf,26);
+  delete[] buf;
+}
+
+void ImageAnalysisToolkit::read(std::ifstream& fin)
+{
+  char* buf = new char[26];
+  fin.read(buf,26);
+  m_master = (uint8_t)buf[0];
+  if((uint8_t)buf[1] == 0) m_mode = OVERRIDE;
+  else m_mode = OR;
+  m_punctaFindingIterations = (uint8_t)buf[2];
+  m_localWindowIncrement = (uint8_t)buf[3];
+  m_minPunctaRadius = NiaUtils::convertToDouble(buf[4],buf[5],buf[6],buf[7]);
+  m_reclusterThreshold = NiaUtils::convertToDouble(buf[8],buf[9],buf[10],buf[11]);
+  m_noiseRemovalThreshold = NiaUtils::convertToDouble(buf[12],buf[13],buf[14],buf[15]);
+  m_peakThreshold = NiaUtils::convertToDouble(buf[16],buf[17],buf[18],buf[19]);
+  m_floorThreshold = NiaUtils::convertToDouble(buf[20],buf[21],buf[22],buf[23]);
+  m_saturationThreshold = NiaUtils::convertToShort(buf[24],buf[25]);
+  delete[] buf;
+}

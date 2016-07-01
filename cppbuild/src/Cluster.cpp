@@ -1,4 +1,5 @@
 #include "Cluster.hpp"
+#include <cmath>
 
 Cluster::Cluster() :
   m_peak(0),
@@ -82,6 +83,13 @@ void Cluster::add(Cluster* c)
   for(std::vector<LocalizedObject::Point>::iterator it = points2.begin(); it != points2.end(); it++) m_points.push_back(*it);
   if(c->peak() > m_peak) m_peak = c->peak();
   m_total += c->integratedIntensity();
+}
+
+double Cluster::peakToPeakDistance2(Cluster* c)
+{
+  LocalizedObject::Point pt = c->getPoint(0);
+  LocalizedObject::Point pt2 = m_points.at(0);
+  return pow((int)pt.x - pt2.x,2) + pow((int)pt.y - pt2.y,2);
 }
 
 void Cluster::computeCenter()

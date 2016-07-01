@@ -33,10 +33,16 @@ public:
   uint16_t imHeight(){ return m_imHeight; }
   void setThreshold(uint8_t chan, uint16_t thrshld){ m_thresholds.at(chan) = thrshld; }
   uint16_t getThreshold(uint8_t chan){ return m_thresholds.at(chan); }
-  void setSignalMask(uint8_t chan, Mask* m){ m_signalMasks.at(chan) = m; }
+  void setSignalMask(uint8_t chan, Mask* m){
+    if(m_signalMasks.at(chan)) delete m_signalMasks.at(chan);
+    m_signalMasks.at(chan) = m;
+  }
   Mask* getSignalMask(uint8_t chan){ return m_signalMasks.at(chan); }
   std::vector<Mask*> signalMasks(){ return m_signalMasks; }
-  void setUtilityMask(uint8_t chan, Mask* m){ m_utilityMasks.at(chan) = m; }
+  void setUtilityMask(uint8_t chan, Mask* m){
+    if(m_utilityMasks.at(chan)) delete m_utilityMasks.at(chan);
+    m_utilityMasks.at(chan) = m;
+  }
   Mask* getUtilityMask(uint8_t chan){ return m_utilityMasks.at(chan); }
   void addRegion(Region* r){ m_regions.push_back(r); }
   Region* getRegion(uint8_t index){ return m_regions.at(index); }

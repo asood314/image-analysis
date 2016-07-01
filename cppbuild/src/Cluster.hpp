@@ -22,6 +22,7 @@ public:
   void setPoint(uint32_t index, LocalizedObject::Point pt){ m_points.at(index) = pt; }
   void removePoint(uint32_t index){ m_points.erase(m_points.begin()+index); }
   void removePoint(LocalizedObject::Point pt);
+  void clearPoints(){ m_points.clear(); }
   void setPeakIntensity(uint16_t i){ m_peak = i; }
   uint16_t peak(){ return m_peak; }
   void setIntegratedIntensity(uint32_t i){ m_total = i; }
@@ -30,6 +31,7 @@ public:
   uint32_t size(){ return m_points.size(); }
   uint32_t getBorderLength(Cluster* c);
   void add(Cluster* c);
+  double peakToPeakDistance2(Cluster* c);
   void computeCenter();
   bool contains(LocalizedObject::Point pt);
   std::vector<LocalizedObject::Point> getPoints(){ return m_points; }

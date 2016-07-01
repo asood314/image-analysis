@@ -11,6 +11,11 @@ public:
   typedef struct point{
     uint16_t x;
     uint16_t y;
+    point(){}
+    point(uint16_t i, uint16_t j){
+      x = i;
+      y = j;
+    }
   } Point;
 
 protected:
