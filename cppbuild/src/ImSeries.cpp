@@ -2,28 +2,31 @@
 
 ImSeries::ImSeries()
 {
-  m_fourLocations = NULL;
   m_npos = -1;
   m_nt = -1;
+  m_name = "";
 }
 
 ImSeries::ImSeries(uint8_t npos, uint8_t nt)
 {
   m_npos = npos;
   m_nt = nt;
-  m_fourLocations = new ImStack**[m_npos];
-  for(uint8_t i = 0; i < m_npos; i++) m_fourLocations[i] = new ImStack*[m_nt];
+  m_fourLocations.assign(npos*nt,NULL);
+  m_name = "";
 }
 
 ImSeries::~ImSeries()
 {
-  if(m_fourLocations){
-    for(uint8_t i = 0; i < m_npos; i++) delete[] m_fourLocations[i];
-    delete[] m_fourLocations;
+  for(std::vector<ImStack*>::iterator it = m_fourLocations.begin(); it != m_fourLocations.end(); it++){
+    if(*it) delete *it;
   }
 }
 
 void ImSeries::insert(ImStack* stack, uint8_t pos, uint8_t t)
 {
-  if(pos < m_npos && t < m_nt) m_fourLocations[pos][t] = stack;
+  if(pos < m_npos && t < m_nt){
+    uint16_t index = pos*m_nt + t;
+    if(m_fourLocations.at(index)) delete m_fourLocations.at(index);
+    m_fourLocations.at(index) = stack;
+  }
 }

@@ -25,6 +25,7 @@ protected:
   Gtk::Label m_dimensionLabel;
   Gtk::Entry m_wField,m_zField,m_pField,m_tField;
   Gtk::Label m_wLabel,m_zLabel,m_pLabel,m_tLabel;
+  Gtk::Entry m_seriesName;
   Gtk::Button m_addButton,m_cancelButton;
   Gtk::HBox m_hboxBig,m_hbox1,m_hbox2,m_hbox3;
   Gtk::VBox m_configBox,m_vbox1,m_wBox,m_zBox,m_pBox,m_tBox;

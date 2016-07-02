@@ -5,17 +5,45 @@ ImageAnalysisToolkit::ImageAnalysisToolkit()
   m_master = 255;
   m_mode = OVERRIDE;
   m_punctaFindingIterations = 10;
-  m_localWindowIncrement = 10;
-  m_minPunctaRadius = 0.1;
-  m_reclusterThreshold = 3.0;
-  m_noiseRemovalThreshold = 2.0;
-  m_peakThreshold = 3.0;
-  m_floorThreshold = 2.0;
   m_saturationThreshold = 4094;
+  m_localWindow.push_back(5.0);
+  m_localWindowIncrement.push_back(0.5);
+  m_minPunctaRadius.push_back(0.1);
+  m_reclusterThreshold.push_back(3.0);
+  m_noiseRemovalThreshold.push_back(2.0);
+  m_peakThreshold.push_back(3.0);
+  m_floorThreshold.push_back(2.0);
 }
 
 ImageAnalysisToolkit::~ImageAnalysisToolkit()
 {
+}
+
+void ImageAnalysisToolkit::makeSeparateConfigs(uint8_t nchan)
+{
+  for(uint8_t i = 1; i < nchan; i++){
+    m_localWindow.push_back(m_localWindow.at(0));
+    m_localWindowIncrement.push_back(m_localWindowIncrement.at(0));
+    m_minPunctaRadius.push_back(m_minPunctaRadius.at(0));
+    m_reclusterThreshold.push_back(m_reclusterThreshold.at(0));
+    m_noiseRemovalThreshold.push_back(m_noiseRemovalThreshold.at(0));
+    m_peakThreshold.push_back(m_peakThreshold.at(0));
+    m_floorThreshold.push_back(m_floorThreshold.at(0));
+  }
+}
+
+void ImageAnalysisToolkit::makeSingleConfig()
+{
+  uint8_t nchan = m_localWindow.size();
+  for(uint8_t i = 1; i < nchan; i++){
+    m_localWindow.erase(m_localWindow.begin()+1);
+    m_localWindowIncrement.erase(m_localWindowIncrement.begin()+1);
+    m_minPunctaRadius.erase(m_minPunctaRadius.begin()+1);
+    m_reclusterThreshold.erase(m_reclusterThreshold.begin()+1);
+    m_noiseRemovalThreshold.erase(m_noiseRemovalThreshold.begin()+1);
+    m_peakThreshold.erase(m_peakThreshold.begin()+1);
+    m_floorThreshold.erase(m_floorThreshold.begin()+1);
+  }
 }
 
 void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int zplane)
@@ -101,7 +129,10 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t cha
       }
     }
   }
-  uint32_t sizeThreshold = (uint32_t)(m_noiseRemovalThreshold*3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY()));
+  uint8_t configChan = chan;
+  if(configChan >= m_noiseRemovalThreshold.size()) configChan = 0;
+  double radius = m_minPunctaRadius.at(configChan);
+  uint32_t sizeThreshold = (uint32_t)(m_noiseRemovalThreshold.at(configChan)*3.14159*radius*radius/(rec->resolutionXY()*rec->resolutionXY()));
   std::vector<uint16_t> borderX;
   std::vector<uint16_t> borderY;
   std::vector<uint16_t> clusterX;
@@ -325,17 +356,20 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
   std::vector<LocalizedObject::Point> upperLeft;
   std::vector<LocalizedObject::Point> lowerRight;
   std::vector<uint16_t> intensities;
-  int minSignal = (int)std::min(5.0 / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
+  uint8_t configChan = chan;
+  if(configChan >= m_localWindow.size()) configChan = 0;
+  int minSignal = (int)std::min(m_localWindow.at(configChan) / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
   int initialWindowSize = (int)(sqrt(minSignal) / 2);
+  int lwi = (int)(m_localWindowIncrement.at(configChan) / rec->resolutionXY());
   for(uint16_t i = 0; i < frame->width(); i++){
     for(uint16_t j = 0; j < frame->height(); j++){
       if(m->getValue(i,j) < 1){
 	continue;
       }
-      uint16_t x1 = std::max(i-m_localWindowIncrement,0);
-      uint16_t x2 = std::min((int)frame->width(),i+m_localWindowIncrement);
-      uint16_t y1 = std::max(j-m_localWindowIncrement,0);
-      uint16_t y2 = std::min((int)frame->height(),j+m_localWindowIncrement);
+      uint16_t x1 = std::max(i-lwi,0);
+      uint16_t x2 = std::min((int)frame->width(),i+lwi);
+      uint16_t y1 = std::max(j-lwi,0);
+      uint16_t y2 = std::min((int)frame->height(),j+lwi);
       
       uint16_t val = frame->getPixel(i,j);
       bool isMax = true;
@@ -360,10 +394,10 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
       int nSignal = m->sum(x1,x2,y1,y2);
       while(nSignal < minSignal){
 	//int step = (int)(Math.sqrt(minSignal/nSignal - 1) * initialWindowSize) + 1;
-	x1 = std::max(x1-m_localWindowIncrement,0);
-	x2 = std::min((int)frame->width(),x2+m_localWindowIncrement);
-	y1 = std::max(y1-m_localWindowIncrement,0);
-	y2 = std::min((int)frame->height(),y2+m_localWindowIncrement);
+	x1 = std::max(x1-lwi,0);
+	x2 = std::min((int)frame->width(),x2+lwi);
+	y1 = std::max(y1-lwi,0);
+	y2 = std::min((int)frame->height(),y2+lwi);
 	//x1 = Math.std::max(x1-step,0);
 	//x2 = Math.std::min(ndim.getWidth(),x2+step);
 	//y1 = Math.std::max(y1-step,0);
@@ -402,8 +436,9 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
   Mask* cMask = new Mask(frame->width(),frame->height());
   Mask* used = m->getCopy();
   used->subtract(*(rec->getPunctaMask(chan,false)));
-  double punctaAreaThreshold = 3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY());
-  uint32_t retryThreshold = (uint32_t)(m_reclusterThreshold*punctaAreaThreshold) + 1;
+  double radius = m_minPunctaRadius.at(configChan);
+  double punctaAreaThreshold = 3.14159*radius*radius/(rec->resolutionXY()*rec->resolutionXY());
+  uint32_t retryThreshold = (uint32_t)(m_reclusterThreshold.at(configChan)*punctaAreaThreshold) + 1;
   while(nNew > nRemoved && count < m_punctaFindingIterations){
     nRemoved = 0;
     int32_t nPuncta = (int32_t)rec->nPuncta(chan);
@@ -429,9 +464,9 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
       double localMedian;
       double localStd;
       frame->getMedianStd(ul.x,lr.x,ul.y,lr.y,used,localMedian,localStd);
-      double minThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold*localStd);
-      double localThreshold = localMedian + m_peakThreshold*localStd;
-      double minIntensity = punctaAreaThreshold*(localMedian + m_floorThreshold*localStd);
+      double minThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold.at(configChan)*localStd);
+      double localThreshold = localMedian + m_peakThreshold.at(configChan)*localStd;
+      double minIntensity = punctaAreaThreshold*(localMedian + m_floorThreshold.at(configChan)*localStd);
       if(Imax < localThreshold) continue;
       localThreshold = Imax;
       Cluster* c = new Cluster();
@@ -561,7 +596,10 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
   std::vector<uint16_t> borderUnsatX;
   std::vector<uint16_t> borderUnsatY;
   std::vector<uint16_t> borderVal;
-  uint32_t minMinSignal = (uint32_t)std::min(5.0 / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
+  uint8_t configChan = chan;
+  if(configChan >= m_localWindow.size()) configChan = 0;
+  uint32_t minMinSignal = (uint32_t)std::min(m_localWindow.at(configChan) / (rec->resolutionXY()*rec->resolutionXY()),(double)m->sum());
+  int lwi = (int)(m_localWindowIncrement.at(configChan) / rec->resolutionXY());
   for(uint16_t i = 0; i < frame->width(); i++){
     for(uint16_t j = 0; j < frame->height(); j++){
       uint16_t value = frame->getPixel(i,j);
@@ -605,23 +643,23 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 
       c->computeCenter();
       LocalizedObject::Point center = c->center();
-      int x1 = std::max(center.x-m_localWindowIncrement,0);
-      int x2 = std::min((int)frame->width(),center.x+m_localWindowIncrement);
-      int y1 = std::max(center.y-m_localWindowIncrement,0);
-      int y2 = std::min((int)frame->height(),center.y+m_localWindowIncrement);
+      int x1 = std::max(center.x-lwi,0);
+      int x2 = std::min((int)frame->width(),center.x+lwi);
+      int y1 = std::max(center.y-lwi,0);
+      int y2 = std::min((int)frame->height(),center.y+lwi);
       int nSignal = m->sum(x1,x2,y1,y2);
       int minSignal = std::max(minMinSignal,4*c->size());
       while(nSignal < minSignal){
-	x1 = std::max(x1-m_localWindowIncrement,0);
-	x2 = std::min((int)frame->width(),x2+m_localWindowIncrement);
-	y1 = std::max(y1-m_localWindowIncrement,0);
-	y2 = std::min((int)frame->height(),y2+m_localWindowIncrement);
+	x1 = std::max(x1-lwi,0);
+	x2 = std::min((int)frame->width(),x2+lwi);
+	y1 = std::max(y1-lwi,0);
+	y2 = std::min((int)frame->height(),y2+lwi);
 	nSignal = m->sum(x1,x2,y1,y2);
       }
       uint16_t Imax = m_saturationThreshold;
       double localMedian = frame->median(x1,x2,y1,y2,used);
       double localStd = frame->std(x1,x2,y1,y2,used);
-      double localThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold*localStd);
+      double localThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold.at(configChan)*localStd);
       while(borderUnsatX.size() > 0){
 	uint16_t upperLimit = Imax;
 	if((borderVal.at(0) - localThreshold)/(Imax - localThreshold) < 0.3) upperLimit = borderVal.at(0);
@@ -830,8 +868,10 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
 
   rec->clearPuncta(chan);
   for(std::vector<Cluster*>::iterator it = satClusters.begin(); it != satClusters.end(); it++) rec->addPunctum(chan,*it);
-  double punctaAreaThreshold = 3.14159*m_minPunctaRadius*m_minPunctaRadius/(rec->resolutionXY()*rec->resolutionXY());
-  uint32_t areaThreshold = (uint32_t)(m_reclusterThreshold*punctaAreaThreshold);
+  uint8_t configChan = chan;
+  if(configChan >= m_minPunctaRadius.size()) configChan = 0;
+  double punctaAreaThreshold = 3.14159*m_minPunctaRadius.at(configChan)*m_minPunctaRadius.at(configChan)/(rec->resolutionXY()*rec->resolutionXY());
+  uint32_t areaThreshold = (uint32_t)(m_reclusterThreshold.at(configChan)*punctaAreaThreshold);
   for(std::vector<Cluster*>::iterator it = newClusters.begin(); it != newClusters.end(); it++){
     if((*it)->size() > areaThreshold){
       rec->addPunctum(chan, *it);
@@ -932,36 +972,56 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
 
 void ImageAnalysisToolkit::write(std::ofstream& fout)
 {
-  char* buf = new char[26];
+  char* buf = new char[2000];
   buf[0] = (char)m_master;
   if(m_mode == OVERRIDE) buf[1] = (char)0;
   else buf[1] = (char)1;
   buf[2] = (char)m_punctaFindingIterations;
-  buf[3] = (char)m_localWindowIncrement;
-  NiaUtils::writeDoubleToBuffer(buf,4,m_minPunctaRadius);
-  NiaUtils::writeDoubleToBuffer(buf,8,m_reclusterThreshold);
-  NiaUtils::writeDoubleToBuffer(buf,12,m_noiseRemovalThreshold);
-  NiaUtils::writeDoubleToBuffer(buf,16,m_peakThreshold);
-  NiaUtils::writeDoubleToBuffer(buf,20,m_floorThreshold);
-  NiaUtils::writeShortToBuffer(buf,24,m_saturationThreshold);
-  fout.write(buf,26);
+  NiaUtils::writeShortToBuffer(buf,3,m_saturationThreshold);
+  uint8_t nchan = m_localWindow.size();
+  buf[5] = (char)nchan;
+  uint32_t offset = 6;
+  for(uint8_t i = 0; i < nchan; i++){
+    NiaUtils::writeDoubleToBuffer(buf,offset,m_localWindow.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+4,m_localWindowIncrement.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+8,m_minPunctaRadius.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+12,m_reclusterThreshold.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+16,m_noiseRemovalThreshold.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+20,m_peakThreshold.at(i));
+    NiaUtils::writeDoubleToBuffer(buf,offset+24,m_floorThreshold.at(i));
+    offset += 28;
+  }
+  fout.write(buf,offset);
   delete[] buf;
 }
 
 void ImageAnalysisToolkit::read(std::ifstream& fin)
 {
-  char* buf = new char[26];
-  fin.read(buf,26);
+  char* buf = new char[2000];
+  fin.read(buf,6);
   m_master = (uint8_t)buf[0];
   if((uint8_t)buf[1] == 0) m_mode = OVERRIDE;
   else m_mode = OR;
   m_punctaFindingIterations = (uint8_t)buf[2];
-  m_localWindowIncrement = (uint8_t)buf[3];
-  m_minPunctaRadius = NiaUtils::convertToDouble(buf[4],buf[5],buf[6],buf[7]);
-  m_reclusterThreshold = NiaUtils::convertToDouble(buf[8],buf[9],buf[10],buf[11]);
-  m_noiseRemovalThreshold = NiaUtils::convertToDouble(buf[12],buf[13],buf[14],buf[15]);
-  m_peakThreshold = NiaUtils::convertToDouble(buf[16],buf[17],buf[18],buf[19]);
-  m_floorThreshold = NiaUtils::convertToDouble(buf[20],buf[21],buf[22],buf[23]);
-  m_saturationThreshold = NiaUtils::convertToShort(buf[24],buf[25]);
+  m_saturationThreshold = NiaUtils::convertToShort(buf[3],buf[4]);
+  uint8_t nchan = (uint8_t)buf[5];
+  fin.read(buf,nchan*28);
+  uint32_t offset = 0;
+  for(uint8_t i = 0; i < nchan; i++){
+    m_localWindow.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_localWindowIncrement.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_minPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_reclusterThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_noiseRemovalThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_peakThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+    m_floorThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+    offset += 4;
+  }
   delete[] buf;
 }

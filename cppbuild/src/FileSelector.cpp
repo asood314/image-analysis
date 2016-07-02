@@ -64,6 +64,10 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   m_hbox2.pack_start(m_tBox, Gtk::PACK_EXPAND_PADDING);
   m_configBox.pack_start(m_hbox2, Gtk::PACK_SHRINK);
 
+  m_seriesName.set_max_length(30);
+  m_seriesName.set_width_chars(15);
+  m_seriesName.set_text("SeriesName");
+  m_hbox3.pack_end(m_seriesName, Gtk::PACK_EXPAND_PADDING);
   m_hbox3.pack_end(m_addButton, Gtk::PACK_SHRINK);
   m_hbox3.pack_end(m_cancelButton, Gtk::PACK_SHRINK);
   m_configBox.pack_start(m_hbox3, Gtk::PACK_SHRINK);
@@ -97,6 +101,7 @@ void FileSelector::on_add_button_clicked()
 {
   FileManager::input_file infile;
   infile.fnames = m_names;
+  infile.sname = m_seriesName.get_text();
   Glib::ustring ordString = m_orderField.get_text();
   infile.order[3-ordString.find_first_of('W')] = FileManager::WAVELENGTH;
   infile.order[3-ordString.find_first_of('Z')] = FileManager::ZSLICE;

@@ -3,7 +3,8 @@
 
 #include <vector>
 #include "ImSeries.hpp"
-#include <gtkmm-2.4/gtkmm.h>
+#include <iostream>
+#include <fstream>
 
 class FileManager
 {
@@ -13,6 +14,7 @@ public:
 
   typedef struct input_file{
     std::vector<std::string> fnames;
+    std::string sname;
     uint8_t nw;
     uint8_t nz;
     uint8_t np;
@@ -31,6 +33,7 @@ public:
   ImSeries* loadNext();
   void addInputFile(input_file phil){ m_fileList.push_back(phil); }
   void clearInputFiles(){ m_fileList.clear(); }
+  void saveFileList(std::ofstream& fout);
 
 };
 
