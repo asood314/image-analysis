@@ -17,6 +17,9 @@ ImageAnalysisToolkit::ImageAnalysisToolkit()
 
 ImageAnalysisToolkit::~ImageAnalysisToolkit()
 {
+  for(std::vector<SynapseCollection*>::iterator it = m_synapseDefinitions.begin(); it != m_synapseDefinitions.end(); it++){
+    if(*it) delete *it;
+  }
 }
 
 void ImageAnalysisToolkit::makeSeparateConfigs(uint8_t nchan)
@@ -84,10 +87,15 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int z
       }
     }
   }
+  std::cout << "Done signal finding" << std::endl;
 
-  for(uint8_t w = 0; w < analysisStack->nwaves(); w++) findPuncta(analysisStack->frame(w,zplane),rec,w);
+  for(uint8_t w = 0; w < analysisStack->nwaves(); w++){
+    findPuncta(analysisStack->frame(w,zplane),rec,w);
+    std::cout << "Found " << rec->nPuncta(w) << " puncta in channel " << w << std::endl;
+  }
 
   findSynapses(rec);
+  std::cout << "Done synapse finding" << std::endl;
 }
 
 void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t chan)
@@ -736,7 +744,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
       if(!(index < 0)){
 	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
 	  LocalizedObject::Point seed = c->getPoint(0);
-	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," + seed.y << ")" << std::endl;
+	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << std::endl;
 	  cMask->clear(x1,x2,y1,y2);
 	  delete c;
 	  continue;
@@ -976,11 +984,12 @@ void ImageAnalysisToolkit::write(std::ofstream& fout)
   buf[0] = (char)m_master;
   if(m_mode == OVERRIDE) buf[1] = (char)0;
   else buf[1] = (char)1;
-  buf[2] = (char)m_punctaFindingIterations;
-  NiaUtils::writeShortToBuffer(buf,3,m_saturationThreshold);
+  buf[2] = (char)m_postChan;
+  buf[3] = (char)m_punctaFindingIterations;
+  NiaUtils::writeShortToBuffer(buf,4,m_saturationThreshold);
   uint8_t nchan = m_localWindow.size();
-  buf[5] = (char)nchan;
-  uint32_t offset = 6;
+  buf[6] = (char)nchan;
+  uint32_t offset = 7;
   for(uint8_t i = 0; i < nchan; i++){
     NiaUtils::writeDoubleToBuffer(buf,offset,m_localWindow.at(i));
     NiaUtils::writeDoubleToBuffer(buf,offset+4,m_localWindowIncrement.at(i));
@@ -998,13 +1007,14 @@ void ImageAnalysisToolkit::write(std::ofstream& fout)
 void ImageAnalysisToolkit::read(std::ifstream& fin)
 {
   char* buf = new char[2000];
-  fin.read(buf,6);
+  fin.read(buf,7);
   m_master = (uint8_t)buf[0];
   if((uint8_t)buf[1] == 0) m_mode = OVERRIDE;
   else m_mode = OR;
-  m_punctaFindingIterations = (uint8_t)buf[2];
-  m_saturationThreshold = NiaUtils::convertToShort(buf[3],buf[4]);
-  uint8_t nchan = (uint8_t)buf[5];
+  m_postChan = (uint8_t)buf[2];
+  m_punctaFindingIterations = (uint8_t)buf[3];
+  m_saturationThreshold = NiaUtils::convertToShort(buf[4],buf[5]);
+  uint8_t nchan = (uint8_t)buf[6];
   fin.read(buf,nchan*28);
   uint32_t offset = 0;
   for(uint8_t i = 0; i < nchan; i++){
@@ -1024,4 +1034,12 @@ void ImageAnalysisToolkit::read(std::ifstream& fin)
     offset += 4;
   }
   delete[] buf;
+}
+
+uint8_t ImageAnalysisToolkit::getBitDepth()
+{
+  uint8_t bd;
+  uint16_t st = m_saturationThreshold + 2;
+  for(bd = 0; st > 1; bd++) st = st / 2;
+  return bd;
 }

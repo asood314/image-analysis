@@ -20,6 +20,7 @@ public:
     uint8_t np;
     uint8_t nt;
     Dimension order[4];
+    double resolutionXY;
   } input_file;
 
 protected:
@@ -33,7 +34,13 @@ public:
   ImSeries* loadNext();
   void addInputFile(input_file phil){ m_fileList.push_back(phil); }
   void clearInputFiles(){ m_fileList.clear(); }
-  void saveFileList(std::ofstream& fout);
+  void saveInputFiles(std::ofstream& fout, int index);
+  std::string getName(int index){ return m_fileList.at(index).sname; }
+  uint8_t getNW(int index){ return m_fileList.at(index).nw; }
+  uint8_t getNZ(int index){ return m_fileList.at(index).nz; }
+  uint8_t getNP(int index){ return m_fileList.at(index).np; }
+  uint8_t getNT(int index){ return m_fileList.at(index).nt; }
+  Dimension* getOrder(int index){ return m_fileList.at(index).order; }
 
 };
 

@@ -10,8 +10,10 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   m_orderLabel("Frame Ordering:"),
   m_dimensionLabel("Image Series Dimensions:"),
   m_wLabel("wavelengths"),m_zLabel("z-frames"),m_pLabel("positions"),m_tLabel("timepoints"),
+  m_resolutionLabel("Image Resolution: "),
+  m_nameLabel("Name: "),
   m_addButton("Add Image Series"),
-  m_cancelButton("Cancel"),
+  m_cancelButton("Clear"),
   m_nextRow(0)
 {
   m_fileManager = fm;
@@ -64,13 +66,23 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   m_hbox2.pack_start(m_tBox, Gtk::PACK_EXPAND_PADDING);
   m_configBox.pack_start(m_hbox2, Gtk::PACK_SHRINK);
 
+  m_resolutionEntry.set_max_length(10);
+  m_resolutionEntry.set_width_chars(10);
+  m_resolutionEntry.set_text("0.115");
+  m_hbox3.pack_start(m_resolutionLabel, Gtk::PACK_SHRINK);
+  m_hbox3.pack_end(m_resolutionEntry, Gtk::PACK_SHRINK);
+  m_configBox.pack_start(m_hbox3, Gtk::PACK_SHRINK);
+
   m_seriesName.set_max_length(30);
   m_seriesName.set_width_chars(15);
-  m_seriesName.set_text("SeriesName");
-  m_hbox3.pack_end(m_seriesName, Gtk::PACK_EXPAND_PADDING);
-  m_hbox3.pack_end(m_addButton, Gtk::PACK_SHRINK);
-  m_hbox3.pack_end(m_cancelButton, Gtk::PACK_SHRINK);
-  m_configBox.pack_start(m_hbox3, Gtk::PACK_SHRINK);
+  m_seriesName.set_text("Series1");
+  m_hbox4.pack_start(m_nameLabel, Gtk::PACK_SHRINK);
+  m_hbox4.pack_end(m_seriesName, Gtk::PACK_SHRINK);
+  m_configBox.pack_start(m_hbox4, Gtk::PACK_SHRINK);
+
+  m_hbox5.pack_start(m_cancelButton, Gtk::PACK_SHRINK);
+  m_hbox5.pack_start(m_addButton, Gtk::PACK_SHRINK);
+  m_configBox.pack_start(m_hbox5, Gtk::PACK_SHRINK);
   m_hboxBig.pack_start(m_configBox, Gtk::PACK_SHRINK);
 
   m_selectButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_select_button_clicked));
@@ -81,6 +93,7 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   vbox->pack_start(m_selectButton, Gtk::PACK_SHRINK);
   vbox->pack_start(m_hboxBig, Gtk::PACK_SHRINK);
   vbox->show_all_children();
+  add_button("Cancel", Gtk::RESPONSE_CANCEL);
   add_button("Finished", Gtk::RESPONSE_OK);
 }
 
@@ -111,6 +124,7 @@ void FileSelector::on_add_button_clicked()
   sscanf(m_zField.get_text().c_str(),"%hhu",&infile.nz);
   sscanf(m_tField.get_text().c_str(),"%hhu",&infile.nt);
   sscanf(m_pField.get_text().c_str(),"%hhu",&infile.np);
+  infile.resolutionXY = boost::lexical_cast<double>(m_resolutionEntry.get_text());
   m_fileManager->addInputFile(infile);
   m_refTreeModel->clear();
   m_names.clear();

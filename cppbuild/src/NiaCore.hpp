@@ -2,19 +2,21 @@
 #define NIA_CORE_HPP
 
 #include <gtkmm-2.4/gtkmm.h>
-#include "ImSeries.hpp"
-//#include "ImRecord.hpp"
+//#include "ImSeries.hpp"
 //#include "ImageAnalysisToolkit.hpp"
-//#include "BatchService.hpp"
-#include "FileManager.hpp"
+#include "BatchService.hpp"
+//#include "FileManager.hpp"
+#include "ConfigurationDialog.hpp"
 #include "NiaViewer.hpp"
 
 class NiaCore : public Gtk::Window
 {
 
 protected:
-  //image data
+  //back-end components
   FileManager m_fileManager;
+  ImageAnalysisToolkit m_iat;
+  BatchService m_batchService;
 
   //gui components
   Gtk::VBox m_vbox;
@@ -24,7 +26,7 @@ protected:
 
   //signal handlers
   void on_menu_load();
-
+  void on_start_batch_jobs();
   
 public:
   NiaCore();

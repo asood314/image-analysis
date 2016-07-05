@@ -5,6 +5,7 @@ ImSeries::ImSeries()
   m_npos = -1;
   m_nt = -1;
   m_name = "";
+  m_resolutionXY = 0.046;
 }
 
 ImSeries::ImSeries(uint8_t npos, uint8_t nt)
@@ -13,6 +14,7 @@ ImSeries::ImSeries(uint8_t npos, uint8_t nt)
   m_nt = nt;
   m_fourLocations.assign(npos*nt,NULL);
   m_name = "";
+  m_resolutionXY = 0.046;
 }
 
 ImSeries::~ImSeries()

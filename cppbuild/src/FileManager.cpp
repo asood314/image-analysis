@@ -47,6 +47,7 @@ ImSeries* FileManager::load()
   }
   ImSeries* retVal = new ImSeries(np,nt);
   retVal->setName(m_fileList.begin()->sname);
+  retVal->setResolutionXY(m_fileList.begin()->resolutionXY);
   for(int i = 0; i < np; i++){
     for(int j = 0; j < nt; j++){
       retVal->insert(stacks.at(i*nt+j),i,j);
@@ -88,6 +89,7 @@ ImSeries* FileManager::loadNext()
   }
   ImSeries* retVal = new ImSeries(nx[POSITION],nx[TIMEPOINT]);
   retVal->setName(m_it->sname);
+  retVal->setResolutionXY(m_it->resolutionXY);
   for(int i = 0; i < nx[POSITION]; i++){
     for(int j = 0; j < nx[TIMEPOINT]; j++){
       retVal->insert(stacks.at(i*nx[TIMEPOINT]+j),i,j);
@@ -97,18 +99,27 @@ ImSeries* FileManager::loadNext()
   return retVal;
 }
 
-void FileManager::saveFileList(std::ofstream& fout)
+void FileManager::saveInputFiles(std::ofstream& fout, int index)
 {
-  for(std::vector<input_file>::iterator fit = m_fileList.begin(); fit != m_fileList.end(); fit++){
-    fout << fit->sname;
-    fout << " " << fit->nw << " " << fit->nz << " " << fit->np << " " << fit->nt << " ";
-    for(int8_t j = 3; j >= 0; j++){
-      if(fit->order[j] == FileManager::WAVELENGTH) fout << "W";
-      else if(fit->order[j] == FileManager::ZSLICE) fout << "Z";
-      else if(fit->order[j] == FileManager::POSITION) fout << "P";
-      else if(fit->order[j] == FileManager::TIMEPOINT) fout << "T";
-    }
-    for(std::vector<std::string>::iterator it = fit->fnames.begin(); it != fit->fnames.end(); it++) fout << "\n" << *it;
-    fout << "\nEndSeries\n";
+  char buf[20];
+  std::vector<input_file>::iterator fit = m_fileList.begin()+index;
+  NiaUtils::writeIntToBuffer(buf,0,fit->sname.length());
+  fout.write(buf,4);
+  fout.write(fit->sname.c_str(),fit->sname.length());
+  buf[0] = (char)fit->nw;
+  buf[1] = (char)fit->nz;
+  buf[2] = (char)fit->np;
+  buf[3] = (char)fit->nt;
+  for(int8_t j = 3; j >= 0; j++){
+    if(fit->order[j] == FileManager::WAVELENGTH) buf[7-j] = 'W';
+    else if(fit->order[j] == FileManager::ZSLICE) buf[7-j] = 'Z';
+    else if(fit->order[j] == FileManager::POSITION) buf[7-j] = 'P';
+    else if(fit->order[j] == FileManager::TIMEPOINT) buf[7-j] = 'T';
+  }
+  fout.write(buf,8);
+  for(std::vector<std::string>::iterator it = fit->fnames.begin(); it != fit->fnames.end(); it++){
+    NiaUtils::writeIntToBuffer(buf,0,it->length());
+    fout.write(buf,4);
+    fout.write(it->c_str(),it->length());
   }
 }

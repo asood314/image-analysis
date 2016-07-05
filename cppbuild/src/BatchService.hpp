@@ -20,15 +20,20 @@ protected:
   std::vector<ImSeries*> m_data;
   std::vector<int> m_nStacks;
   std::vector< std::vector<int> >m_nPlanes;
+  std::vector< std::vector<ImRecord*> > m_records;
 
 public:
   BatchService();
   virtual ~BatchService();
-  void saveJobInfo();
   void analyzeProjection(int seriesID, uint8_t p, uint8_t t);
   void analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z);
   void run();
+  void setName(std::string name){ m_name = name; }
+  std::string name(){ return m_name; }
   void setMaxThreads(uint8_t max){ m_maxThreads = max; }
+  uint8_t maxThreads(){ return m_maxThreads; }
+  void setZProject(bool tf){ m_zproject = tf; }
+  bool zproject(){ return m_zproject; }
   ImageAnalysisToolkit* iat(){ return m_iat; };
   FileManager* fileManager(){ return m_fileManager; }
   

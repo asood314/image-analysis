@@ -11,6 +11,7 @@ protected:
   uint8_t m_npos;
   uint8_t m_nt;
   std::string m_name;
+  double m_resolutionXY;
 
 public:
   ImSeries();
@@ -22,6 +23,8 @@ public:
   uint8_t npos(){ return m_npos; }
   uint8_t nt(){ return m_nt; }
   std::string name(){ return m_name; }
+  void setResolutionXY(double res){ m_resolutionXY = res; }
+  double resolutionXY(){ return m_resolutionXY; }
 
 };
 

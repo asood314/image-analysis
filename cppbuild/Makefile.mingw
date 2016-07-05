@@ -15,16 +15,16 @@ all:
 	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 	x86_64-w64-mingw32-g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 	x86_64-w64-mingw32-g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ src/ConfigurationDialog.cpp -o obj/ConfigurationDialog.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/main.cpp -o obj/main.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ -o launcher obj/*.o -std=c++11 $(LIBS)
 
 front:
-	x86_64-w64-mingw32-g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 $(CFLAGS)
@@ -44,6 +44,7 @@ back:
 	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 
 exec:
