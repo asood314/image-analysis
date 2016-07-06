@@ -18,6 +18,8 @@ BatchService::~BatchService()
 
 void BatchService::run()
 {
+  if(m_fileManager->empty()) return;
+  m_fileManager->reset();
   m_data.push_back(m_fileManager->loadNext());
   m_activeThreads = 0;
   int currentS = 0;
@@ -108,6 +110,7 @@ void BatchService::run()
     }
     m_data.push_back(m_fileManager->loadNext());
     currentS++;
+    if(!(m_data.at(currentS))) continue;
     m_nStacks.push_back(m_data.at(currentS)->npos()*m_data.at(currentS)->nt());
     if(!m_zproject){
       std::vector<int> nvec;
@@ -129,7 +132,28 @@ void BatchService::run()
     }
   }
   m_threadpool.join_all();
-  for(std::vector<ImSeries*>::iterator it = m_data.begin(); it != m_data.end(); it++) delete *it;
+  for(unsigned int i = 0; i < m_nStacks.size(); i++){
+    if(m_nStacks.at(i) == 0){
+      std::ostringstream filename;
+      filename << m_name << m_fileManager->getName(i) << ".nia";
+      std::ofstream fout(filename.str().c_str(),std::ofstream::binary);
+      m_fileManager->saveInputFiles(fout,i);
+      m_iat->write(fout);
+      char buf[1];
+      if(m_zproject) buf[0] = 1;
+      else buf[0] = 0;
+      fout.write(buf,1);
+      for(std::vector<ImRecord*>::iterator rit = m_records.at(i).begin(); rit != m_records.at(i).end(); rit++){
+	(*rit)->write(fout);
+	delete *rit;
+      }
+      fout.close();
+      m_nStacks.at(i) = -1;
+    }
+  }
+  for(std::vector<ImSeries*>::iterator it = m_data.begin(); it != m_data.end(); it++){
+    if(*it) delete *it;
+  }
   m_data.clear();
   m_nStacks.clear();
   m_nPlanes.clear();

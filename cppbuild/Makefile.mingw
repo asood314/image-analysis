@@ -1,27 +1,27 @@
-CFLAGS=-g -mms-bitfields -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtkmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gtkmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/atkmm-1.6 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtk-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gdkmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gdkmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/giomm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/giomm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pangomm-1.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pangomm-1.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/glibmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/glibmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairomm-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/cairomm-1.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/sigc++-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/sigc++-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtk-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gtk-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairo -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/atk-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairo -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pixman-1 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gdk-pixbuf-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/harfbuzz -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/glib-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/glib-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/freetype2 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/freetype2 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x84_64-w64-mingw32/sys-root/mingw/include
+CFLAGS= -mms-bitfields -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtkmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gtkmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/atkmm-1.6 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtk-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gdkmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gdkmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/giomm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/giomm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pangomm-1.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/pangomm-1.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/glibmm-2.4 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/glibmm-2.4/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairomm-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/cairomm-1.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/sigc++-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/sigc++-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gtk-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/gtk-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairo -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/atk-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/cairo -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pixman-1 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/gdk-pixbuf-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/harfbuzz -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/pango-1.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/glib-2.0 -I/usr/x86_64-w64-mingw32/sys-root/mingw/lib/glib-2.0/include -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/freetype2 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/freetype2 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include/libpng16 -I/usr/x84_64-w64-mingw32/sys-root/mingw/include
 
 LIBS=-L/usr/x86_64-w64-mingw32/sys-root/mingw/lib -lgtkmm-2.4 -latkmm-1.6 -lgdkmm-2.4 -lgiomm-2.4 -lpangomm-1.4 -lgtk-win32-2.0 -lglibmm-2.4 -lcairomm-1.0 -lsigc-2.0 -lgdk-win32-2.0 -lpangowin32-1.0 -lgdi32 -lpangocairo-1.0 -lgio-2.0 -latk-1.0 -lcairo -lgdk_pixbuf-2.0 -lgio-2.0 -lpangoft2-1.0 -lpango-1.0 -lgobject-2.0 -lglib-2.0 -lintl -lfontconfig -lfreetype -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt -lwsock32
 
 all:
-	x86_64-w64-mingw32-g++ src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/Cluster.cpp -o obj/Cluster.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/Mask.cpp -o obj/Mask.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11
-	x86_64-w64-mingw32-g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
-	x86_64-w64-mingw32-g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ src/ConfigurationDialog.cpp -o obj/ConfigurationDialog.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ src/main.cpp -o obj/main.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/Cluster.cpp -o obj/Cluster.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/Mask.cpp -o obj/Mask.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
+	x86_64-w64-mingw32-g++ -g src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/ConfigurationDialog.cpp -o obj/ConfigurationDialog.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 $(CFLAGS)
+	x86_64-w64-mingw32-g++ -g src/main.cpp -o obj/main.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ -o launcher obj/*.o -std=c++11 $(LIBS)
 
 front:

@@ -41,7 +41,7 @@ public:
   virtual ~ImageAnalysisToolkit();
   void makeSeparateConfigs(uint8_t nchan);
   void makeSingleConfig();
-  void standardAnalysis(ImStack* stack, ImRecord* rec, int zplane=-1);
+  void standardAnalysis(ImStack* stack, ImRecord* rec, int arg_zplane=-1);
   void findSignal(ImFrame* frame, ImRecord* rec, uint8_t chan);
   uint16_t findThreshold(ImFrame* frame);
   void findPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan);
@@ -51,7 +51,7 @@ public:
   void write(std::ofstream& fout);
   void read(std::ifstream& fin);
   uint8_t getBitDepth();
-  void setBitDepth(uint8_t bd){ m_saturationThreshold = ((uint16_t)pow(2,bd)) - 2;}
+  void setBitDepth(uint8_t bd){ m_saturationThreshold = (uint16_t)(pow(2,bd) - 2);}
 
   void setMaster(uint8_t chan){ m_master = chan; }
   void setPostChan(uint8_t chan){ m_postChan = chan; }

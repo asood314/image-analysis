@@ -100,27 +100,27 @@ uint32_t Mask::sum()
   return sum;
 }
 
-uint32_t Mask::sum(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+uint32_t Mask::sum(int x1, int x2, int y1, int y2)
 {
   uint32_t sum = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++) sum += m_mask[i][j];
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++) sum += m_mask[i][j];
   }
   return sum;
 }
 
-void Mask::clear(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+void Mask::clear(int x1, int x2, int y1, int y2)
 {
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++) m_mask[i][j] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++) m_mask[i][j] = 0;
   }
 }
 
-uint16_t Mask::max(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+uint16_t Mask::max(int x1, int x2, int y1, int y2)
 {
   uint16_t max = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       if(m_mask[i][j] > max) max = m_mask[i][j];
     }
   }

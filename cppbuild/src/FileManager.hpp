@@ -32,6 +32,8 @@ public:
   virtual ~FileManager();
   ImSeries* load();
   ImSeries* loadNext();
+  bool empty(){ return m_fileList.size() == 0; }
+  void reset(){ m_it = m_fileList.begin(); }
   void addInputFile(input_file phil){ m_fileList.push_back(phil); }
   void clearInputFiles(){ m_fileList.clear(); }
   void saveInputFiles(std::ofstream& fout, int index);

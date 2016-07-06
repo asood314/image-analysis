@@ -170,6 +170,10 @@ void NiaCore::on_start_batch_jobs()
   fcd.set_transient_for(*this);
   fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
   fcd.add_button("Run",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("NIA files");
+  filt2.add_pattern("*.nia");
+  fcd.add_filter(filt2);
   result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     m_batchService.setName(fcd.get_filename());

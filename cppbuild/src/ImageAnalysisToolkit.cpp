@@ -49,11 +49,12 @@ void ImageAnalysisToolkit::makeSingleConfig()
   }
 }
 
-void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int zplane)
+void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int arg_zplane)
 {
   ImStack* analysisStack = stack;
+  int zplane = arg_zplane;
   if(zplane < 0){
-    analysisStack = stack->zprojection();
+    if(stack->nz() > 1) analysisStack = stack->zprojection();
     zplane = 0;
   }
 
@@ -596,6 +597,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
 
 void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan)
 {
+  std::cout << "Find saturated puncta" << std::endl;
   Mask* m = rec->getSignalMask(chan);
   Mask* used = m->getCopy();
   Mask* cMask = new Mask(frame->width(),frame->height());
@@ -741,7 +743,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
       }
       center = c->center();
       int index = c->indexOf(center);
-      if(!(index < 0)){
+      if(index < c->size()){
 	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
 	  LocalizedObject::Point seed = c->getPoint(0);
 	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << std::endl;
@@ -776,6 +778,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 
 void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_t chan)
 {
+  std::cout << "Resolve overlaps" << std::endl;
   std::vector<Cluster*> clusters = rec->puncta(chan);
   std::vector<Cluster*> unsatClusters;
   std::vector<Cluster*> satClusters;

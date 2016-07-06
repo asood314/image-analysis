@@ -34,5 +34,20 @@ void ImStack::insert(ImFrame* frame, uint8_t w, uint8_t z)
 
 ImStack* ImStack::zprojection()
 {
-  return NULL;
+  ImStack* retVal = new ImStack(m_nwaves,1);
+  for(uint8_t w = 0; w < m_nwaves; w++){
+    ImFrame* f = new ImFrame(m_frames[w][0]->width(),m_frames[w][0]->height());
+    for(uint16_t i = 0; i < f->width(); i++){
+      for(uint16_t j = 0; j < f->height(); j++){
+	uint16_t max = 0;
+	for(int z = 0; z < m_nz; z++){
+	  uint16_t val = m_frames[w][z]->getPixel(i,j);
+	  if(val > max) max = val;
+	}
+	f->setPixel(i,j,max);
+      }
+    }
+    retVal->insert(f,w,0);
+  }
+  return retVal;
 }
