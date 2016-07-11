@@ -12,6 +12,16 @@ Cluster::~Cluster()
   m_points.clear();
 }
 
+Cluster* Cluster::getCopy()
+{
+  Cluster* c = new Cluster();
+  for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++) c->addPoint(*it);
+  c->setPeakIntensity(m_peak);
+  c->setIntegratedIntensity(m_total);
+  c->setCenter(m_center);
+  return c;
+}
+
 void Cluster::addPoint(uint16_t x, uint16_t y)
 {
   LocalizedObject::Point pt;

@@ -14,6 +14,7 @@ protected:
 public:
   Cluster();
   virtual ~Cluster();
+  Cluster* getCopy();
   void addPoint(uint16_t x, uint16_t y);
   void addPoint(LocalizedObject::Point pt){ m_points.push_back(pt); }
   void addPoint(uint16_t x, uint16_t y, uint16_t i);
@@ -32,6 +33,7 @@ public:
   uint32_t getBorderLength(Cluster* c);
   void add(Cluster* c);
   double peakToPeakDistance2(Cluster* c);
+  void setCenter(LocalizedObject::Point cent){ m_center = cent; }
   void computeCenter();
   bool contains(LocalizedObject::Point pt);
   std::vector<LocalizedObject::Point> getPoints(){ return m_points; }

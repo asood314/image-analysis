@@ -998,6 +998,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	Function2D[] fs = new Function2D[np];
 	Cluster[] clusters = new Cluster[np];
 	Vector<Cluster> satClusters = new Vector<Cluster>();
+	int count = 0;
 	for(int i = 0; i < np; i++){
 	    Cluster c = r.getPunctum(w,i);
 	    int imax = 0;
@@ -1022,6 +1023,10 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	    if(nSat > 0) continue;
+	    if(count < 3){
+		System.out.println("Original: ("+c.getPixel(0).x+","+c.getPixel(0).y+"), "+c.size());
+		count++;
+	    }
 	    clusters[i] = new Cluster();
 	    clusters[i].addPixel(peaks[i]);
 	    clusters[i].setPeakIntensity(imax);
@@ -1098,6 +1103,16 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		else if(maxDiff > -1.0) clusters[maxK].addPixel(new Point(i,j));
 		else if(distK >= 0) clusters[distK].addPixel(new Point(i,j));
 	    }
+	}
+	count = 0;
+	int index = 0;
+	while(count < 3){
+	    if(clusters[index] != null){
+		Cluster c = clusters[index];
+		System.out.println("New: ("+c.getPixel(0).x+","+c.getPixel(0).y+"), "+c.size());
+		count++;
+	    }
+	    index++;
 	}
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
 	int[] diArr = {-1,0,1,-1,1,-1,0,1};

@@ -49,10 +49,12 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   row[m_colMode] = ImageAnalysisToolkit::OR;
   row[m_colString] = "OR";
   m_modeBox.pack_start(m_colString);
+  if(m_toolkit->mode() == ImageAnalysisToolkit::OVERRIDE) m_modeBox.set_active(0);
+  else m_modeBox.set_active(1);
   m_vbox2.pack_start(m_modeLabel, Gtk::PACK_SHRINK);
   m_vbox2.pack_start(m_modeBox, Gtk::PACK_SHRINK);
   m_hbox1.pack_start(m_vbox1, Gtk::PACK_SHRINK);
-  m_hbox1.pack_start(m_vbox2, Gtk::PACK_SHRINK);
+  m_hbox1.pack_start(m_vbox2, Gtk::PACK_EXPAND_PADDING);
   m_analysisBox.pack_start(m_hbox1, Gtk::PACK_SHRINK);
 
   m_saturationEntry.set_max_length(3);

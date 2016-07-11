@@ -106,17 +106,18 @@ void FileManager::saveInputFiles(std::ofstream& fout, int index)
   NiaUtils::writeIntToBuffer(buf,0,fit->sname.length());
   fout.write(buf,4);
   fout.write(fit->sname.c_str(),fit->sname.length());
-  buf[0] = (char)fit->nw;
-  buf[1] = (char)fit->nz;
-  buf[2] = (char)fit->np;
-  buf[3] = (char)fit->nt;
-  for(int8_t j = 3; j >= 0; j++){
+  buf[0] = (char)(fit->nw);
+  buf[1] = (char)(fit->nz);
+  buf[2] = (char)(fit->np);
+  buf[3] = (char)(fit->nt);
+  for(int8_t j = 3; j >= 0; j--){
     if(fit->order[j] == FileManager::WAVELENGTH) buf[7-j] = 'W';
     else if(fit->order[j] == FileManager::ZSLICE) buf[7-j] = 'Z';
     else if(fit->order[j] == FileManager::POSITION) buf[7-j] = 'P';
     else if(fit->order[j] == FileManager::TIMEPOINT) buf[7-j] = 'T';
   }
-  fout.write(buf,8);
+  NiaUtils::writeIntToBuffer(buf,8,fit->fnames.size());
+  fout.write(buf,12);
   for(std::vector<std::string>::iterator it = fit->fnames.begin(); it != fit->fnames.end(); it++){
     NiaUtils::writeIntToBuffer(buf,0,it->length());
     fout.write(buf,4);

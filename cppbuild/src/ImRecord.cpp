@@ -29,14 +29,14 @@ void ImRecord::removePunctum(uint8_t chan, uint32_t index)
 {
   std::vector<Cluster*> clusters = m_puncta.at(chan);
   delete clusters.at(index);
-  clusters.erase(clusters.begin()+index);
+  m_puncta[chan].erase(m_puncta[chan].begin()+index);
 }
 
 void ImRecord::clearPuncta(uint8_t chan)
 {
     std::vector<Cluster*> clusters = m_puncta.at(chan);
     for(std::vector<Cluster*>::iterator it = clusters.begin(); it != clusters.end(); it++) delete *it;
-    clusters.clear();
+    m_puncta[chan].clear();
 }
 
 void ImRecord::removeSynapseCollection(uint8_t index)
@@ -114,35 +114,36 @@ Synapse* ImRecord::selectSynapseFromCollection(uint8_t index, LocalizedObject::P
 Mask* ImRecord::getPunctaMask(uint8_t chan, bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);
+  std::vector<Cluster*> vec = m_puncta.at(chan);
   if(outline){
-    for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
-      for(std::vector<Cluster*>::iterator jt = it->begin(); jt != it->end(); jt++){
-	std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
-	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
-	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
-	  uint8_t sum = 0;
-	  for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	    if(dx >= m_imWidth){
-	      sum += 6;
-	      continue;
-	    }
-	    for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	      if(dy >= m_imHeight) sum += 2;
-	      else sum += m->getValue(dx,dy);
-	    }
+    //for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
+    for(std::vector<Cluster*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
+      std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
+      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
+	uint8_t sum = 0;
+	for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
+	  if(dx >= m_imWidth){
+	    sum += 6;
+	    continue;
 	  }
-	  m->setValue(kt->x,kt->y,sum/18);
+	  for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
+	    if(dy >= m_imHeight) sum += 2;
+	    else sum += m->getValue(dx,dy);
+	  }
 	}
+	m->setValue(kt->x,kt->y,sum/18);
       }
     }
+    //}
     return m;
   }
-  for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
-    for(std::vector<Cluster*>::iterator jt = it->begin(); jt != it->end(); jt++){
-      std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
-      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
-    }
+  //for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
+  for(std::vector<Cluster*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
+    std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
+    for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
   }
+    //}
   return m;
 }
 
@@ -462,8 +463,17 @@ void ImRecord::write(std::ofstream& fout)
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
     if(m_signalMasks.at(chan)){
       buf[0] = (char)1;
-      uint32_t size = m_imWidth*m_imHeight;
+      //uint32_t size = m_imWidth*m_imHeight;
       offset = 1;
+      fout.write(buf,1);
+      int npacks = (m_imHeight / 8);
+      if(m_imHeight % 8 > 0) npacks++;
+      for(int i = 0; i < npacks; i++){
+	int startY = 8*i;
+	offset = pack(buf,m_signalMasks.at(chan),startY);
+	fout.write(buf,offset);
+      }
+      /*
       for(uint32_t i = 0; i < size; i += 8){
 	pack(buf,offset,m_signalMasks.at(chan),i);
 	if(offset > 200000){
@@ -471,7 +481,8 @@ void ImRecord::write(std::ofstream& fout)
 	  offset = 0;
 	}
       }
-      fout.write(buf,offset);
+      */
+      //fout.write(buf,offset);
     }
     else{
       buf[0] = (char)0;
@@ -499,6 +510,7 @@ void ImRecord::write(std::ofstream& fout)
     std::string d = (*it)->description();
     offset = 0;
     NiaUtils::writeShortToBuffer(buf,offset,d.length());
+    offset += 2;
     for(uint16_t i = 0; i < d.length(); i++){
       buf[offset] = d[i];
       offset++;
@@ -511,11 +523,15 @@ void ImRecord::write(std::ofstream& fout)
     }
     NiaUtils::writeIntToBuffer(buf,offset,(*it)->nSynapses());
     offset += 4;
-    for(std::vector<Synapse*>::iterator jt = (*it)->synapses().begin(); jt != (*it)->synapses().end(); jt++){
-      NiaUtils::writeDoubleToBuffer(buf,offset,(*jt)->colocalizationScore());
+    std::vector<Synapse*> vec = (*it)->synapses();
+    for(std::vector<Synapse*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
+    NiaUtils::writeDoubleToBuffer(buf,offset,(*jt)->colocalizationScore());
+    //for(unsigned isyn = 0; isyn < (*it)->nSynapses(); isyn++){
+    //NiaUtils::writeDoubleToBuffer(buf,offset,(*it)->getSynapse(isyn)->colocalizationScore());
       offset += 4;
       for(uint8_t i = 0; i < (*it)->nChannels(); i++){
 	NiaUtils::writeIntToBuffer(buf,offset,(*jt)->getPunctumIndex(i));
+	//NiaUtils::writeIntToBuffer(buf,offset,(*it)->getSynapse(isyn)->getPunctumIndex(i));
 	offset += 4;
       }
     }
@@ -561,6 +577,30 @@ void ImRecord::write(std::ofstream& fout)
   delete[] buf;
 }
 
+uint64_t ImRecord::pack(char* buf, Mask* m, int startY)
+{
+  uint64_t offset = 0;
+  uint8_t nextByte = 0x00;
+  int nb = 0;
+  for(int j = startY; j < startY+8 && j < m_imHeight; j++){
+    for(int i = 0; i < m_imWidth; i++){
+      nextByte = nextByte | ((m->getValue(i,j) & 0x01) << nb);
+      nb++;
+      if(nb > 7){
+	buf[offset] = (char)nextByte;
+	nextByte = 0x00;
+	nb = 0;
+	offset++;
+      }
+    }
+  }
+  if(nb > 0){
+    buf[offset] = (char)nextByte;
+    offset++;
+  }
+  return offset;
+}
+/*
 void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
 {
   uint16_t x = index % m_imWidth; 
@@ -589,7 +629,7 @@ void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
   buf[offset+7] = (char)((retval & 0xff00000000000000) >> 56);
   offset += 8;
 }
-
+*/
 void ImRecord::read(std::ifstream& fin)
 {
   char* buf = new char[400000];
@@ -604,12 +644,16 @@ void ImRecord::read(std::ifstream& fin)
     m_thresholds.push_back(NiaUtils::convertToShort(buf[offset],buf[offset+1]));
     offset += 2;
   }
-  uint32_t npackets = (m_imWidth*m_imHeight) / 8;
-  if((m_imWidth*m_imHeight) % 8 > 0) npackets++;
+  //uint32_t npackets = (m_imWidth*m_imHeight) / 64;
+  //if((m_imWidth*m_imHeight) % 64 > 0) npackets++;
+  int nunpacks = m_imHeight / 8;
+  int leftovers = (m_imHeight % 8) * m_imWidth;
+  //if(leftovers > 0) nunpacks++;
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
     fin.read(buf,1);
     if((uint8_t)buf[0] > 0){
       Mask* m = new Mask(m_imWidth,m_imHeight);
+      /*
       uint32_t index = 0;
       while(npackets > 19999){
 	fin.read(buf,160000);
@@ -619,6 +663,17 @@ void ImRecord::read(std::ifstream& fin)
       }
       fin.read(buf,8*npackets);
       unpack(buf,8*npackets,m,index);
+      */
+      for(int i = 0; i < nunpacks; i++){
+	fin.read(buf,m_imWidth);
+	unpack(buf,m,8*i);
+      }
+      if(leftovers > 0){
+	int nbytes = leftovers / 8;
+	if(leftovers % 8 > 0) nbytes++;
+	fin.read(buf,nbytes);
+	unpack(buf,m,8*nunpacks);
+      }
       m_signalMasks.push_back(m);
     }
     else m_signalMasks.push_back(NULL);
@@ -644,7 +699,8 @@ void ImRecord::read(std::ifstream& fin)
   }
 
   fin.read(buf,1);
-  for(uint8_t icol = 0; icol < (uint8_t)buf[0]; icol++){
+  uint8_t ncol = (uint8_t)buf[0];
+  for(uint8_t icol = 0; icol < ncol; icol++){
     fin.read(buf,2);
     uint16_t len = NiaUtils::convertToShort(buf[0],buf[1]);
     fin.read(buf,len+1);
@@ -710,6 +766,25 @@ void ImRecord::read(std::ifstream& fin)
   delete[] buf;
 }
 
+void ImRecord::unpack(char* buf, Mask* m, int startY)
+{
+  uint64_t offset = 0;
+  uint8_t nextByte = buf[offset];
+  int nb = 0;
+  for(int j = startY; j < startY+8 && j < m_imHeight; j++){
+    for(int i = 0; i < m_imWidth; i++){
+      uint8_t val = ((nextByte >> nb) & 0x01);
+      m->setValue(i,j,val);
+      nb++;
+      if(nb > 7){
+	offset++;
+	nextByte = buf[offset];
+	nb = 0;
+      }
+    }
+  }
+}
+/*
 void ImRecord::unpack(char* buf, uint64_t offset, Mask* m, uint32_t index)
 {
   uint16_t x = index % m_imWidth;
@@ -774,7 +849,7 @@ void ImRecord::unpack(char* buf, uint64_t offset, Mask* m, uint32_t index)
     }
   }
 }
-
+*/
 void ImRecord::loadMetaMorphRegions(std::string filename)
 {
 }

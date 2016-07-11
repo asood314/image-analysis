@@ -32,3 +32,12 @@ void ImSeries::insert(ImStack* stack, uint8_t pos, uint8_t t)
     m_fourLocations.at(index) = stack;
   }
 }
+
+void ImSeries::remove(uint8_t pos, uint8_t t)
+{
+  if(pos < m_npos && t < m_nt){
+    uint16_t index = pos*m_nt + t;
+    if(m_fourLocations.at(index)) delete m_fourLocations.at(index);
+    m_fourLocations.at(index) = NULL;
+  }
+}

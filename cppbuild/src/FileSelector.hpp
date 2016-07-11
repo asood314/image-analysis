@@ -5,6 +5,7 @@
 #include <vector>
 #include <boost/lexical_cast.hpp>
 #include "FileManager.hpp"
+#include "ImageAnalysisToolkit.hpp"
 
 class FileSelector : public Gtk::FileChooserDialog
 {
@@ -12,6 +13,8 @@ class FileSelector : public Gtk::FileChooserDialog
 protected:
   FileManager* m_fileManager;
   std::vector<std::string> m_names;
+  ImageAnalysisToolkit* m_toolkit;
+  std::vector<ImRecord*>* m_recs;
   uint16_t m_nextRow;
   Gtk::Button m_selectButton;
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
@@ -36,7 +39,7 @@ protected:
   void on_cancel_button_clicked();
 
 public:
-  FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::FileChooserAction act=Gtk::FILE_CHOOSER_ACTION_OPEN);
+  FileSelector(FileManager* fm, ImageAnalysisToolkit* iat, std::vector<ImRecord*>* recs, const Glib::ustring& title, Gtk::FileChooserAction act=Gtk::FILE_CHOOSER_ACTION_OPEN);
   virtual ~FileSelector();
 
 };

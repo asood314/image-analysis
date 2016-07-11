@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdio.h>
 
-FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::FileChooserAction act) :
+FileSelector::FileSelector(FileManager* fm, ImageAnalysisToolkit* iat, std::vector<ImRecord*>* recs, const Glib::ustring& title, Gtk::FileChooserAction act) :
   Gtk::FileChooserDialog(title,act),
   m_selectButton("Select File"),
   m_diskoveryButton("Auto load Diskovery files"),
@@ -17,6 +17,8 @@ FileSelector::FileSelector(FileManager* fm, const Glib::ustring& title, Gtk::Fil
   m_nextRow(0)
 {
   m_fileManager = fm;
+  m_recs = recs;
+  m_toolkit = iat;
   m_columnRecord.add(m_idColumn);
   m_columnRecord.add(m_fileNameColumn);
   m_refTreeModel = Gtk::ListStore::create(m_columnRecord);
@@ -103,11 +105,58 @@ FileSelector::~FileSelector()
 
 void FileSelector::on_select_button_clicked()
 {
-  Gtk::TreeModel::Row row = *(m_refTreeModel->append());
-  row[m_idColumn] = m_nextRow;
-  m_nextRow++;
-  row[m_fileNameColumn] = get_filename();
-  m_names.push_back(get_filename());
+  std::string phil = get_filename();
+  if(phil.find(".nia") != std::string::npos){
+    std::ifstream fin(phil.c_str(),std::ifstream::binary);
+    char buf[500];
+    fin.read(buf,4);
+    int len = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+    fin.read(buf,len);
+    m_seriesName.set_text(std::string(buf,len));
+    fin.read(buf,12);
+    int nw = (int)buf[0];
+    int nz = (int)buf[1];
+    int np = (int)buf[2];
+    int nt = (int)buf[3];
+    m_wField.set_text(boost::lexical_cast<std::string>(nw));
+    m_zField.set_text(boost::lexical_cast<std::string>(nz));
+    m_tField.set_text(boost::lexical_cast<std::string>(np));
+    m_pField.set_text(boost::lexical_cast<std::string>(nt));
+    char minibuf[4];
+    for(int i = 4; i < 8; i++) minibuf[i-4] = buf[i];
+    m_orderField.set_text(std::string(minibuf));
+    int nfiles = NiaUtils::convertToInt(buf[8],buf[9],buf[10],buf[11]);
+    for(int i = 0; i < nfiles; i++){
+      Gtk::TreeModel::Row row = *(m_refTreeModel->append());
+      row[m_idColumn] = m_nextRow;
+      m_nextRow++;
+      fin.read(buf,4);
+      len = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+      fin.read(buf,len);
+      std::string fname(buf,len);
+      row[m_fileNameColumn] = fname;
+      m_names.push_back(fname);
+    }
+    m_toolkit->read(fin);
+    if(m_recs){
+      fin.read(buf,1);
+      int nrecs = np*nt;
+      if((int)buf[0] < 1) nrecs *= nz;
+      for(int i = 0; i < nrecs; i++){
+	ImRecord* rec = new ImRecord();
+	rec->read(fin);
+	m_recs->push_back(rec);
+      }
+    }
+    fin.close();
+  }
+  else{
+    Gtk::TreeModel::Row row = *(m_refTreeModel->append());
+    row[m_idColumn] = m_nextRow;
+    m_nextRow++;
+    row[m_fileNameColumn] = phil;
+    m_names.push_back(phil);
+  }
 }
 
 void FileSelector::on_add_button_clicked()

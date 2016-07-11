@@ -2,17 +2,19 @@
 #define MASK_HPP
 
 #include <iostream>
+#include <vector>
 
 class Mask
 {
 
 protected:
-  uint8_t** m_mask;
+  //uint8_t** m_mask;
+  std::vector< std::vector<uint8_t> > m_mask;
   uint16_t m_width;
   uint16_t m_height;
 
 public:
-  Mask(){ m_mask = NULL; }
+  Mask(){}// m_mask = NULL; }
   Mask(uint16_t w, uint16_t h){ init(w,h,0); }
   Mask(uint16_t w, uint16_t h, uint8_t startValue){ init(w,h,startValue); }
   Mask(Mask& m);

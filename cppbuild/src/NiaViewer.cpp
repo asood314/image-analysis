@@ -6,10 +6,23 @@ NiaViewer::NiaViewer() :
   m_red(255), m_green(255), m_blue(255),
   m_grayMin(0), m_grayMax(65535),
   m_redMin(0), m_redMax(65535), m_greenMin(0), m_greenMax(65535), m_blueMin(0), m_blueMax(65535),
-  m_mode(GRAY)
+  m_mode(GRAY),
+  m_width(0),m_height(0),m_zoom(1.0)
 {
   m_data = NULL;
-  add(m_displayImage);
+  m_colors[0].r = 0xff;
+  m_colors[0].g = 0x00;
+  m_colors[0].b = 0x00;
+  m_colors[1].r = 0x00;
+  m_colors[1].g = 0xff;
+  m_colors[1].b = 0x00;
+  m_colors[2].r = 0x00;
+  m_colors[2].g = 0x00;
+  m_colors[2].b = 0xff;
+  add(m_eventBox);
+  m_eventBox.set_events(Gdk::BUTTON_PRESS_MASK);
+  m_eventBox.signal_button_press_event().connect(sigc::mem_fun(*this, &NiaViewer::on_button_press));
+  m_eventBox.add(m_displayImage);
 }
 
 NiaViewer::~NiaViewer()
@@ -19,6 +32,15 @@ NiaViewer::~NiaViewer()
     uint8_t* buf = m_pixbuf->get_pixels();
     if(buf) delete[] buf;
   }
+  for(std::vector<ImRecord*>::iterator it = m_records.begin(); it != m_records.end(); it++){
+    if(*it) delete *it;
+  }
+}
+
+bool NiaViewer::on_button_press(GdkEventButton* evt)
+{
+  std::cout << "Mouse click at (" << evt->x << "," << evt->y << ")" << std::endl;
+  return true;
 }
 
 void NiaViewer::setData(ImSeries* data)
@@ -29,6 +51,13 @@ void NiaViewer::setData(ImSeries* data)
     buf = m_pixbuf->get_pixels();
   }
   m_data = data;
+  m_width = m_data->fourLocation(0,0)->frame(0,0)->width();
+  m_height = m_data->fourLocation(0,0)->frame(0,0)->height();
+  for(std::vector<ImRecord*>::iterator it = m_records.begin(); it != m_records.end(); it++){
+    if(*it) delete *it;
+  }
+  m_records.clear();
+  m_records.assign(m_data->npos()*m_data->nt(),NULL);
   m_view_w = 0;
   m_view_z = 0;
   m_view_p = 0;
@@ -43,7 +72,9 @@ void NiaViewer::setData(ImSeries* data)
     m_pixbuf = createPixbuf(m_data->fourLocation(0,0));
     if(buf) delete[] buf;
   }
-  m_displayImage.set(m_pixbuf);
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
 }
 
 void NiaViewer::autoscale()
@@ -56,6 +87,28 @@ void NiaViewer::autoscale()
 void NiaViewer::setMode(NiaViewer::ImageMode mode)
 {
   m_mode = mode;
+  if(mode == GRAY){
+    m_colors[0].r = 0xff;
+    m_colors[0].g = 0x00;
+    m_colors[0].b = 0x00;
+    m_colors[1].r = 0x00;
+    m_colors[1].g = 0xff;
+    m_colors[1].b = 0x00;
+    m_colors[2].r = 0x00;
+    m_colors[2].g = 0x00;
+    m_colors[2].b = 0xff;
+  }
+  else if(mode == RGB){
+    m_colors[0].r = 0xff;
+    m_colors[0].g = 0xff;
+    m_colors[0].b = 0xff;
+    m_colors[1].r = 0xff;
+    m_colors[1].g = 0x00;
+    m_colors[1].b = 0xff;
+    m_colors[2].r = 0x00;
+    m_colors[2].g = 0xff;
+    m_colors[2].b = 0xff;
+  }
   autoscale();
   updateImage();
 }
@@ -127,24 +180,117 @@ void NiaViewer::updateImage()
     m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t));
     if(buf) delete[] buf;
   }
-  m_displayImage.set(m_pixbuf);
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
+}
+
+void NiaViewer::zoomIn()
+{
+  m_zoom += 0.1;
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
+}
+
+void NiaViewer::zoomOut()
+{
+  m_zoom -= 0.1;
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
+}
+
+void NiaViewer::unzoom()
+{
+  m_zoom = 1.0;
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
+}
+
+void NiaViewer::toggleMask(Mask* m)
+{
+  for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
+    if(m->equals(**it)){
+      m_masks.erase(it);
+      updateImage();
+      return;
+    }
+  }
+  m_masks.push_back(m);
+  updateImage();
+}
+
+void NiaViewer::toggleSignalMask()
+{
+  if(!m_data) return;
+  int index = m_view_p*m_data->nt() + m_view_t;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getSignalMask(m_view_w));
+}
+
+void NiaViewer::togglePunctaMask()
+{
+  if(!m_data) return;
+  int index = m_view_p*m_data->nt() + m_view_t;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getPunctaMask(m_view_w,false));
+}
+
+void NiaViewer::toggleSynapseMask()
+{
+  if(!m_data) return;
+  int index = m_view_p*m_data->nt() + m_view_t;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getSynapseMask(false));
+}
+
+void NiaViewer::setRecords(std::vector<ImRecord*> recs)
+{
+  for(std::vector<ImRecord*>::iterator it = m_records.begin(); it != m_records.end(); it++){
+    if(*it) delete *it;
+  }
+  m_records.clear();
+  for(std::vector<ImRecord*>::iterator it = recs.begin(); it != recs.end(); it++) m_records.push_back(*it);
+}
+
+void NiaViewer::setCurrentRecord(ImRecord* rec)
+{
+  if(!m_data) return;
+  int index = m_view_p*m_data->nt() + m_view_t;
+  if(m_records[index]) delete m_records[index];
+  m_records[index] = rec;
 }
 
 Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)
 {
+  unsigned nmasks = m_masks.size();
   uint8_t* buf = new uint8_t[frame->width()*frame->height()*3];
   double sf = 255.0 / (m_grayMax - m_grayMin);
   uint64_t index = 0;
   for(uint32_t j = 0; j < frame->height(); j++){
     for(uint32_t i = 0; i < frame->width(); i++){
-      uint16_t val = frame->getPixel(i,j);
-      uint8_t scaled_p;
-      if(val > m_grayMax) scaled_p = 255;
-      else if(val < m_grayMin) scaled_p = 0;
-      else scaled_p = (uint8_t)(sf * (val - m_grayMin));
-      buf[index] = scaled_p;
-      buf[index+1] = scaled_p;
-      buf[index+2] = scaled_p;
+      buf[index] = 0;
+      buf[index+1] = 0;
+      buf[index+2] = 0;
+      bool masked = false;
+      for(unsigned k = 0; k < nmasks; k++){
+	if(m_masks.at(k)->getValue(i,j) > 0){
+	  unsigned colorIndex = k % m_ncolors;
+	  buf[index] = buf[index] |m_colors[colorIndex].r;
+	  buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	  buf[index+2] = buf[index+2] |m_colors[colorIndex].b;
+	  masked = true;
+	}
+      }
+      if(!masked){
+	uint16_t val = frame->getPixel(i,j);
+	uint8_t scaled_p;
+	if(val > m_grayMax) scaled_p = 255;
+	else if(val < m_grayMin) scaled_p = 0;
+	else scaled_p = (uint8_t)(sf * (val - m_grayMin));
+	buf[index] = scaled_p;
+	buf[index+1] = scaled_p;
+	buf[index+2] = scaled_p;
+      }
       index += 3;
     }
   }
@@ -155,6 +301,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)
 
 Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
 {
+  unsigned nmasks = m_masks.size();
   uint16_t width = stack->frame(0,0)->width();
   uint16_t height = stack->frame(0,0)->height();
   uint8_t* buf = new uint8_t[width*height*3];
@@ -167,12 +314,27 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
       if(m_blue < 255){
 	for(uint32_t j = 0; j < height; j++){
 	  for(uint32_t i = 0; i < width; i++){
-	    uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
-	    uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
-	    uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
-	    buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
-	    buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
-	    buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	    buf[index] = 0;
+	    buf[index+1] = 0;
+	    buf[index+2] = 0;
+	    bool masked = false;
+	    for(unsigned k = 0; k < nmasks; k++){
+	      if(m_masks.at(k)->getValue(i,j) > 0){
+		unsigned colorIndex = k % m_ncolors;
+		buf[index] = buf[index] | m_colors[colorIndex].r;
+		buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+		buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+		masked = true;
+	      }
+	    }
+	    if(!masked){
+	      uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
+	      uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
+	      uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
+	      buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	      buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	      buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	    }
 	    index += 3;
 	  }
 	}
@@ -180,11 +342,26 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
       else{
 	for(uint32_t j = 0; j < height; j++){
 	  for(uint32_t i = 0; i < width; i++){
-	    uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
-	    uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
-	    buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
-	    buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	    buf[index] = 0;
+	    buf[index+1] = 0;
 	    buf[index+2] = 0;
+	    bool masked = false;
+	    for(unsigned k = 0; k < nmasks; k++){
+	      if(m_masks.at(k)->getValue(i,j) > 0){
+		unsigned colorIndex = k % m_ncolors;
+		buf[index] = buf[index] | m_colors[colorIndex].r;
+		buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+		buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+		masked = true;
+	      }
+	    }
+	    if(!masked){
+	      uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
+	      uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
+	      buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	      buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	      buf[index+2] = 0;
+	    }
 	    index += 3;
 	  }
 	}
@@ -193,11 +370,26 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
     else if(m_blue < 255){
       for(uint32_t j = 0; j < height; j++){
 	for(uint32_t i = 0; i < width; i++){
-	  uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
-	  uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
-	  buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	  buf[index] = 0;
 	  buf[index+1] = 0;
-	  buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	  buf[index+2] = 0;
+	  bool masked = false;
+	  for(unsigned k = 0; k < nmasks; k++){
+	    if(m_masks.at(k)->getValue(i,j) > 0){
+	      unsigned colorIndex = k % m_ncolors;
+	      buf[index] = buf[index] | m_colors[colorIndex].r;
+	      buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	      buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+	      masked = true;
+	    }
+	  }
+	  if(!masked){
+	    uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
+	    uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
+	    buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	    buf[index+1] = 0;
+	    buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	  }
 	  index += 3;
 	}
       }
@@ -205,10 +397,25 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
     else{
       for(uint32_t j = 0; j < height; j++){
 	for(uint32_t i = 0; i < width; i++){
-	  uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
-	  buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	  buf[index] = 0;
 	  buf[index+1] = 0;
 	  buf[index+2] = 0;
+	  bool masked = false;
+	  for(unsigned k = 0; k < nmasks; k++){
+	    if(m_masks.at(k)->getValue(i,j) > 0){
+	      unsigned colorIndex = k % m_ncolors;
+	      buf[index] = buf[index] | m_colors[colorIndex].r;
+	      buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	      buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+	      masked = true;
+	    }
+	  }
+	  if(!masked){
+	    uint16_t rval = stack->frame(m_red,m_view_z)->getPixel(i,j);
+	    buf[index] = (uint8_t)(sfRed * (rval-(rval-m_redMax)*(rval>m_redMax) - m_redMin)*(rval > m_redMin));
+	    buf[index+1] = 0;
+	    buf[index+2] = 0;
+	  }
 	  index += 3;
 	}
       }
@@ -218,11 +425,26 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
     if(m_blue < 255){
       for(uint32_t j = 0; j < height; j++){
 	for(uint32_t i = 0; i < width; i++){
-	  uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
-	  uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
 	  buf[index] = 0;
-	  buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
-	  buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	  buf[index+1] = 0;
+	  buf[index+2] = 0;
+	  bool masked = false;
+	  for(unsigned k = 0; k < nmasks; k++){
+	    if(m_masks.at(k)->getValue(i,j) > 0){
+	      unsigned colorIndex = k % m_ncolors;
+	      buf[index] = buf[index] | m_colors[colorIndex].r;
+	      buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	      buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+	      masked = true;
+	    }
+	  }
+	  if(!masked){
+	    uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
+	    uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
+	    buf[index] = 0;
+	    buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	    buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	  }
 	  index += 3;
 	}
       }
@@ -230,10 +452,25 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
     else{
       for(uint32_t j = 0; j < height; j++){
 	for(uint32_t i = 0; i < width; i++){
-	  uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
 	  buf[index] = 0;
-	  buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	  buf[index+1] = 0;
 	  buf[index+2] = 0;
+	  bool masked = false;
+	  for(unsigned k = 0; k < nmasks; k++){
+	    if(m_masks.at(k)->getValue(i,j) > 0){
+	      unsigned colorIndex = k % m_ncolors;
+	      buf[index] = buf[index] | m_colors[colorIndex].r;
+	      buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	      buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+	      masked = true;
+	    }
+	  }
+	  if(!masked){
+	    uint16_t gval = stack->frame(m_green,m_view_z)->getPixel(i,j);
+	    buf[index] = 0;
+	    buf[index+1] = (uint8_t)(sfGreen * (gval-(gval-m_greenMax)*(gval>m_greenMax) - m_greenMin)*(gval > m_greenMin));
+	    buf[index+2] = 0;
+	  }
 	  index += 3;
 	}
       }
@@ -242,10 +479,25 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImStack* stack)
   else if(m_blue < 255){
     for(uint32_t j = 0; j < height; j++){
       for(uint32_t i = 0; i < width; i++){
-	uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
 	buf[index] = 0;
 	buf[index+1] = 0;
-	buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	buf[index+2] = 0;
+	bool masked = false;
+	for(unsigned k = 0; k < nmasks; k++){
+	  if(m_masks.at(k)->getValue(i,j) > 0){
+	    unsigned colorIndex = k % m_ncolors;
+	    buf[index] = buf[index] | m_colors[colorIndex].r;
+	    buf[index+1] = buf[index+1] | m_colors[colorIndex].g;
+	    buf[index+2] = buf[index+2] | m_colors[colorIndex].b;
+	    masked = true;
+	  }
+	}
+	if(!masked){
+	  uint16_t bval = stack->frame(m_blue,m_view_z)->getPixel(i,j);
+	  buf[index] = 0;
+	  buf[index+1] = 0;
+	  buf[index+2] = (uint8_t)(sfBlue * (bval-(bval-m_blueMax)*(bval>m_blueMax) - m_blueMin)*(bval > m_blueMin));
+	}
 	index += 3;
       }
     }

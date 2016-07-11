@@ -93,10 +93,10 @@ void BatchService::run()
 		fout.close();
 		m_nStacks.at(i) = -1;
 	      }
-	      for(int k = 0; k < m_data.at(i)->npos(); k++){
-		for(int j = 0; j < m_data.at(i)->nt(); j++){
+	      for(uint8_t k = 0; k < m_data.at(i)->npos(); k++){
+		for(uint8_t j = 0; j < m_data.at(i)->nt(); j++){
 		  if(m_nPlanes.at(i).at(k*m_data.at(i)->nt()+j) == 0){
-		    delete m_data.at(i)->fourLocation(k,j);
+		    m_data.at(i)->remove(k,j);
 		    m_nPlanes.at(i).at(k*m_data.at(i)->nt()+j) = -1;
 		    m_nStacks.at(i) -= 1;
 		  }
@@ -172,7 +172,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   boost::lock_guard<boost::mutex> guard(m_mtx);
   m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t) = record;
   m_nStacks.at(seriesID) -= 1;
-  delete stack;
+  m_data.at(seriesID)->remove(p,t);
   m_activeThreads--;
 }
 

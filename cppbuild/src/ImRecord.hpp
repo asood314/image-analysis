@@ -71,9 +71,11 @@ public:
   void calculateRegionStats(Region* r, uint8_t& postChan);
   void printSynapseDensityTable(uint8_t& postChan, std::vector<std::string> chanNames, std::string filename);
   void write(std::ofstream& fout);
-  void pack(char* buf, uint64_t& offset, Mask* m, uint32_t index);
+  uint64_t pack(char* buf, Mask* m, int startY);
+  //void pack(char* buf, uint64_t& offset, Mask* m, uint32_t index);
   void read(std::ifstream& fin);
-  void unpack(char* buf, uint64_t offset, Mask* m, uint32_t index);
+  void unpack(char* buf, Mask* m, int startY);
+  //void unpack(char* buf, uint64_t offset, Mask* m, uint32_t index);
   void loadMetaMorphRegions(std::string filename);
   void loadMetaMorphTraces(std::string filename, uint8_t chan, bool overwrite);
   
