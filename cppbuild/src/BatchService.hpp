@@ -15,6 +15,8 @@ protected:
   boost::mutex m_mtx;
   uint8_t m_maxThreads,m_activeThreads;
   bool m_zproject;
+  int m_divisor;
+  bool m_writeTables;
   ImageAnalysisToolkit* m_iat;
   FileManager* m_fileManager;
   std::vector<ImSeries*> m_data;
@@ -28,12 +30,17 @@ public:
   void analyzeProjection(int seriesID, uint8_t p, uint8_t t);
   void analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z);
   void run();
+  void run(std::vector<ImRecord*> recs);
   void setName(std::string name){ m_name = name; }
   std::string name(){ return m_name; }
   void setMaxThreads(uint8_t max){ m_maxThreads = max; }
   uint8_t maxThreads(){ return m_maxThreads; }
   void setZProject(bool tf){ m_zproject = tf; }
   bool zproject(){ return m_zproject; }
+  void setDivisor(int d){ m_divisor = d; }
+  int divisor(){ return m_divisor; }
+  void setWriteTables(bool tf){ m_writeTables = tf; }
+  bool writeTables(){ return m_writeTables; }
   ImageAnalysisToolkit* iat(){ return m_iat; };
   FileManager* fileManager(){ return m_fileManager; }
   

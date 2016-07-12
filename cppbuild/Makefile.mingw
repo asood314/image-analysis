@@ -22,7 +22,7 @@ all:
 	x86_64-w64-mingw32-g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ src/main.cpp -o obj/main.o -c -std=c++11 $(CFLAGS)
-	x86_64-w64-mingw32-g++ -o launcher obj/*.o -std=c++11 $(LIBS)
+	x86_64-w64-mingw32-g++ -o launcher obj/*.o obj/my.res -std=c++11 $(LIBS)
 
 debug:
 	x86_64-w64-mingw32-g++ -g src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11
@@ -32,7 +32,7 @@ debug:
 	x86_64-w64-mingw32-g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11
 	x86_64-w64-mingw32-g++ -g src/Mask.cpp -o obj/Mask.o -c -std=c++11
 	x86_64-w64-mingw32-g++ -g src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
-	x86_64-w64-mingw32-g++ -g src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
+	x86_64-w64-mingw32-g++ -g src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 	x86_64-w64-mingw32-g++ -g src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11
 	x86_64-w64-mingw32-g++ -g src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
 	x86_64-w64-mingw32-g++ -g src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11

@@ -7,6 +7,8 @@
 #include "NiaUtils.hpp"
 #include <iostream>
 #include <fstream>
+#include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
 
 class ImRecord
 {
@@ -63,13 +65,14 @@ public:
   Cluster* selectPunctum(uint8_t chan, LocalizedObject::Point pt);
   Synapse* selectSynapse(LocalizedObject::Point pt);
   Synapse* selectSynapseFromCollection(uint8_t index, LocalizedObject::Point pt);
-  Mask* getPunctaMask(uint8_t chan, bool outline);
-  Mask* getSynapseMask(bool outline);
-  Mask* getSynapseMaskFromCollection(uint8_t index, bool outline);
-  Mask* getSynapticPunctaMask(uint8_t chan, bool outline);
-  Mask* getSynapticPunctaMaskFromCollection(uint8_t index, uint8_t chan, bool outline);
-  void calculateRegionStats(Region* r, uint8_t& postChan);
-  void printSynapseDensityTable(uint8_t& postChan, std::vector<std::string> chanNames, std::string filename);
+  Mask* getPunctaMask(uint8_t chan, bool outline=false);
+  Mask* getSynapseMask(bool outline=true);
+  Mask* getSynapseMaskFromCollection(uint8_t index, bool outline=true);
+  Mask* getSynapticPunctaMask(uint8_t chan, bool outline=true);
+  Mask* getSynapticPunctaMaskFromCollection(uint8_t index, uint8_t chan, bool outline=true);
+  Mask* getRegionMask(bool outline=true);
+  void calculateRegionStats(Region* r, uint8_t postChan);
+  void printSynapseDensityTable(uint8_t postChan, std::vector<std::string> chanNames, std::string filename);
   void write(std::ofstream& fout);
   uint64_t pack(char* buf, Mask* m, int startY);
   //void pack(char* buf, uint64_t& offset, Mask* m, uint32_t index);

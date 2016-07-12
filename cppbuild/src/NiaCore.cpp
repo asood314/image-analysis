@@ -25,6 +25,8 @@ void NiaCore::init()
   m_refActionGroup = Gtk::ActionGroup::create();
   m_refActionGroup->add(Gtk::Action::create("fileMenu","File"));
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
+  m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
+  m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
   m_refActionGroup->add(Gtk::Action::create("quit","Quit"),Gtk::AccelKey("<control>Q"),sigc::mem_fun(*this, &NiaCore::on_quit));
   m_refActionGroup->add(Gtk::Action::create("viewMenu","View"));
   m_refActionGroup->add(Gtk::Action::create("single","Single Wavelength"));
@@ -51,6 +53,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("sigMask","Signal Mask"),Gtk::AccelKey("<control>M"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSignalMask));
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
+  m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
   m_refActionGroup->add(Gtk::Action::create("navMenu","Navigate"));
   m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey(GDK_KEY_Left,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
   m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey(GDK_KEY_Right,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
@@ -74,6 +77,8 @@ void NiaCore::init()
     " <menubar name='menuBar'>"
     "  <menu action='fileMenu'>"
     "   <menuitem action='load'/>"
+    "   <menuitem action='loadMMR'/>"
+    "   <menuitem action='save'/>"
     "   <menuitem action='quit'/>"
     "  </menu>"
     "  <menu action='viewMenu'>"
@@ -102,6 +107,7 @@ void NiaCore::init()
     "    <menuitem action='sigMask'/>"
     "    <menuitem action='puncMask'/>"
     "    <menuitem action='synMask'/>"
+    "    <menuitem action='regMask'/>"
     "   </menu>"
     "   <menuitem action='zoomin'/>"
     "   <menuitem action='zoomout'/>"
@@ -137,6 +143,7 @@ void NiaCore::init()
 void NiaCore::on_menu_load()
 {
   std::vector<ImRecord*> records;
+  m_fileManager.clearInputFiles();
   FileSelector fcd(&m_fileManager,&m_iat,&records,"",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fcd.set_transient_for(*this);
 
@@ -156,14 +163,47 @@ void NiaCore::on_menu_load()
   int result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     m_viewer.setData(m_fileManager.load());
-    m_fileManager.clearInputFiles();
     if(records.size() > 0) m_viewer.setRecords(records);
+  }
+}
+
+void NiaCore::on_save()
+{
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Save",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("NIA files");
+  filt2.add_pattern("*.nia");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  if(result == Gtk::RESPONSE_OK){
+    std::string filename = fcd.get_filename();
+    if(filename.find(".nia") == std::string::npos){
+      filename.append("_");
+      filename.append(m_fileManager.getName(0));
+      filename.append(".nia");
+    }
+    std::ofstream fout(filename.c_str(),std::ofstream::binary);
+    m_fileManager.saveInputFiles(fout,0);
+    m_iat.write(fout);
+    char buf[1];
+    if(m_batchService.zproject()) buf[0] = 1;
+    else buf[0] = 0;
+    fout.write(buf,1);
+    std::vector<ImRecord*> recs = m_viewer.records();
+    for(std::vector<ImRecord*>::iterator rit = recs.begin(); rit != recs.end(); rit++){
+      (*rit)->write(fout);
+    }
+    fout.close();
   }
 }
 
 void NiaCore::on_start_batch_jobs()
 {
-  FileSelector fs(m_batchService.fileManager(),&m_iat,NULL,"",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  std::vector<ImRecord*> recs;
+  FileSelector fs(m_batchService.fileManager(),&m_iat,&recs,"",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fs.set_transient_for(*this);
 
   Gtk::FileFilter filt;
@@ -173,6 +213,11 @@ void NiaCore::on_start_batch_jobs()
   filt.add_pattern("*.TIF");
   filt.add_pattern("*.TIFF");
   fs.add_filter(filt);
+
+  Gtk::FileFilter filt2;
+  filt2.set_name("NIA files");
+  filt2.add_pattern("*.nia");
+  fs.add_filter(filt2);
 
   int result = fs.run();
   if(result != Gtk::RESPONSE_OK) return;
@@ -194,20 +239,20 @@ void NiaCore::on_start_batch_jobs()
   biat->setFloorThreshold(cd.getFloor());
   m_batchService.setMaxThreads(cd.getThreads());
   m_batchService.setZProject(cd.getZProject());
+  m_batchService.setDivisor(cd.getDivisor());
+  m_batchService.setWriteTables(cd.getWriteTables());
   cd.hide();
   
   Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
   fcd.set_transient_for(*this);
   fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
   fcd.add_button("Run",Gtk::RESPONSE_OK);
-  Gtk::FileFilter filt2;
-  filt2.set_name("NIA files");
-  filt2.add_pattern("*.nia");
   fcd.add_filter(filt2);
   result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     m_batchService.setName(fcd.get_filename());
-    m_batchService.run();
+    if(recs.size() > 0) m_batchService.run(recs);
+    else m_batchService.run();
   }
 }
 
@@ -263,4 +308,29 @@ void NiaCore::on_full_analysis_clicked()
     m_viewer.setCurrentRecord(rec);
   }
   m_iat.standardAnalysis(stack,rec,-1);
+}
+
+void NiaCore::on_load_regions()
+{
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
+
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Load",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("RGN files");
+  filt2.add_pattern("*.rgn");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  
+  if(result == Gtk::RESPONSE_OK){
+    ImRecord* rec = m_viewer.currentRecord();
+    if(!rec){
+      rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
+      m_viewer.setCurrentRecord(rec);
+    }
+    rec->loadMetaMorphRegions(fcd.get_filename());
+  }
 }

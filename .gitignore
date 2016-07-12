@@ -8,3 +8,4 @@ JohnPaulImages.*
 ClaireImages.*
 cppbuild/obj/*
 cppbuild/launcher*
+cppbuild/src/my.rc

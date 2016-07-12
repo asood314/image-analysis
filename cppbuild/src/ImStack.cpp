@@ -51,3 +51,12 @@ ImStack* ImStack::zprojection()
   }
   return retVal;
 }
+
+void ImStack::divide(int d)
+{
+  for(uint8_t w = 0; w < m_nwaves; w++){
+    for(int z = 0; z < m_nz; z++){
+      m_frames[w][z]->divide(d);
+    }
+  }
+}

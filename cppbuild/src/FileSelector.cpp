@@ -120,8 +120,8 @@ void FileSelector::on_select_button_clicked()
     int nt = (int)buf[3];
     m_wField.set_text(boost::lexical_cast<std::string>(nw));
     m_zField.set_text(boost::lexical_cast<std::string>(nz));
-    m_tField.set_text(boost::lexical_cast<std::string>(np));
-    m_pField.set_text(boost::lexical_cast<std::string>(nt));
+    m_pField.set_text(boost::lexical_cast<std::string>(np));
+    m_tField.set_text(boost::lexical_cast<std::string>(nt));
     char minibuf[4];
     for(int i = 4; i < 8; i++) minibuf[i-4] = buf[i];
     m_orderField.set_text(std::string(minibuf));
@@ -147,6 +147,7 @@ void FileSelector::on_select_button_clicked()
 	rec->read(fin);
 	m_recs->push_back(rec);
       }
+      m_resolutionEntry.set_text(boost::lexical_cast<std::string>(m_recs->at(0)->resolutionXY()));
     }
     fin.close();
   }

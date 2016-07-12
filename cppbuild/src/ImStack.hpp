@@ -18,6 +18,7 @@ public:
   void insert(ImFrame** frames, uint8_t startW, uint8_t startZ, uint8_t nw, uint8_t nz, uint8_t order);
   void insert(ImFrame* frame, uint8_t w, uint8_t z);
   ImStack* zprojection();
+  void divide(int d);
   ImFrame* frame(uint8_t w, uint8_t z){ return m_frames[w][z]; }
   uint8_t nwaves(){ return m_nwaves; }
   uint8_t nz(){ return m_nz; }

@@ -34,14 +34,14 @@ protected:
   uint8_t m_scIndex;
   Gtk::TreeView m_treeView;
 
-  Gtk::Entry m_threadEntry;
+  Gtk::Entry m_threadEntry,m_divideEntry;
   Gtk::Label m_threadLabel;
-  Gtk::CheckButton m_zprojBox;
+  Gtk::CheckButton m_zprojBox,m_divideBox,m_writeTablesBox;
 
   Gtk::Notebook m_Notebook;
   Gtk::ScrolledWindow m_synapseWindow;
   Gtk::VBox m_analysisBox,m_synapseBox,m_batchBox;
-  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12;
+  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12,m_hbox13;
   Gtk::VBox m_vbox1,m_vbox2,m_vbox3;
 
   void on_add_button_clicked();
@@ -60,6 +60,8 @@ public:
   double getFloor(){ return boost::lexical_cast<double>(m_floorEntry.get_text()); }
   uint8_t getThreads(){ return (uint8_t)boost::lexical_cast<int>(m_threadEntry.get_text()); }
   bool getZProject(){ return m_zprojBox.get_active(); }
+  int getDivisor();
+  bool getWriteTables(){ return m_writeTablesBox.get_active(); }
 
 };
 

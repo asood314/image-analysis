@@ -58,9 +58,11 @@ public:
   void toggleSignalMask();
   void togglePunctaMask();
   void toggleSynapseMask();
+  void toggleRegionMask();
   void clearMasks(){ m_masks.clear(); }
   void setRecords(std::vector<ImRecord*> recs);
   void setCurrentRecord(ImRecord* rec);
+  std::vector<ImRecord*> records(){ return m_records; }
   uint8_t getNW(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nwaves();
     return 0;

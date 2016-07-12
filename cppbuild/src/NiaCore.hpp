@@ -26,11 +26,13 @@ protected:
 
   //signal handlers
   void on_menu_load();
+  void on_save();
   void on_start_batch_jobs();
   void on_configure_clicked();
   void on_find_signal_clicked();
   void on_find_puncta_clicked();
   void on_full_analysis_clicked();
+  void on_load_regions();
   void on_quit(){ hide(); }
   
 public:

@@ -24,6 +24,7 @@ public:
   static std::vector<ImFrame*> loadBig(char* buf, std::ifstream &fin);
   void readLittle(char* buf, std::ifstream &fin, uint32_t offset);
   void readBig(char* buf, std::ifstream &fin, uint32_t offset);
+  void divide(int d);
   uint16_t getPixel(int x, int y){ return m_pixels[x][y]; }
   void setPixel(int x, int y, uint16_t value){ m_pixels[x][y] = value; }
   uint32_t width(){ return m_width; }

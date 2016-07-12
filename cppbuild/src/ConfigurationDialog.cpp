@@ -20,7 +20,9 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_addButton("Add Synapse Type"),
   m_scIndex(0),
   m_threadLabel("Set maximum number of threads"),
-  m_zprojBox("Do Z-projections")
+  m_zprojBox("Do Z-projections"),
+  m_divideBox("Divide image intensities by: "),
+  m_writeTablesBox("Write synapse density tables")
 {
   m_toolkit = iat;
 
@@ -174,14 +176,23 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_threadEntry.set_width_chars(5);
   m_threadEntry.set_text(boost::lexical_cast<std::string>(maxThreads));
   m_zprojBox.set_active(zproject);
+  m_divideBox.set_active(false);
+  m_divideEntry.set_max_length(3);
+  m_divideEntry.set_width_chars(5);
+  m_divideEntry.set_text("1");
+  m_writeTablesBox.set_active(false);
   m_hbox12.pack_start(m_threadLabel, Gtk::PACK_SHRINK);
   m_hbox12.pack_start(m_threadEntry, Gtk::PACK_SHRINK);
   m_batchBox.pack_start(m_hbox12, Gtk::PACK_SHRINK);
   m_batchBox.pack_start(m_zprojBox, Gtk::PACK_SHRINK);
+  m_hbox13.pack_start(m_divideBox, Gtk::PACK_SHRINK);
+  m_hbox13.pack_start(m_divideEntry, Gtk::PACK_SHRINK);
+  m_batchBox.pack_start(m_hbox13, Gtk::PACK_SHRINK);
+  m_batchBox.pack_start(m_writeTablesBox, Gtk::PACK_SHRINK);
 
   m_Notebook.append_page(m_analysisBox,"Analysis Config");
   m_Notebook.append_page(m_synapseWindow,"Synapse Config");
-  m_Notebook.append_page(m_batchBox,"Batch Config");
+  m_Notebook.append_page(m_batchBox,"Misc. Config");
   get_vbox()->pack_start(m_Notebook);
   add_button("Cancel", Gtk::RESPONSE_CANCEL);
   add_button("Finished", Gtk::RESPONSE_OK);
@@ -244,4 +255,10 @@ ImageAnalysisToolkit::MasterMode ConfigurationDialog::getMode()
   Gtk::TreeModel::iterator it = m_modeBox.get_active();
   if(it) return (*it)[m_colMode];
   return ImageAnalysisToolkit::OVERRIDE;
+}
+
+int ConfigurationDialog::getDivisor()
+{
+  if(!m_divideBox.get_active()) return 1;
+  return boost::lexical_cast<int>(m_divideEntry.get_text());
 }

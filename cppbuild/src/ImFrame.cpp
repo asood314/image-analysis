@@ -225,6 +225,15 @@ void ImFrame::readBig(char* buf, std::ifstream &fin, uint32_t offset)
   }
 }
 
+void ImFrame::divide(int d)
+{
+  for(uint16_t i = 0; i < m_width; i++){
+    for(uint16_t j = 0; j < m_height; j++){
+      m_pixels[i][j] = m_pixels[i][j] / d;
+    }
+  }
+}
+
 double ImFrame::mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
 {
   double sum = 0.0;

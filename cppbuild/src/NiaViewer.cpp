@@ -243,6 +243,13 @@ void NiaViewer::toggleSynapseMask()
   if(m_records.at(index)) toggleMask(m_records.at(index)->getSynapseMask(false));
 }
 
+void NiaViewer::toggleRegionMask()
+{
+  if(!m_data) return;
+  int index = m_view_p*m_data->nt() + m_view_t;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getRegionMask(true));
+}
+
 void NiaViewer::setRecords(std::vector<ImRecord*> recs)
 {
   for(std::vector<ImRecord*>::iterator it = m_records.begin(); it != m_records.end(); it++){

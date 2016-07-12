@@ -291,7 +291,53 @@ Mask* ImRecord::getSynapticPunctaMaskFromCollection(uint8_t index, uint8_t chan,
   return m;
 }
 
-void ImRecord::calculateRegionStats(Region* r, uint8_t& postChan)
+Mask* ImRecord::getRegionMask(bool outline)
+{
+  Mask* m = new Mask(m_imWidth,m_imHeight);
+  uint16_t x1,x2,y1,y2;
+  if(outline){
+    Mask* m2 = m->getCopy();
+    for(std::vector<Region*>::iterator jt = m_regions.begin(); jt != m_regions.end(); jt++){
+      (*jt)->getEnclosure(x1,x2,y1,y2);
+      x1++;
+      x2--;
+      y1++;
+      y2--;
+      for(uint16_t i = x1; i < x2; i++){
+	for(uint16_t j = y1; j < y2; j++){
+	  if((*jt)->contains(i,j)) m->setValue(i,j,1);
+	  else m->setValue(i,j,0);
+	}
+      }
+      for(uint16_t i = x1; i < x2; i++){
+	for(uint16_t j = y1; j < y2; j++){
+	  if(m->getValue(i,j) == 0) continue;
+	  int sum = 0;
+	  for(int dx = i - 1; dx < i + 2; dx++){
+	    for(int dy = j - 1; dy < j + 2; dy++){
+	      int val = m->getValue(dx,dy);
+	      sum += val;
+	    }
+	  }
+	  m2->setValue(i,j,1 - sum/9);
+	}
+      }
+    }
+    delete m;
+    return m2;
+  }
+  for(std::vector<Region*>::iterator jt = m_regions.begin(); jt != m_regions.end(); jt++){
+    (*jt)->getEnclosure(x1,x2,y1,y2);
+    for(uint16_t i = x1; i < x2; i++){
+      for(uint16_t j = y1; j < y2; j++){
+	if((*jt)->contains(i,j)) m->setValue(i,j,1);
+      }
+    }
+  }
+  return m;
+}
+
+void ImRecord::calculateRegionStats(Region* r, uint8_t postChan)
 {
   r->dendriteArea = 0.0;
   uint16_t x1,x2,y1,y2;
@@ -348,7 +394,7 @@ void ImRecord::calculateRegionStats(Region* r, uint8_t& postChan)
   }
 }
 
-void ImRecord::printSynapseDensityTable(uint8_t& postChan, std::vector<std::string> chanNames, std::string filename)
+void ImRecord::printSynapseDensityTable(uint8_t postChan, std::vector<std::string> chanNames, std::string filename)
 {
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++) calculateRegionStats(*it,postChan);
   uint8_t nROI = m_regions.size();
@@ -445,6 +491,7 @@ void ImRecord::printSynapseDensityTable(uint8_t& postChan, std::vector<std::stri
     fout << "" << (sum/nROI) << ",-\n";
     fout << "-,-,-,-,-,-\n";
   }
+  fout.close();
 }
 
 void ImRecord::write(std::ofstream& fout)
@@ -463,7 +510,6 @@ void ImRecord::write(std::ofstream& fout)
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
     if(m_signalMasks.at(chan)){
       buf[0] = (char)1;
-      //uint32_t size = m_imWidth*m_imHeight;
       offset = 1;
       fout.write(buf,1);
       int npacks = (m_imHeight / 8);
@@ -473,16 +519,6 @@ void ImRecord::write(std::ofstream& fout)
 	offset = pack(buf,m_signalMasks.at(chan),startY);
 	fout.write(buf,offset);
       }
-      /*
-      for(uint32_t i = 0; i < size; i += 8){
-	pack(buf,offset,m_signalMasks.at(chan),i);
-	if(offset > 200000){
-	  fout.write(buf,offset);
-	  offset = 0;
-	}
-      }
-      */
-      //fout.write(buf,offset);
     }
     else{
       buf[0] = (char)0;
@@ -526,12 +562,9 @@ void ImRecord::write(std::ofstream& fout)
     std::vector<Synapse*> vec = (*it)->synapses();
     for(std::vector<Synapse*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
     NiaUtils::writeDoubleToBuffer(buf,offset,(*jt)->colocalizationScore());
-    //for(unsigned isyn = 0; isyn < (*it)->nSynapses(); isyn++){
-    //NiaUtils::writeDoubleToBuffer(buf,offset,(*it)->getSynapse(isyn)->colocalizationScore());
       offset += 4;
       for(uint8_t i = 0; i < (*it)->nChannels(); i++){
 	NiaUtils::writeIntToBuffer(buf,offset,(*jt)->getPunctumIndex(i));
-	//NiaUtils::writeIntToBuffer(buf,offset,(*it)->getSynapse(isyn)->getPunctumIndex(i));
 	offset += 4;
       }
     }
@@ -564,7 +597,7 @@ void ImRecord::write(std::ofstream& fout)
   buf[0] = (char)nRegions();
   offset = 1;
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){
-    buf[offset] = (*it)->nVertices();
+    buf[offset] = (char)(*it)->nVertices();
     offset++;
     std::vector<LocalizedObject::Point> verts = (*it)->vertices();
     for(std::vector<LocalizedObject::Point>::iterator jt = verts.begin(); jt != verts.end(); jt++){
@@ -600,36 +633,7 @@ uint64_t ImRecord::pack(char* buf, Mask* m, int startY)
   }
   return offset;
 }
-/*
-void ImRecord::pack(char* buf, uint64_t& offset, Mask* m, uint32_t index)
-{
-  uint16_t x = index % m_imWidth; 
-  uint16_t y = index / m_imWidth;
-  uint8_t nb = 0;
-  uint64_t retval = 0;
-  for(uint16_t i = x; nb < 64 && i < m_imWidth; i++){
-    retval = retval | ((m->getValue(i,y) & 0x01) << nb);
-    nb++;
-  }
-  while(nb < 64 && y < m_imHeight){
-    x = 0;
-    y++;
-    for(uint16_t i = x; nb < 64 && i < m_imWidth; i++){
-      retval = retval | ((m->getValue(i,y) & 0x01) << nb);
-      nb++;
-    }
-  }
-  buf[offset] = (char)(retval & 0x00000000000000ff);
-  buf[offset+1] = (char)((retval & 0x000000000000ff00) >> 8);
-  buf[offset+2] = (char)((retval & 0x0000000000ff0000) >> 16);
-  buf[offset+3] = (char)((retval & 0x00000000ff000000) >> 24);
-  buf[offset+4] = (char)((retval & 0x000000ff00000000) >> 32);
-  buf[offset+5] = (char)((retval & 0x0000ff0000000000) >> 40);
-  buf[offset+6] = (char)((retval & 0x00ff000000000000) >> 48);
-  buf[offset+7] = (char)((retval & 0xff00000000000000) >> 56);
-  offset += 8;
-}
-*/
+
 void ImRecord::read(std::ifstream& fin)
 {
   char* buf = new char[400000];
@@ -644,26 +648,12 @@ void ImRecord::read(std::ifstream& fin)
     m_thresholds.push_back(NiaUtils::convertToShort(buf[offset],buf[offset+1]));
     offset += 2;
   }
-  //uint32_t npackets = (m_imWidth*m_imHeight) / 64;
-  //if((m_imWidth*m_imHeight) % 64 > 0) npackets++;
   int nunpacks = m_imHeight / 8;
   int leftovers = (m_imHeight % 8) * m_imWidth;
-  //if(leftovers > 0) nunpacks++;
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
     fin.read(buf,1);
     if((uint8_t)buf[0] > 0){
       Mask* m = new Mask(m_imWidth,m_imHeight);
-      /*
-      uint32_t index = 0;
-      while(npackets > 19999){
-	fin.read(buf,160000);
-	unpack(buf,160000,m,index);
-	index += 1280000;
-	npackets -= 20000;
-      }
-      fin.read(buf,8*npackets);
-      unpack(buf,8*npackets,m,index);
-      */
       for(int i = 0; i < nunpacks; i++){
 	fin.read(buf,m_imWidth);
 	unpack(buf,m,8*i);
@@ -753,6 +743,7 @@ void ImRecord::read(std::ifstream& fin)
     fin.read(buf,1);
     uint8_t nVerts = (uint8_t)buf[0];
     fin.read(buf,4*nVerts);
+    offset = 0;
     for(uint8_t j = 0; j < nVerts; j++){
       LocalizedObject::Point pt;
       pt.x = NiaUtils::convertToShort(buf[offset],buf[offset+1]);
@@ -784,74 +775,40 @@ void ImRecord::unpack(char* buf, Mask* m, int startY)
     }
   }
 }
-/*
-void ImRecord::unpack(char* buf, uint64_t offset, Mask* m, uint32_t index)
-{
-  uint16_t x = index % m_imWidth;
-  uint16_t y = index / m_imWidth;
-  for(uint64_t i = 0; i < offset; i++){
-    uint8_t next = (uint8_t)buf[i];
-    m->setValue(x,y,(next & 0x01));
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x02)>>1);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x04)>>2);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x08)>>3);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x10)>>4);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x20)>>5);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x40)>>6);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-    m->setValue(x,y,(next & 0x80)>>7);
-    x++;
-    if(x >= m_imWidth){
-      x = 0;
-      y++;
-      if(y >= m_imHeight) return;
-    }
-  }
-}
-*/
+
 void ImRecord::loadMetaMorphRegions(std::string filename)
 {
+  std::ifstream fin(filename);
+  while(!fin.eof()){
+    char buf[500];
+    fin.getline(buf,500);
+    if(fin.fail()) return;
+    boost::char_separator<char> sep(",");
+    std::string line(buf);
+    boost::tokenizer< boost::char_separator<char> > tokens(line,sep);
+    boost::tokenizer< boost::char_separator<char> >::iterator it = tokens.begin();
+    for(int i = 0; i < 6; i++) it++;
+    boost::char_separator<char> sep2(" ");
+    boost::tokenizer< boost::char_separator<char> > tokens2(*it,sep2);
+    boost::tokenizer< boost::char_separator<char> >::iterator it2 = tokens2.begin();
+    if(boost::lexical_cast<int>(*it2) != 6){
+      std::cout << "Format error: didn't find list of vertices where expected" << std::endl;
+      return;
+    }
+    Region* r = new Region();
+    it2++;
+    int nvert = boost::lexical_cast<int>(*it2);
+    it2++;
+    while(it2 != tokens2.end()){
+      LocalizedObject::Point pt;
+      pt.x = boost::lexical_cast<int>(*it2);
+      it2++;
+      pt.y = boost::lexical_cast<int>(*it2);
+      r->addVertex(pt);
+      it2++;
+    }
+    addRegion(r);
+  }
 }
 
 void ImRecord::loadMetaMorphTraces(std::string filename, uint8_t chan, bool overwrite)
