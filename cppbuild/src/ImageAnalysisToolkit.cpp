@@ -332,6 +332,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	finished = false;
       }
       delete subMask;
+      std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
     }
     if(step < 1.01) break;
     if(best < 0) break;
@@ -356,6 +357,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     }
   }
   delete m;
+  std::cout << "Best threshold: " << best;
   return (uint16_t)best;
 }
 
@@ -1000,6 +1002,7 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
 	for(int i = 1; i < nchans; i++) sumpi += pi[i];
       }
       if(best){
+	best->computeCenter();
 	sc->addSynapse(best);
 	nSynapses++;
       }

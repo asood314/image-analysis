@@ -6,11 +6,11 @@ all:
 	g++ src/Region.cpp -o obj/Region.o -c -std=c++11
 	g++ src/Mask.cpp -o obj/Mask.o -c -std=c++11
 	g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
-	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11
+	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11
 	g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11
 	g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11
-	g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11
+	g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11 -I/opt/local/include/
 	g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/opt/local/include/
 	g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
