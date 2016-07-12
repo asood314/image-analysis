@@ -235,8 +235,8 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	}
       }
       int maxSize = 0;
-      long avgSigSize = 0;
-      long avgSigSize2 = 0;
+      int64_t avgSigSize = 0;
+      int64_t avgSigSize2 = 0;
       int nSigClusters = 0;
       std::vector<uint16_t> borderX;
       std::vector<uint16_t> borderY;
@@ -247,7 +247,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  borderX.push_back(i);
 	  borderY.push_back(j);
 	  subMask->setValue(i,j,0);
-	  long size = 1;
+	  int64_t size = 1;
 	  while(borderX.size() > 0){
 	    int bi = borderX.at(0);
 	    int bj = borderY.at(0);
@@ -332,16 +332,16 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	finished = false;
       }
       delete subMask;
-      std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
+      //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
     }
     if(step < 1.01) break;
     if(best < 0) break;
-    if(best == lowerLimit){
+    if(best == upperLimit){
       lowerLimit = best - step;
       upperLimit = best + 9*step;
       fom *= 0.999;
     }
-    else if(best == upperLimit){
+    else if(best == lowerLimit){
       lowerLimit = best - 9*step;
       upperLimit = best + step;
       fom *= 0.999;
@@ -357,7 +357,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     }
   }
   delete m;
-  std::cout << "Best threshold: " << best;
+  //std::cout << "Best threshold: " << best << std::endl;
   return (uint16_t)best;
 }
 

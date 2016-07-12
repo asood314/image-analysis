@@ -553,7 +553,8 @@ void ImRecord::write(std::ofstream& fout)
     }
     buf[offset] = (char)(*it)->nChannels();
     offset++;
-    for(std::vector<uint8_t>::iterator jt = (*it)->channels().begin(); jt != (*it)->channels().end(); jt++){
+    std::vector<uint8_t> chans = (*it)->channels();
+    for(std::vector<uint8_t>::iterator jt = chans.begin(); jt != chans.end(); jt++){
       buf[offset] = (char)(*jt);
       offset++;
     }

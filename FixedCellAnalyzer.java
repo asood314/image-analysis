@@ -649,15 +649,15 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    lowerRight.set(imax,temp);
 	}
 
-	int nRemoved = 0;
-	int nNew = 1;
+	int nRemoved = -1;
+	int nNew = 0;
 	int count = 0;
 	Mask cMask = new Mask(ndim.getWidth(),ndim.getHeight());
 	Mask used = m.getCopy();
 	used.add(r.getPunctaMask(w,false),-1);
 	int retryThreshold = (int)(3.0 * punctaAreaThreshold) + 1;
 	while(nNew > nRemoved && count < punctaFindingIterations){
-	    nNew = 0;
+	    //nNew = 0;
 	    nRemoved = 0;
 	    int nPuncta = r.getNPuncta(w);
 	    for(int j = nPuncta-1; j >= nPuncta-nNew; j--){
@@ -671,6 +671,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		    }
 		}
 	    }
+	    nNew = 0;
 	    //Mask m2 = m.getCopy();
 	    //m2.add(r.getPunctaMask(w,false),-1);
 	    //double[] globalMedStd = ndim.getMedianStd(w,z,t,p,0,ndim.getWidth(),0,ndim.getHeight(),m2);
@@ -1023,10 +1024,12 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		}
 	    }
 	    if(nSat > 0) continue;
+	    /*
 	    if(count < 3){
 		System.out.println("Original: ("+c.getPixel(0).x+","+c.getPixel(0).y+"), "+c.size());
 		count++;
 	    }
+	    */
 	    clusters[i] = new Cluster();
 	    clusters[i].addPixel(peaks[i]);
 	    clusters[i].setPeakIntensity(imax);
@@ -1104,6 +1107,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 		else if(distK >= 0) clusters[distK].addPixel(new Point(i,j));
 	    }
 	}
+	/*
 	count = 0;
 	int index = 0;
 	while(count < 3){
@@ -1114,6 +1118,7 @@ public class FixedCellAnalyzer extends ImageAnalysisToolkit
 	    }
 	    index++;
 	}
+	*/
 	m.clear(0,ndim.getWidth(),0,ndim.getHeight());
 	int[] diArr = {-1,0,1,-1,1,-1,0,1};
         int[] djArr = {-1,-1,-1,0,0,1,1,1};
