@@ -28,6 +28,7 @@ public:
   void computeCenter();
   std::vector<LocalizedObject::Point> getPoints();
   bool contains(LocalizedObject::Point pt);
+  Mask* getMask(int width, int height, bool outline=false);
   
 };
 

@@ -2,6 +2,7 @@
 #define CLUSTER_HPP
 
 #include "LocalizedObject.hpp"
+#include "Mask.hpp"
 
 class Cluster : public LocalizedObject
 {
@@ -33,6 +34,7 @@ public:
   uint32_t getBorderLength(Cluster* c);
   void add(Cluster* c);
   double peakToPeakDistance2(Cluster* c);
+  Mask* getMask(int width, int height, bool outline=false);
   void setCenter(LocalizedObject::Point cent){ m_center = cent; }
   void computeCenter();
   bool contains(LocalizedObject::Point pt);

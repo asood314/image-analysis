@@ -39,3 +39,45 @@ void Region::getEnclosure(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2
     if(it->y > y2) y2 = it->y;
   }
 }
+
+Mask* Region::getMask(int width, int height, bool outline)
+{
+  Mask* m = new Mask(width,height);
+  uint16_t x1,x2,y1,y2;
+  if(outline){
+    Mask* m2 = m->getCopy();
+    getEnclosure(x1,x2,y1,y2);
+    x1++;
+    x2--;
+    y1++;
+    y2--;
+    for(uint16_t i = x1; i < x2; i++){
+      for(uint16_t j = y1; j < y2; j++){
+	if(contains(i,j)) m->setValue(i,j,1);
+	else m->setValue(i,j,0);
+      }
+    }
+    for(uint16_t i = x1; i < x2; i++){
+      for(uint16_t j = y1; j < y2; j++){
+	if(m->getValue(i,j) == 0) continue;
+	int sum = 0;
+	for(int dx = i - 1; dx < i + 2; dx++){
+	  for(int dy = j - 1; dy < j + 2; dy++){
+	    int val = m->getValue(dx,dy);
+	    sum += val;
+	  }
+	}
+	m2->setValue(i,j,1 - sum/9);
+      }
+    }
+    delete m;
+    return m2;
+  }
+  getEnclosure(x1,x2,y1,y2);
+  for(uint16_t i = x1; i < x2; i++){
+    for(uint16_t j = y1; j < y2; j++){
+      if(contains(i,j)) m->setValue(i,j,1);
+    }
+  }
+  return m;
+}

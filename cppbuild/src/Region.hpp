@@ -2,6 +2,7 @@
 #define REGION_HPP
 
 #include "LocalizedObject.hpp"
+#include "Mask.hpp"
 
 class Region
 {
@@ -20,6 +21,7 @@ public:
   bool contains(LocalizedObject::Point pt);
   bool contains(uint16_t x, uint16_t y);
   void getEnclosure(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2);
+  Mask* getMask(int width, int height, bool outline=true);
   void addVertex(LocalizedObject::Point pt){ m_vertices.push_back(pt); }
   uint8_t nVertices(){ return m_vertices.size(); }
   LocalizedObject::Point getVertex(uint8_t index){ return m_vertices.at(index); }

@@ -45,7 +45,7 @@ double Synapse::maxPunctaDistance(std::vector<uint8_t> indices)
   std::vector<LocalizedObject*> c;
   for(std::vector<uint8_t>::iterator it = indices.begin(); it != indices.end(); it++)
     c.push_back(dynamic_cast<LocalizedObject*>(m_puncta.at(*it)));
-  return 0.0;//LocalizedObject::findMaxDistance(c);
+  return LocalizedObject::findMaxDistance(c);
 }
 
 bool Synapse::isColocalized()
@@ -85,4 +85,33 @@ bool Synapse::contains(LocalizedObject::Point pt)
     if((*it)->contains(pt)) return true;
   }
   return false;
+}
+
+Mask* Synapse::getMask(int width, int height, bool outline)
+{
+  Mask* m = new Mask(width,height);
+  if(outline){
+    Mask* m2 = m->getCopy();
+    std::vector<LocalizedObject::Point> pts = getPoints();
+    for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
+    for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
+      uint8_t sum = 0;
+      for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	if(dx < 0 || dx >= width){
+	  sum += 3;
+	  continue;
+	}
+	for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	  if(dy < 0 || dy >= height) sum += 1;
+	  else sum += m->getValue(dx,dy);
+	}
+      }
+      m2->setValue(kt->x,kt->y,1 - sum/9);
+    }
+    delete m;
+    return m2;
+  }
+  std::vector<LocalizedObject::Point> pts = getPoints();
+  for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
+  return m;
 }

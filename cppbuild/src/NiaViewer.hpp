@@ -31,6 +31,8 @@ protected:
   std::vector<Mask*> m_masks;
   static const unsigned m_ncolors = 3;
   Color m_colors[m_ncolors];
+  bool m_pixelSelector,m_punctaSelector,m_synapseSelector,m_regionSelector;
+  std::vector<LocalizedObject::Point> m_prevClicks;
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImStack* stack);
   void autoscaleGray();
@@ -83,6 +85,30 @@ public:
   void setRed(uint8_t chan){ m_red = chan; }
   void setGreen(uint8_t chan){ m_green = chan; }
   void setBlue(uint8_t chan){ m_blue = chan; }
+  void setPixelSelector(){
+    m_pixelSelector = true;
+    m_punctaSelector = false;
+    m_synapseSelector = false;
+    m_regionSelector = false;
+  }
+  void setPunctaSelector(){
+    m_pixelSelector = false;
+    m_punctaSelector = true;
+    m_synapseSelector = false;
+    m_regionSelector = false;
+  }
+  void setSynapseSelector(){
+    m_pixelSelector = false;
+    m_punctaSelector = false;
+    m_synapseSelector = true;
+    m_regionSelector = false;
+  }
+  void setRegionSelector(){
+    m_pixelSelector = false;
+    m_punctaSelector = false;
+    m_synapseSelector = false;
+    m_regionSelector = true;
+  }
 
 };
 

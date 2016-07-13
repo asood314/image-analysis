@@ -11,7 +11,7 @@ class ImFrame
 {
 
 protected:
-  uint16_t** m_pixels;
+  std::vector< std::vector<uint16_t> > m_pixels;
   uint32_t m_width;
   uint32_t m_height;
 

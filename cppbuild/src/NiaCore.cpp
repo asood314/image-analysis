@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 void NiaCore::init()
 {
   set_title("Neuron Image Analysis");
-  set_default_size(1000,1100);
+  set_default_size(1200,1000);
   add(m_vbox);
 
   m_refActionGroup = Gtk::ActionGroup::create();
@@ -67,6 +67,11 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("findpunc","Find Puncta"),sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked));
   m_refActionGroup->add(Gtk::Action::create("fullanal","Full Analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
   m_refActionGroup->add(Gtk::Action::create("batch","Start Batch Process"),Gtk::AccelKey("<control>B"),sigc::mem_fun(*this, &NiaCore::on_start_batch_jobs));
+  m_refActionGroup->add(Gtk::Action::create("toolMenu","Tools"));
+  m_refActionGroup->add(Gtk::Action::create("pixSel","Pixel Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPixelSelector));
+  m_refActionGroup->add(Gtk::Action::create("punSel","Puncta Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPunctaSelector));
+  m_refActionGroup->add(Gtk::Action::create("synSel","Synapse Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSynapseSelector));
+  m_refActionGroup->add(Gtk::Action::create("regSel","Region Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setRegionSelector));
 
   m_refUIManager = Gtk::UIManager::create();
   m_refUIManager->insert_action_group(m_refActionGroup);
@@ -127,6 +132,12 @@ void NiaCore::init()
     "   <menuitem action='findpunc'/>"
     "   <menuitem action='fullanal'/>"
     "   <menuitem action='batch'/>"
+    "  </menu>"
+    "  <menu action='toolMenu'>"
+    "   <menuitem action='pixSel'/>"
+    "   <menuitem action='punSel'/>"
+    "   <menuitem action='synSel'/>"
+    "   <menuitem action='regSel'/>"
     "  </menu>"
     " </menubar>"
     "</ui>";

@@ -5,22 +5,22 @@ ImFrame::ImFrame()
 {
   m_width = 2048;
   m_height = 2048;
-  m_pixels = new uint16_t*[2048];
-  for(int i = 0; i < 2048; i++) m_pixels[i] = new uint16_t[2048];
+  m_pixels.assign(2048,std::vector<uint16_t>(2048));
+  //for(int i = 0; i < 2048; i++) m_pixels[i] = new uint16_t[2048];
 }
 
 ImFrame::ImFrame(const int width, const int height)
 {
   m_width = width;
   m_height = height;
-  m_pixels = new uint16_t*[width];
-  for(int i = 0; i < width; i++) m_pixels[i] = new uint16_t[height];
+  m_pixels.assign(width,std::vector<uint16_t>(height));
+  //for(int i = 0; i < width; i++) m_pixels[i] = new uint16_t[height];
 }
 
 ImFrame::~ImFrame()
 {
-  for(int i = 0; i < m_width; i++) delete[] m_pixels[i];
-  delete[] m_pixels;
+  //for(int i = 0; i < m_width; i++) delete[] m_pixels[i];
+  //delete[] m_pixels;
 }
 
 std::vector<ImFrame*> ImFrame::load(const char* fname)

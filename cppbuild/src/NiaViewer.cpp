@@ -19,6 +19,10 @@ NiaViewer::NiaViewer() :
   m_colors[2].r = 0x00;
   m_colors[2].g = 0x00;
   m_colors[2].b = 0xff;
+  m_pixelSelector = true;
+  m_punctaSelector = false;
+  m_synapseSelector = false;
+  m_regionSelector = false;
   add(m_eventBox);
   m_eventBox.set_events(Gdk::BUTTON_PRESS_MASK);
   m_eventBox.signal_button_press_event().connect(sigc::mem_fun(*this, &NiaViewer::on_button_press));
@@ -39,7 +43,67 @@ NiaViewer::~NiaViewer()
 
 bool NiaViewer::on_button_press(GdkEventButton* evt)
 {
-  std::cout << "Mouse click at (" << evt->x << "," << evt->y << ")" << std::endl;
+  if(!m_data) return false;
+  LocalizedObject::Point thisClick;
+  thisClick.x = (uint16_t)(evt->x / m_zoom);
+  thisClick.y = (uint16_t)(evt->y / m_zoom);
+  if(evt->type == GDK_BUTTON_PRESS){
+    if(m_pixelSelector){
+      std::cout << "Location (" << thisClick.x << "," << thisClick.y << ") has intensity " << currentFrame()->getPixel(thisClick.x,thisClick.y) << std::endl;
+      return true;
+    }
+    else if(m_punctaSelector){
+      ImRecord* rec = currentRecord();
+      if(!rec){
+	std::cout << "Couldn't find image record" << std::endl;
+	return false;
+      }
+      Cluster* c = NULL;
+      if(m_mode == GRAY) c = rec->selectPunctum(m_view_w,thisClick);
+      else if(m_mode == RGB) c = rec->selectPunctum(thisClick);
+      if(c){
+	toggleMask(c->getMask(m_width,m_height,false));
+	std::cout << "Center: (" << (int)c->center().x << "," << (int)c->center().y << "), Size: " << (int)c->size() << "\nPeak Intensity: " << (int)c->peak() << ", Integrated Intensity: " << (int)c->integratedIntensity() << std::endl;
+	return true;
+      }
+      std::cout << "Couldn't find any puncta" << std::endl;
+      return false;
+    }
+    else if(m_synapseSelector){
+      ImRecord* rec = currentRecord();
+      if(!rec) return false;
+      Synapse* s = NULL;
+      s = rec->selectSynapse(thisClick);
+      if(s){
+	toggleMask(s->getMask(m_width,m_height,false));
+	//std::cout << "Center: (" << (int)c->center().x << "," << (int)c->center().y << "), Size: " << (int)c->size() << "\nPeak Intensity: " << (int)c->peak() << ", Integrated Intensity: " << (int)c->integratedIntensity() << std::endl;
+	return true;
+      }
+      return false;
+    }
+    else if(m_regionSelector){
+      if(evt->button == 1){
+	LocalizedObject::Point lastClick;
+	if(m_prevClicks.size() > 0) lastClick = m_prevClicks.at(m_prevClicks.size()-1);
+	if(thisClick.x == lastClick.x && thisClick.y == lastClick.y){
+	  if(m_prevClicks.size() > 2){
+	    Region* r = new Region(m_prevClicks);
+	    ImRecord* rec = currentRecord();
+	    if(!rec){
+	      rec = new ImRecord(getNW(),m_width,m_height);
+	      setCurrentRecord(rec);
+	    }
+	    rec->addRegion(r);
+	    toggleMask(r->getMask(m_width,m_height,true));
+	  }
+	  m_prevClicks.clear();
+	}
+	else m_prevClicks.push_back(thisClick);
+      }
+      else if(evt->button == 3) m_prevClicks.clear();
+      return true;
+    }
+  }
   return true;
 }
 

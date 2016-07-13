@@ -52,7 +52,7 @@ Cluster* ImRecord::selectPunctum(LocalizedObject::Point pt)
   for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
     for(std::vector<Cluster*>::iterator jt = it->begin(); jt != it->end(); jt++){
       double dist = (*jt)->distanceTo(pt);
-      if(dist > minDist){
+      if(dist < minDist){
 	minDist = dist;
 	closest = *jt;
       }
@@ -68,7 +68,7 @@ Cluster* ImRecord::selectPunctum(uint8_t chan, LocalizedObject::Point pt)
   std::vector<Cluster*> clusters = m_puncta.at(chan);
   for(std::vector<Cluster*>::iterator jt = clusters.begin(); jt != clusters.end(); jt++){
     double dist = (*jt)->distanceTo(pt);
-    if(dist > minDist){
+    if(dist < minDist){
       minDist = dist;
       closest = *jt;
     }
@@ -85,7 +85,7 @@ Synapse* ImRecord::selectSynapse(LocalizedObject::Point pt)
     for(uint32_t i = 0; i < n; i++){
       Synapse* s = (*it)->getSynapse(i);
       double dist = s->distanceTo(pt);
-      if(dist > minDist){
+      if(dist < minDist){
 	minDist = dist;
 	closest = s;
       }
@@ -103,7 +103,7 @@ Synapse* ImRecord::selectSynapseFromCollection(uint8_t index, LocalizedObject::P
   for(uint32_t i = 0; i < n; i++){
     Synapse* s = sc->getSynapse(i);
     double dist = s->distanceTo(pt);
-    if(dist > minDist){
+    if(dist < minDist){
       minDist = dist;
       closest = s;
     }
@@ -116,34 +116,32 @@ Mask* ImRecord::getPunctaMask(uint8_t chan, bool outline)
   Mask* m = new Mask(m_imWidth,m_imHeight);
   std::vector<Cluster*> vec = m_puncta.at(chan);
   if(outline){
-    //for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
+    Mask* m2 = m->getCopy();
     for(std::vector<Cluster*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
       std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
-      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
       for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
 	uint8_t sum = 0;
-	for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	  if(dx >= m_imWidth){
-	    sum += 6;
+	for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	  if(dx < 0 || dx >= m_imWidth){
+	    sum += 3;
 	    continue;
 	  }
-	  for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	    if(dy >= m_imHeight) sum += 2;
+	  for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	    if(dy < 0 || dy >= m_imHeight) sum += 1;
 	    else sum += m->getValue(dx,dy);
 	  }
 	}
-	m->setValue(kt->x,kt->y,sum/18);
+	m2->setValue(kt->x,kt->y,1 - sum/9);
       }
     }
-    //}
-    return m;
+    delete m;
+    return m2;
   }
-  //for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
   for(std::vector<Cluster*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
     std::vector<LocalizedObject::Point> pts = (*jt)->getPoints();
     for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
   }
-    //}
   return m;
 }
 
@@ -151,28 +149,30 @@ Mask* ImRecord::getSynapseMask(bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);
   if(outline){
+    Mask* m2 = m->getCopy();
     for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
       uint32_t nsyns = (*it)->nSynapses();
       for(uint32_t isyn = 0; isyn < nsyns; isyn++){
 	std::vector<LocalizedObject::Point> pts = (*it)->getSynapse(isyn)->getPoints();
-	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
 	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
 	  uint8_t sum = 0;
-	  for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	    if(dx >= m_imWidth){
-	      sum += 6;
+	  for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	    if(dx < 0 || dx >= m_imWidth){
+	      sum += 3;
 	      continue;
 	    }
-	    for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	      if(dy >= m_imHeight) sum += 2;
+	    for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	      if(dy < 0 || dy >= m_imHeight) sum += 1;
 	      else sum += m->getValue(dx,dy);
 	    }
 	  }
-	  m->setValue(kt->x,kt->y,sum/18);
+	  m2->setValue(kt->x,kt->y,1 - sum/9);
 	}
       }
     }
-    return m;
+    delete m;
+    return m2;
   }
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
     uint32_t nsyns = (*it)->nSynapses();
@@ -188,27 +188,29 @@ Mask* ImRecord::getSynapseMaskFromCollection(uint8_t index, bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);
   if(outline){
+    Mask* m2 = m->getCopy();
     SynapseCollection* sc = m_synapseCollections.at(index);
     uint32_t nsyns = sc->nSynapses();
     for(uint32_t isyn = 0; isyn < nsyns; isyn++){
       std::vector<LocalizedObject::Point> pts = sc->getSynapse(isyn)->getPoints();
-      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
       for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
 	uint8_t sum = 0;
-	for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	  if(dx >= m_imWidth){
-	    sum += 6;
+	for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	  if(dx < 0 || dx >= m_imWidth){
+	    sum += 3;
 	    continue;
 	  }
-	  for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	    if(dy >= m_imHeight) sum += 2;
+	  for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	    if(dy < 0 || dy >= m_imHeight) sum += 1;
 	    else sum += m->getValue(dx,dy);
-	    }
+	  }
 	}
-	m->setValue(kt->x,kt->y,sum/18);
+	m2->setValue(kt->x,kt->y,1 - sum/9);
       }
     }
-    return m;
+    delete m;
+    return m2;
   }
   SynapseCollection* sc = m_synapseCollections.at(index);
   uint32_t nsyns = sc->nSynapses();
@@ -223,28 +225,30 @@ Mask* ImRecord::getSynapticPunctaMask(uint8_t chan, bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);
   if(outline){
+    Mask* m2 = m->getCopy();
     for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
       uint32_t nsyns = (*it)->nSynapses();
       for(uint32_t isyn = 0; isyn < nsyns; isyn++){
 	std::vector<LocalizedObject::Point> pts = (*it)->getSynapse(isyn)->getPunctum((*it)->getChannelIndex(chan))->getPoints();
-	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
 	for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
 	  uint8_t sum = 0;
-	  for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	    if(dx >= m_imWidth){
-	      sum += 6;
+	  for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	    if(dx < 0 || dx >= m_imWidth){
+	      sum += 3;
 	      continue;
 	    }
-	    for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	      if(dy >= m_imHeight) sum += 2;
+	    for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	      if(dy < 0 || dy >= m_imHeight) sum += 1;
 	      else sum += m->getValue(dx,dy);
 	    }
 	  }
-	  m->setValue(kt->x,kt->y,sum/18);
+	  m2->setValue(kt->x,kt->y,1 - sum/9);
 	}
       }
     }
-    return m;
+    delete m;
+    return m2;
   }
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
     uint32_t nsyns = (*it)->nSynapses();
@@ -260,27 +264,29 @@ Mask* ImRecord::getSynapticPunctaMaskFromCollection(uint8_t index, uint8_t chan,
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);
   if(outline){
+    Mask* m2 = m->getCopy();
     SynapseCollection* sc = m_synapseCollections.at(index);
     uint32_t nsyns = sc->nSynapses();
     for(uint32_t isyn = 0; isyn < nsyns; isyn++){
       std::vector<LocalizedObject::Point> pts = sc->getSynapse(isyn)->getPunctum(sc->getChannelIndex(chan))->getPoints();
-      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,2);
+      for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
       for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
 	uint8_t sum = 0;
-	for(uint16_t dx = kt->x - 1; dx < kt->x + 2; dx++){
-	  if(dx >= m_imWidth){
-	    sum += 6;
+	for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
+	  if(dx < 0 || dx >= m_imWidth){
+	    sum += 3;
 	    continue;
 	  }
-	  for(uint16_t dy = kt->y - 1; dy < kt->y + 2; dy++){
-	    if(dy >= m_imHeight) sum += 2;
+	  for(int dy = kt->y - 1; dy < kt->y + 2; dy++){
+	    if(dy < 0 || dy >= m_imHeight) sum += 1;
 	    else sum += m->getValue(dx,dy);
-	    }
+	  }
 	}
-	m->setValue(kt->x,kt->y,sum/18);
+	m2->setValue(kt->x,kt->y,1 - sum/9);
       }
     }
-    return m;
+    delete m;
+    return m2;
   }
   SynapseCollection* sc = m_synapseCollections.at(index);
   uint32_t nsyns = sc->nSynapses();
@@ -684,6 +690,7 @@ void ImRecord::read(std::ifstream& fin)
 	c->addPoint(NiaUtils::convertToShort(buf[offset],buf[offset+1]),NiaUtils::convertToShort(buf[offset+2],buf[offset+3]));
 	offset += 4;
       }
+      c->computeCenter();
       clusters.push_back(c);
     }
     m_puncta.push_back(clusters);
@@ -715,6 +722,7 @@ void ImRecord::read(std::ifstream& fin)
 	s->addPunctum(m_puncta.at(*it).at(index),index);
 	offset += 4;
       }
+      s->computeCenter();
       sc->addSynapse(s);
     }
     fin.read(buf,10);
