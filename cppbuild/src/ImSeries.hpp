@@ -19,6 +19,7 @@ public:
   ~ImSeries();
   void insert(ImStack* stack, uint8_t pos, uint8_t t);
   void remove(uint8_t pos, uint8_t t);
+  void zproject();
   void divide(int d){
     for(std::vector<ImStack*>::iterator it = m_fourLocations.begin(); it != m_fourLocations.end(); it++){
       if(*it) (*it)->divide(d);

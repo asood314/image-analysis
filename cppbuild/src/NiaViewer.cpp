@@ -141,6 +141,15 @@ void NiaViewer::setData(ImSeries* data)
   m_displayImage.set(pb);
 }
 
+void NiaViewer::zproject()
+{
+  if(!m_data) return;
+  m_view_z = 0;
+  m_data->zproject();
+  autoscale();
+  updateImage();
+}
+
 void NiaViewer::autoscale()
 {
   if(m_mode == GRAY) autoscaleGray();

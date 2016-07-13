@@ -7,6 +7,7 @@ ImRecord::ImRecord(uint8_t nchan, uint16_t w, uint16_t h)
   m_imHeight = h;
   m_resolutionXY = 0.046;
   for(uint8_t i = 0; i < m_nchannels; i++){
+    m_channelNames.push_back("");
     m_thresholds.push_back(0);
     m_signalMasks.push_back(NULL);
     m_utilityMasks.push_back(NULL);
@@ -400,7 +401,7 @@ void ImRecord::calculateRegionStats(Region* r, uint8_t postChan)
   }
 }
 
-void ImRecord::printSynapseDensityTable(uint8_t postChan, std::vector<std::string> chanNames, std::string filename)
+void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
 {
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++) calculateRegionStats(*it,postChan);
   uint8_t nROI = m_regions.size();
@@ -454,8 +455,8 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::vector<std::strin
       if((*scit)->allRequired()) fout << "-\n";
       else{
 	std::vector<uint8_t> req = (*scit)->getRequiredColocalization(i);
-	fout << "\"" << chanNames.at(req.at(0));
-	for(std::vector<uint8_t>::iterator it = req.begin()+1; it != req.end(); it++) fout << " and " << chanNames.at(*it);
+	fout << "\"" << m_channelNames.at(req.at(0));
+	for(std::vector<uint8_t>::iterator it = req.begin()+1; it != req.end(); it++) fout << " and " << m_channelNames.at(*it);
 	fout << "\"\n";
       }
     }
@@ -463,7 +464,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::vector<std::strin
     icol++;
   }
   for(int chan = 0; chan < m_nchannels; chan++){
-    fout << "\"" << chanNames.at(chan) << " puncta\",";
+    fout << "\"" << m_channelNames.at(chan) << " puncta\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
       fout << "" << (*rit)->nPuncta.at(chan) << ",";
@@ -514,6 +515,10 @@ void ImRecord::write(std::ofstream& fout)
   }
   fout.write(buf,offset);
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
+    uint8_t len = m_channelNames[chan].length();
+    buf[0] = (char)len;
+    fout.write(buf,1);
+    fout.write(m_channelNames[chan].c_str(),len);
     if(m_signalMasks.at(chan)){
       buf[0] = (char)1;
       offset = 1;
@@ -658,6 +663,10 @@ void ImRecord::read(std::ifstream& fin)
   int nunpacks = m_imHeight / 8;
   int leftovers = (m_imHeight % 8) * m_imWidth;
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
+    fin.read(buf,1);
+    uint8_t len = (uint8_t)buf[0];
+    fin.read(buf,len);
+    m_channelNames.push_back(std::string(buf,len));
     fin.read(buf,1);
     if((uint8_t)buf[0] > 0){
       Mask* m = new Mask(m_imWidth,m_imHeight);

@@ -33,6 +33,7 @@ protected:
   void on_find_puncta_clicked();
   void on_full_analysis_clicked();
   void on_load_regions();
+  void on_print_density();
   void on_quit(){ hide(); }
   
 public:

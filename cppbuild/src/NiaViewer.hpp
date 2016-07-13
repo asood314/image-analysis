@@ -53,6 +53,7 @@ public:
   void prevTimepoint();
   void nextTimepoint();
   void setData(ImSeries* data);
+  void zproject();
   void zoomIn();
   void zoomOut();
   void unzoom();
@@ -109,6 +110,7 @@ public:
     m_synapseSelector = false;
     m_regionSelector = true;
   }
+  ImSeries* data(){ return m_data; }
 
 };
 

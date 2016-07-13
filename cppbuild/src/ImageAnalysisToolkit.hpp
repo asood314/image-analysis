@@ -31,6 +31,7 @@ protected:
   MasterMode m_mode;
   uint8_t m_punctaFindingIterations;
   uint16_t m_saturationThreshold;
+  std::vector<std::string> m_channelNames;
   std::vector<double> m_localWindow,m_localWindowIncrement;
   std::vector<double> m_minPunctaRadius,m_reclusterThreshold,m_noiseRemovalThreshold;
   std::vector<double> m_peakThreshold,m_floorThreshold;
@@ -58,6 +59,7 @@ public:
   void setMode(MasterMode m){ m_mode = m; }
   void setMaxPunctaFindingIterations(uint8_t it){ m_punctaFindingIterations = it; }
   void setSaturationThreshold(uint16_t s){ m_saturationThreshold = s; }
+  void setChannelNames(std::vector<std::string> names){ m_channelNames = names; }
   void setLocalWindow(double lw){ m_localWindow.at(0) = lw; }
   void setLocalWindowIncrement(double lwi){ m_localWindowIncrement.at(0) = lwi; }
   void setMinPunctaRadius(double r){ m_minPunctaRadius.at(0) = r; }
@@ -78,6 +80,8 @@ public:
   MasterMode mode(){ return m_mode; }
   uint8_t maxPunctaFindingIterations(){ return m_punctaFindingIterations; }
   uint16_t saturationThreshold(){ return m_saturationThreshold; }
+  std::string getChannelName(uint8_t chan){ return m_channelNames.at(chan); }
+  std::vector<std::string> getChannelNames(){ return m_channelNames; }
   double localWindow(){ return m_localWindow.at(0); }
   double localWindowIncrement(){ return m_localWindowIncrement.at(0); }
   double minPunctaRadius(){ return m_minPunctaRadius.at(0); }

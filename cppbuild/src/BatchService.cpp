@@ -197,6 +197,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t);
   if(!record){
     record = new ImRecord(stack->nwaves(),stack->frame(0,0)->width(),stack->frame(0,0)->height());
+    for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t) = record;
   }
@@ -206,10 +207,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   if(m_writeTables){
     std::ostringstream tablename;
     tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_p" << (int)p << "_t" << (int)t << ".csv";
-    std::vector<std::string> cNames;
-    cNames.push_back("VAMP2");
-    cNames.push_back("PSD95");
-    record->printSynapseDensityTable(1,cNames,tablename.str());
+    record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
   }
   boost::lock_guard<boost::mutex> guard(m_mtx);
   m_nStacks.at(seriesID) -= 1;
@@ -238,12 +236,18 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z);
   if(!record){
     record = new ImRecord(stack->nwaves(),stack->frame(0,z)->width(),stack->frame(0,z)->height());
+    for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z) = record;
   }
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,z);
+  if(m_writeTables){
+    std::ostringstream tablename;
+    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_p" << (int)p << "_t" << (int)t << "_z" << (int)z << ".csv";
+    record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
+  }
   boost::lock_guard<boost::mutex> guard(m_mtx);
   m_nPlanes.at(seriesID).at(p*m_data.at(seriesID)->nt()+t) -= 1;
   if(m_nPlanes.at(seriesID).at(p*m_data.at(seriesID)->nt()+t) == 0){

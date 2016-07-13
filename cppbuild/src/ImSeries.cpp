@@ -41,3 +41,14 @@ void ImSeries::remove(uint8_t pos, uint8_t t)
     m_fourLocations.at(index) = NULL;
   }
 }
+
+void ImSeries::zproject()
+{
+  for(std::vector<ImStack*>::iterator it = m_fourLocations.begin(); it != m_fourLocations.end(); it++){
+    if((*it)){
+      ImStack* tmp = *it;
+      *it = tmp->zprojection();
+      delete tmp;
+    }
+  }
+}

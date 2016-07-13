@@ -22,7 +22,8 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_threadLabel("Set maximum number of threads"),
   m_zprojBox("Do Z-projections"),
   m_divideBox("Divide image intensities by: "),
-  m_writeTablesBox("Write synapse density tables")
+  m_writeTablesBox("Write synapse density tables"),
+  m_postChanLabel("Set channel for dendrite area calculation: ")
 {
   m_toolkit = iat;
 
@@ -116,10 +117,23 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_analysisBox.pack_start(m_hbox9, Gtk::PACK_SHRINK);
 
   m_synapseChannels.assign(nchan, NULL);
+  m_channelEntries.assign(nchan, NULL);
+  m_channelBoxes.assign(nchan, NULL);
   for(uint8_t i = 0; i < nchan; i++){
-    m_synapseChannels.at(i) = new  Gtk::CheckButton(boost::lexical_cast<std::string>((int)i));
-    m_synapseChannels.at(i)->set_active(true);
-    m_synapseBox.pack_start(*(m_synapseChannels.at(i)), Gtk::PACK_SHRINK);
+    std::string channel = "Channel ";
+    channel.append(boost::lexical_cast<std::string>((int)i));
+    m_synapseChannels[i] = new  Gtk::CheckButton(channel);
+    m_synapseChannels[i]->set_active(true);
+    m_channelEntries[i] = new Gtk::Entry();
+    m_channelEntries[i]->set_max_length(20);
+    m_channelEntries[i]->set_width_chars(15);
+    std::string name = "Protein ";
+    name.append(boost::lexical_cast<std::string>((int)i));
+    m_channelEntries[i]->set_text(name);
+    m_channelBoxes[i] = new Gtk::HBox();
+    m_channelBoxes[i]->pack_start(*(m_synapseChannels[i]), Gtk::PACK_SHRINK);
+    m_channelBoxes[i]->pack_start(*(m_channelEntries[i]), Gtk::PACK_EXPAND_PADDING);
+    m_synapseBox.pack_start(*(m_channelBoxes[i]), Gtk::PACK_SHRINK);
   }
 
   m_synapseBox.pack_start(m_thresholdLabel, Gtk::PACK_SHRINK);
@@ -180,6 +194,9 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_divideEntry.set_max_length(3);
   m_divideEntry.set_width_chars(5);
   m_divideEntry.set_text("1");
+  m_postChanEntry.set_max_length(3);
+  m_postChanEntry.set_width_chars(5);
+  m_postChanEntry.set_text("0");
   m_writeTablesBox.set_active(false);
   m_hbox12.pack_start(m_threadLabel, Gtk::PACK_SHRINK);
   m_hbox12.pack_start(m_threadEntry, Gtk::PACK_SHRINK);
@@ -189,6 +206,9 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_hbox13.pack_start(m_divideEntry, Gtk::PACK_SHRINK);
   m_batchBox.pack_start(m_hbox13, Gtk::PACK_SHRINK);
   m_batchBox.pack_start(m_writeTablesBox, Gtk::PACK_SHRINK);
+  m_hbox14.pack_start(m_postChanLabel, Gtk::PACK_SHRINK);
+  m_hbox14.pack_start(m_postChanEntry, Gtk::PACK_SHRINK);
+  m_batchBox.pack_start(m_hbox14, Gtk::PACK_SHRINK);
 
   m_Notebook.append_page(m_analysisBox,"Analysis Config");
   m_Notebook.append_page(m_synapseWindow,"Synapse Config");
@@ -203,6 +223,12 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
 ConfigurationDialog::~ConfigurationDialog()
 {
   for(std::vector<Gtk::CheckButton*>::iterator it = m_synapseChannels.begin(); it != m_synapseChannels.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_channelEntries.begin(); it != m_channelEntries.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::HBox*>::iterator it = m_channelBoxes.begin(); it != m_channelBoxes.end(); it++){
     if(*it) delete *it;
   }
 }
@@ -261,4 +287,11 @@ int ConfigurationDialog::getDivisor()
 {
   if(!m_divideBox.get_active()) return 1;
   return boost::lexical_cast<int>(m_divideEntry.get_text());
+}
+
+std::vector<std::string> ConfigurationDialog::getChannelNames()
+{
+  std::vector<std::string> names;
+  for(std::vector<Gtk::Entry*>::iterator it = m_channelEntries.begin(); it != m_channelEntries.end(); it++) names.push_back((*it)->get_text());
+  return names;
 }

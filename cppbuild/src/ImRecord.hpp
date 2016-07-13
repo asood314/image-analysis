@@ -17,6 +17,7 @@ protected:
   uint8_t m_nchannels;
   uint16_t m_imWidth,m_imHeight;
   double m_resolutionXY;
+  std::vector<std::string> m_channelNames;
   std::vector<uint16_t> m_thresholds;
   std::vector<Mask*> m_signalMasks;
   std::vector<Mask*> m_utilityMasks;
@@ -33,6 +34,8 @@ public:
   uint8_t nchannels(){ return m_nchannels; }
   uint16_t imWidth(){ return m_imWidth; }
   uint16_t imHeight(){ return m_imHeight; }
+  void setChannelName(uint8_t chan, std::string name){ m_channelNames.at(chan) = name; }
+  std::string getChannelName(uint8_t chan){ return m_channelNames.at(chan); }
   void setThreshold(uint8_t chan, uint16_t thrshld){ m_thresholds.at(chan) = thrshld; }
   uint16_t getThreshold(uint8_t chan){ return m_thresholds.at(chan); }
   void setSignalMask(uint8_t chan, Mask* m){
@@ -72,7 +75,7 @@ public:
   Mask* getSynapticPunctaMaskFromCollection(uint8_t index, uint8_t chan, bool outline=true);
   Mask* getRegionMask(bool outline=true);
   void calculateRegionStats(Region* r, uint8_t postChan);
-  void printSynapseDensityTable(uint8_t postChan, std::vector<std::string> chanNames, std::string filename);
+  void printSynapseDensityTable(uint8_t postChan, std::string filename);
   void write(std::ofstream& fout);
   uint64_t pack(char* buf, Mask* m, int startY);
   //void pack(char* buf, uint64_t& offset, Mask* m, uint32_t index);
