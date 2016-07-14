@@ -9,3 +9,4 @@ ClaireImages.*
 cppbuild/obj/*
 cppbuild/launcher*
 cppbuild/src/my.rc
+cppbuild/Nia.app/*

@@ -18,7 +18,7 @@ all:
 	g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/main.cpp -o obj/main.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
-	g++ -o launcher obj/*.o -std=c++11 `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
+	g++ -o launcher obj/*.o -std=c++11 -headerpad_max_install_names `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
 
 debug:
 	g++ -g src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
@@ -48,7 +48,7 @@ front:
 	g++ src/NiaViewer.cpp -o obj/NiaViewer.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/NiaCore.cpp -o obj/NiaCore.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/main.cpp -o obj/main.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
-	g++ -o launcher obj/*.o -std=c++11 `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
+	g++ -o launcher obj/*.o -std=c++11 -headerpad_max_install_names `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
 
 back:
 	g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
@@ -68,7 +68,7 @@ back:
 
 exec:
 	g++ src/main.cpp -o obj/main.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
-	g++ -o launcher obj/*.o -std=c++11 `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
+	g++ -o launcher obj/*.o -std=c++11 -headerpad_max_install_names `pkg-config gtkmm-2.4 --libs` -lboost_filesystem-mt -lboost_system-mt -lboost_thread-mt
 
 clean:
 	rm -f launcher obj/*.o
