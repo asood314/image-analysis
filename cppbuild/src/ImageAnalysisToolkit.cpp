@@ -89,15 +89,12 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
       }
     }
   }
-  std::cout << "Done signal finding" << std::endl;
   
   for(uint8_t w = 0; w < analysisStack->nwaves(); w++){
     findPuncta(analysisStack->frame(w,zplane),rec,w);
-    std::cout << "Found " << rec->nPuncta(w) << " puncta in channel " << (int)w << std::endl;
   }
 
   findSynapses(rec);
-  std::cout << "Done synapse finding" << std::endl;
   
 }
 
@@ -162,10 +159,16 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t cha
       while(borderX.size() > 0){
 	int bi = borderX.at(0);
 	int bj = borderY.at(0);
-	for(int di = bi-1; di < bi+2; di++){
-	  if(di < 0 || di >= frame->width()) continue;
-	  for(int dj = bj-1; dj < bj+2; dj++){
-	    if(dj < 0 || dj >= frame->height()) continue;
+	int left = bi-1;
+	int right = bi+2;
+	int top = bj-1;
+	int bottom = bj+2;
+	if(left < 0) left++;
+	if(right >= frame->width()) right--;
+	if(top < 0) top++;
+	if(bottom >= frame->width()) bottom--;
+	for(int di = left; di < right; di++){
+	  for(int dj = top; dj < bottom; dj++){
 	    uint8_t val = used->getValue(di,dj);
 	    if(val > 0){
 	      used->setValue(di,dj,0);
@@ -189,6 +192,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t cha
   }
   rec->setSignalMask(chan,m);
   delete used;
+  std::cout << "Done signal finding" << std::endl;
 }
 
 uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
@@ -251,10 +255,16 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  while(borderX.size() > 0){
 	    int bi = borderX.at(0);
 	    int bj = borderY.at(0);
-	    for(int di = bi-1; di < bi+2; di++){
-	      if(di < 0 || di >= frame->width()) continue;
-	      for(int dj = bj-1; dj < bj+2; dj++){
-		if(dj < 0 || dj >= frame->height()) continue;
+	    int left = bi-1;
+	    int right = bi+2;
+	    int top = bj-1;
+	    int bottom = bj+2;
+	    if(left < 0) left++;
+	    if(right >= frame->width()) right--;
+	    if(top < 0) top++;
+	    if(bottom >= frame->width()) bottom--;
+	    for(int di = left; di < right; di++){
+	      for(int dj = top; dj < bottom; dj++){
 		uint16_t val = m->getValue(di,dj);
 		if(val > 0 && subMask->getValue(di,dj) == 1){
 		  subMask->setValue(di,dj,0);
@@ -291,10 +301,16 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  while(borderX.size() > 0){
 	    int bi = borderX.at(0);
 	    int bj = borderY.at(0);
-	    for(int di = bi-1; di < bi+2; di++){
-	      if(di < 0 || di >= frame->width()) continue;
-	      for(int dj = bj-1; dj < bj+2; dj++){
-		if(dj < 0 || dj >= frame->height()) continue;
+	    int left = bi-1;
+	    int right = bi+2;
+	    int top = bj-1;
+	    int bottom = bj+2;
+	    if(left < 0) left++;
+	    if(right >= frame->width()) right--;
+	    if(top < 0) top++;
+	    if(bottom >= frame->width()) bottom--;
+	    for(int di = left; di < right; di++){
+	      for(int dj = top; dj < bottom; dj++){
 		int val = m->getValue(di,dj);
 		if(val < 1 && subMask->getValue(di,dj) == 0){
 		  subMask->setValue(di,dj,1);
@@ -500,13 +516,19 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
 	for(uint32_t b = 0; b < nborder; b++){
 	  int bi = borderX.at(0);
 	  int bj = borderY.at(0);
+	  int left = bi-1;
+	  int right = bi+2;
+	  int top = bj-1;
+	  int bottom = bj+2;
+	  if(left < 0) left++;
+	  if(right >= frame->width()) right--;
+	  if(top < 0) top++;
+	  if(bottom >= frame->width()) bottom--;
 	  c->addPoint(bi,bj);
 	  double upperLimit = Imax;
 	  if((borderVal.at(0) - minThreshold)/(Imax - minThreshold) < 0.3) upperLimit = borderVal.at(0);
-	  for(int di = bi-1; di < bi+2; di++){
-	    if(di < 0 || di >= frame->width()) continue;
-	    for(int dj = bj-1; dj < bj+2; dj++){
-	      if(dj < 0 || dj >= frame->height()) continue;
+	  for(int di = left; di < right; di++){
+	    for(int dj = top; dj < bottom; dj++){
 	      double val = used->getValue(di,dj)*((double)frame->getPixel(di,dj) - minThreshold) / (upperLimit - minThreshold);
 	      if(val < 0.001 || val > 1.0) continue;
 	      used->setValue(di,dj,0);
@@ -599,7 +621,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
   delete used;
 
   resolveOverlaps(frame,rec,chan);
-  //return count;
+  std::cout << "Found " << rec->nPuncta(chan) << " puncta in channel " << (int)chan << "after " << (int)count << " iterations." << std::endl;
 }
 
 void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan)
@@ -632,10 +654,16 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
       while(borderSatX.size() > 0){
 	int bi = borderSatX.at(0);
 	int bj = borderSatY.at(0);
-	for(int x = bi-1; x < bi+2; x++){
-	  if(x < 0 || x >= frame->width()) continue;
-	  for(int y = bj-1; y < bj+2; y++){
-	    if(y < 0 || y >= frame->height()) continue;
+	int left = bi-1;
+	int right = bi+2;
+	int top = bj-1;
+	int bottom = bj+2;
+	if(left < 0) left++;
+	if(right >= frame->width()) right--;
+	if(top < 0) top++;
+	if(bottom >= frame->width()) bottom--;
+	for(int x = left; x < right; x++){
+	  for(int y = top; y < bottom; y++){
 	    value = frame->getPixel(x,y);
 	    if(used->getValue(x,y) > 0){
 	      if(value > m_saturationThreshold){
@@ -688,10 +716,16 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 	}
 	int bi = borderUnsatX.at(0);
 	int bj = borderUnsatY.at(0);
-	for(int x = bi-1; x < bi+2; x++){
-	  if(x < 0 || x >= frame->width()) continue;
-	  for(int y = bj-1; y < bj+2; y++){
-	    if(y < 0 || y >= frame->height()) continue;
+	int left = bi-1;
+	int right = bi+2;
+	int top = bj-1;
+	int bottom = bj+2;
+	if(left < 0) left++;
+	if(right >= frame->width()) right--;
+	if(top < 0) top++;
+	if(bottom >= frame->width()) bottom--;
+	for(int x = left; x < right; x++){
+	  for(int y = top; y < bottom; y++){
 	    uint16_t pixelValue = frame->getPixel(x,y);
 	    double val = used->getValue(x,y)*(pixelValue - localThreshold) / (upperLimit - localThreshold);
 	    if(val < 0.001 || val > 1.0) continue;
@@ -880,11 +914,17 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
       for(uint16_t b = 0; b < nborder; b++){
 	int bi = borderX.at(0);
 	int bj = borderY.at(0);
+	int left = bi-1;
+	int right = bi+2;
+	int top = bj-1;
+	int bottom = bj+2;
+	if(left < 0) left++;
+	if(right >= frame->width()) right--;
+	if(top < 0) top++;
+	if(bottom >= frame->width()) bottom--;
 	(*it)->addPoint(bi,bj,frame->getPixel(bi,bj));
-	for(int i = bi-1; i < bi+2; i++){
-	  if(i < 0 || i >= frame->width()) continue;
-	  for(int j = bj-1; j < bj+2; j++){
-	    if(j < 0 || j >= frame->height()) continue;
+	for(int i = left; i < right; i++){
+	  for(int j = top; j < bottom; j++){
 	    if(m->getValue(i,j) > 0){
 	      m->setValue(i,j,0);
 	      borderX.push_back(i);
@@ -945,8 +985,8 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
 
 void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
 {
-  int nSynapses = 0;
   for(int icol = 0; icol < rec->nSynapseCollections(); icol++){
+    int nSynapses = 0;
     SynapseCollection* sc = rec->getSynapseCollection(icol);
     std::vector<uint8_t> chan = sc->channels();
     uint8_t nchans = sc->nChannels();
@@ -1009,6 +1049,7 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
     }
     delete[] np;
     delete[] pi;
+    std::cout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << std::endl;
   }
 }
 

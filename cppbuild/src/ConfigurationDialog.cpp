@@ -119,6 +119,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_synapseChannels.assign(nchan, NULL);
   m_channelEntries.assign(nchan, NULL);
   m_channelBoxes.assign(nchan, NULL);
+  std::vector<std::string> cNames = m_toolkit->getChannelNames();
   for(uint8_t i = 0; i < nchan; i++){
     std::string channel = "Channel ";
     channel.append(boost::lexical_cast<std::string>((int)i));
@@ -129,7 +130,8 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
     m_channelEntries[i]->set_width_chars(15);
     std::string name = "Protein ";
     name.append(boost::lexical_cast<std::string>((int)i));
-    m_channelEntries[i]->set_text(name);
+    if(cNames.size() > i) m_channelEntries[i]->set_text(cNames[i]);
+    else m_channelEntries[i]->set_text(name);
     m_channelBoxes[i] = new Gtk::HBox();
     m_channelBoxes[i]->pack_start(*(m_synapseChannels[i]), Gtk::PACK_SHRINK);
     m_channelBoxes[i]->pack_start(*(m_channelEntries[i]), Gtk::PACK_EXPAND_PADDING);

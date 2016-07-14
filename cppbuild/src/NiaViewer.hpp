@@ -2,6 +2,7 @@
 #define NIA_VIEWER_HPP
 
 #include <gtkmm-2.4/gtkmm.h>
+#include <boost/lexical_cast.hpp>
 #include "ImSeries.hpp"
 #include "FileManager.hpp"
 #include "ImRecord.hpp"
@@ -26,6 +27,12 @@ protected:
   uint16_t m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
   ImageMode m_mode;
   Gtk::EventBox m_eventBox;
+  Gtk::Label m_grayMinLabel,m_grayMaxLabel,m_redMinLabel,m_redMaxLabel,m_greenMinLabel,m_greenMaxLabel,m_blueMinLabel,m_blueMaxLabel;
+  Gtk::Entry m_grayMinEntry,m_grayMaxEntry,m_redMinEntry,m_redMaxEntry,m_greenMinEntry,m_greenMaxEntry,m_blueMinEntry,m_blueMaxEntry;
+  Gtk::VBox m_mainBox,m_vbox1,m_vbox2,m_vbox3,m_vbox4,m_vbox5,m_vbox6,m_vbox7,m_vbox8;
+  Gtk::VSeparator m_vsep1,m_vsep2;
+  Gtk::HBox m_scaleBox;
+  Gtk::Button m_scaleHideButton;
   Gtk::Image m_displayImage;
   Glib::RefPtr<Gdk::Pixbuf> m_pixbuf;
   std::vector<Mask*> m_masks;
@@ -39,6 +46,7 @@ protected:
   void autoscaleRGB();
   void updateImage();
   bool on_button_press(GdkEventButton* evt);
+  void scale();
   
 public:
   NiaViewer();
@@ -62,7 +70,7 @@ public:
   void togglePunctaMask();
   void toggleSynapseMask();
   void toggleRegionMask();
-  void clearMasks(){ m_masks.clear(); }
+  void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
   void setCurrentRecord(ImRecord* rec);
   std::vector<ImRecord*> records(){ return m_records; }
@@ -86,6 +94,8 @@ public:
   void setRed(uint8_t chan){ m_red = chan; }
   void setGreen(uint8_t chan){ m_green = chan; }
   void setBlue(uint8_t chan){ m_blue = chan; }
+  void hideScaleBox(){ m_scaleBox.hide(); }
+  void showScaleBox(){ m_scaleBox.show(); }
   void setPixelSelector(){
     m_pixelSelector = true;
     m_punctaSelector = false;
@@ -111,6 +121,7 @@ public:
     m_regionSelector = true;
   }
   ImSeries* data(){ return m_data; }
+  void saveScreenshot(std::string filename){ m_pixbuf->save(filename,"png"); }
 
 };
 

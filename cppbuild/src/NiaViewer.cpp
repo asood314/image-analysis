@@ -7,7 +7,10 @@ NiaViewer::NiaViewer() :
   m_grayMin(0), m_grayMax(65535),
   m_redMin(0), m_redMax(65535), m_greenMin(0), m_greenMax(65535), m_blueMin(0), m_blueMax(65535),
   m_mode(GRAY),
-  m_width(0),m_height(0),m_zoom(1.0)
+  m_width(0),m_height(0),m_zoom(1.0),
+  m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
+  m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
+  m_scaleHideButton("Hide")
 {
   m_data = NULL;
   m_colors[0].r = 0xff;
@@ -23,10 +26,75 @@ NiaViewer::NiaViewer() :
   m_punctaSelector = false;
   m_synapseSelector = false;
   m_regionSelector = false;
-  add(m_eventBox);
+
+  m_grayMinEntry.set_max_length(5);
+  m_grayMinEntry.set_width_chars(5);
+  m_grayMinEntry.set_text(boost::lexical_cast<std::string>((int)m_grayMin));
+  m_grayMinEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_grayMaxEntry.set_max_length(5);
+  m_grayMaxEntry.set_width_chars(5);
+  m_grayMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_grayMax));
+  m_grayMaxEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_redMinEntry.set_max_length(5);
+  m_redMinEntry.set_width_chars(5);
+  m_redMinEntry.set_text(boost::lexical_cast<std::string>((int)m_redMin));
+  m_redMinEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_redMaxEntry.set_max_length(5);
+  m_redMaxEntry.set_width_chars(5);
+  m_redMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_redMax));
+  m_redMaxEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_greenMinEntry.set_max_length(5);
+  m_greenMinEntry.set_width_chars(5);
+  m_greenMinEntry.set_text(boost::lexical_cast<std::string>((int)m_greenMin));
+  m_greenMinEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_greenMaxEntry.set_max_length(5);
+  m_greenMaxEntry.set_width_chars(5);
+  m_greenMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_greenMax));
+  m_greenMaxEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_blueMinEntry.set_max_length(5);
+  m_blueMinEntry.set_width_chars(5);
+  m_blueMinEntry.set_text(boost::lexical_cast<std::string>((int)m_blueMin));
+  m_blueMinEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_blueMaxEntry.set_max_length(5);
+  m_blueMaxEntry.set_width_chars(5);
+  m_blueMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_blueMax));
+  m_blueMaxEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_scaleHideButton.signal_clicked().connect(sigc::mem_fun(*this, &NiaViewer::hideScaleBox));
+  m_vbox1.pack_start(m_grayMinLabel,Gtk::PACK_SHRINK);
+  m_vbox1.pack_start(m_grayMinEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox1,Gtk::PACK_SHRINK,15);
+  m_vbox2.pack_start(m_grayMaxLabel,Gtk::PACK_SHRINK);
+  m_vbox2.pack_start(m_grayMaxEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox2,Gtk::PACK_SHRINK,15);
+  m_scaleBox.pack_start(m_vsep1,Gtk::PACK_SHRINK,30);
+  m_vbox3.pack_start(m_redMinLabel,Gtk::PACK_SHRINK);
+  m_vbox3.pack_start(m_redMinEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox3,Gtk::PACK_SHRINK,15);
+  m_vbox4.pack_start(m_redMaxLabel,Gtk::PACK_SHRINK);
+  m_vbox4.pack_start(m_redMaxEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox4,Gtk::PACK_SHRINK,15);
+  m_vbox5.pack_start(m_greenMinLabel,Gtk::PACK_SHRINK);
+  m_vbox5.pack_start(m_greenMinEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox5,Gtk::PACK_SHRINK,15);
+  m_vbox6.pack_start(m_greenMaxLabel,Gtk::PACK_SHRINK);
+  m_vbox6.pack_start(m_greenMaxEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox6,Gtk::PACK_SHRINK,15);
+  m_vbox7.pack_start(m_blueMinLabel,Gtk::PACK_SHRINK);
+  m_vbox7.pack_start(m_blueMinEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox7,Gtk::PACK_SHRINK,15);
+  m_vbox8.pack_start(m_blueMaxLabel,Gtk::PACK_SHRINK);
+  m_vbox8.pack_start(m_blueMaxEntry,Gtk::PACK_SHRINK);
+  m_scaleBox.pack_start(m_vbox8,Gtk::PACK_SHRINK,15);
+  m_scaleBox.pack_start(m_vsep2,Gtk::PACK_SHRINK,30);
+  m_scaleBox.pack_start(m_scaleHideButton,Gtk::PACK_SHRINK,15);
+  m_mainBox.pack_start(m_scaleBox,Gtk::PACK_SHRINK);
+  
   m_eventBox.set_events(Gdk::BUTTON_PRESS_MASK);
   m_eventBox.signal_button_press_event().connect(sigc::mem_fun(*this, &NiaViewer::on_button_press));
   m_eventBox.add(m_displayImage);
+  m_mainBox.pack_start(m_eventBox,Gtk::PACK_EXPAND_WIDGET);
+
+  add(m_mainBox);
 }
 
 NiaViewer::~NiaViewer()
@@ -148,6 +216,24 @@ void NiaViewer::zproject()
   m_data->zproject();
   autoscale();
   updateImage();
+}
+
+void NiaViewer::scale()
+{
+  if(m_mode == GRAY){
+    m_grayMin = (uint16_t)boost::lexical_cast<int>(m_grayMinEntry.get_text());
+    m_grayMax = (uint16_t)boost::lexical_cast<int>(m_grayMaxEntry.get_text());
+    updateImage();
+  }
+  else if(m_mode == RGB){
+    m_redMin = (uint16_t)boost::lexical_cast<int>(m_redMinEntry.get_text());
+    m_redMax = (uint16_t)boost::lexical_cast<int>(m_redMaxEntry.get_text());
+    m_greenMin = (uint16_t)boost::lexical_cast<int>(m_greenMinEntry.get_text());
+    m_greenMax = (uint16_t)boost::lexical_cast<int>(m_greenMaxEntry.get_text());
+    m_blueMin = (uint16_t)boost::lexical_cast<int>(m_blueMinEntry.get_text());
+    m_blueMax = (uint16_t)boost::lexical_cast<int>(m_blueMaxEntry.get_text());
+    updateImage();
+  }
 }
 
 void NiaViewer::autoscale()
@@ -321,6 +407,15 @@ void NiaViewer::toggleRegionMask()
   if(!m_data) return;
   int index = m_view_p*m_data->nt() + m_view_t;
   if(m_records.at(index)) toggleMask(m_records.at(index)->getRegionMask(true));
+}
+
+void NiaViewer::clearMasks()
+{
+  for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
+    if((*it)) delete *it;
+  }
+  m_masks.clear();
+  updateImage();
 }
 
 void NiaViewer::setRecords(std::vector<ImRecord*> recs)
@@ -599,6 +694,8 @@ void NiaViewer::autoscaleGray()
       if(val > m_grayMax) m_grayMax = val;
     }
   }
+  m_grayMinEntry.set_text(boost::lexical_cast<std::string>((int)m_grayMin));
+  m_grayMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_grayMax));
 }
 
 void NiaViewer::autoscaleRGB()
@@ -639,4 +736,10 @@ void NiaViewer::autoscaleRGB()
       }
     }
   }
+  m_redMinEntry.set_text(boost::lexical_cast<std::string>((int)m_redMin));
+  m_redMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_redMax));
+  m_greenMinEntry.set_text(boost::lexical_cast<std::string>((int)m_greenMin));
+  m_greenMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_greenMax));
+  m_blueMinEntry.set_text(boost::lexical_cast<std::string>((int)m_blueMin));
+  m_blueMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_blueMax));
 }

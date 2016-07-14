@@ -27,6 +27,7 @@ protected:
   //signal handlers
   void on_menu_load();
   void on_save();
+  void on_save_screenshot();
   void on_start_batch_jobs();
   void on_configure_clicked();
   void on_find_signal_clicked();

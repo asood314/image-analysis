@@ -197,10 +197,10 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t);
   if(!record){
     record = new ImRecord(stack->nwaves(),stack->frame(0,0)->width(),stack->frame(0,0)->height());
-    for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t) = record;
   }
+  for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,-1);
@@ -236,10 +236,10 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z);
   if(!record){
     record = new ImRecord(stack->nwaves(),stack->frame(0,z)->width(),stack->frame(0,z)->height());
-    for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z) = record;
   }
+  for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,z);

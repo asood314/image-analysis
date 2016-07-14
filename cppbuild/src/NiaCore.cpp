@@ -27,6 +27,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
   m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
   m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
+  m_refActionGroup->add(Gtk::Action::create("screenshot","Save Screenshot"),sigc::mem_fun(*this, &NiaCore::on_save_screenshot));
   m_refActionGroup->add(Gtk::Action::create("quit","Quit"),Gtk::AccelKey("<control>Q"),sigc::mem_fun(*this, &NiaCore::on_quit));
   m_refActionGroup->add(Gtk::Action::create("viewMenu","View"));
   m_refActionGroup->add(Gtk::Action::create("single","Single Wavelength"));
@@ -47,6 +48,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
   m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
   m_refActionGroup->add(Gtk::Action::create("zproj","Z-projection"),Gtk::AccelKey("<control>Z"),sigc::mem_fun(m_viewer, &NiaViewer::zproject));
+  m_refActionGroup->add(Gtk::Action::create("scale","Adjust Scale"),sigc::mem_fun(m_viewer, &NiaViewer::showScaleBox));
   m_refActionGroup->add(Gtk::Action::create("zoomin","Zoom In"),Gtk::AccelKey(GDK_KEY_equal,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomIn));
   m_refActionGroup->add(Gtk::Action::create("zoomout","Zoom Out"),Gtk::AccelKey(GDK_KEY_minus,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomOut));
   m_refActionGroup->add(Gtk::Action::create("unzoom","Unzoom"),Gtk::AccelKey("<control>U"),sigc::mem_fun(m_viewer, &NiaViewer::unzoom));
@@ -55,13 +57,22 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
+  m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
   m_refActionGroup->add(Gtk::Action::create("navMenu","Navigate"));
-  m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey(GDK_KEY_Left,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
-  m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey(GDK_KEY_Right,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
-  m_refActionGroup->add(Gtk::Action::create("prevT","Previous Timepoint"),Gtk::AccelKey(GDK_KEY_Left,Gdk::HYPER_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevTimepoint));
-  m_refActionGroup->add(Gtk::Action::create("nextT","Next Timepoint"),Gtk::AccelKey(GDK_KEY_Right,Gdk::HYPER_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextTimepoint));
-  m_refActionGroup->add(Gtk::Action::create("prevZ","Previous Z-slice"),Gtk::AccelKey(GDK_KEY_Down,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevZ));
-  m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
+  //Windows keys
+  m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey(GDK_KEY_Left,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
+  m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey(GDK_KEY_Right,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
+  m_refActionGroup->add(Gtk::Action::create("prevT","Previous Timepoint"),Gtk::AccelKey(GDK_KEY_Left,Gdk::CONTROL_MASK | Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevTimepoint));
+  m_refActionGroup->add(Gtk::Action::create("nextT","Next Timepoint"),Gtk::AccelKey(GDK_KEY_Right,Gdk::CONTROL_MASK | Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextTimepoint));
+  m_refActionGroup->add(Gtk::Action::create("prevZ","Previous Z-slice"),Gtk::AccelKey(GDK_KEY_Down,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevZ));
+  m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
+  //OSX keys
+  //m_refActionGroup->add(Gtk::Action::create("prevP","Previous Position"),Gtk::AccelKey(GDK_KEY_Left,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevPosition));
+  //m_refActionGroup->add(Gtk::Action::create("nextP","Next Position"),Gtk::AccelKey(GDK_KEY_Right,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextPosition));
+  //m_refActionGroup->add(Gtk::Action::create("prevT","Previous Timepoint"),Gtk::AccelKey(GDK_KEY_Left,Gdk::HYPER_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevTimepoint));
+  //m_refActionGroup->add(Gtk::Action::create("nextT","Next Timepoint"),Gtk::AccelKey(GDK_KEY_Right,Gdk::HYPER_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextTimepoint));
+  //m_refActionGroup->add(Gtk::Action::create("prevZ","Previous Z-slice"),Gtk::AccelKey(GDK_KEY_Down,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::prevZ));
+  //m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
   m_refActionGroup->add(Gtk::Action::create("findsig","Find signal"),sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked));
@@ -86,6 +97,7 @@ void NiaCore::init()
     "   <menuitem action='load'/>"
     "   <menuitem action='loadMMR'/>"
     "   <menuitem action='save'/>"
+    "   <menuitem action='screenshot'/>"
     "   <menuitem action='quit'/>"
     "  </menu>"
     "  <menu action='viewMenu'>"
@@ -111,11 +123,13 @@ void NiaCore::init()
     "    <menuitem action='blueChan2'/>"
     "   </menu>"
     "   <menuitem action='zproj'/>"
+    "   <menuitem action='scale'/>"
     "   <menu action='maskMenu'>"
     "    <menuitem action='sigMask'/>"
     "    <menuitem action='puncMask'/>"
     "    <menuitem action='synMask'/>"
     "    <menuitem action='regMask'/>"
+    "    <menuitem action='clearMask'/>"
     "   </menu>"
     "   <menuitem action='zoomin'/>"
     "   <menuitem action='zoomout'/>"
@@ -153,6 +167,7 @@ void NiaCore::init()
   m_vbox.pack_start(m_viewer, Gtk::PACK_EXPAND_WIDGET);
 
   show_all_children();
+  m_viewer.hideScaleBox();
 }
 
 void NiaCore::on_menu_load()
@@ -215,10 +230,32 @@ void NiaCore::on_save()
   }
 }
 
+void NiaCore::on_save_screenshot()
+{
+  if(!m_viewer.data()) return;
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Save",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("PNG files");
+  filt2.add_pattern("*.png");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  if(result == Gtk::RESPONSE_OK){
+    std::string filename = fcd.get_filename();
+    if(filename.find(".png") == std::string::npos){
+      filename.append(".png");
+    }
+    m_viewer.saveScreenshot(filename);
+  }
+}
+
 void NiaCore::on_start_batch_jobs()
 {
   std::vector<ImRecord*> recs;
-  FileSelector fs(m_batchService.fileManager(),&m_iat,&recs,"",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  m_batchService.fileManager()->clearInputFiles();
+  FileSelector fs(m_batchService.fileManager(),&m_iat,&recs,"Select input files",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fs.set_transient_for(*this);
 
   Gtk::FileFilter filt;
@@ -260,7 +297,7 @@ void NiaCore::on_start_batch_jobs()
   m_batchService.setWriteTables(cd.getWriteTables());
   cd.hide();
   
-  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
+  Gtk::FileChooserDialog fcd("Select save destination",Gtk::FILE_CHOOSER_ACTION_SAVE);
   fcd.set_transient_for(*this);
   fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
   fcd.add_button("Run",Gtk::RESPONSE_OK);

@@ -411,7 +411,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
   for(uint8_t r = 0; r < nROI; r++) fout << "\"Region " << r << "\",";
   fout << "Average,Description\n";
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
-    fout << "Channel " << chan << " threshold,";
+    fout << "Channel " << (int)chan << " threshold,";
     for(int r = 0; r < nROI; r++) fout << "-,";
     fout << "" << m_thresholds.at(chan) << ",-\n";
   }
@@ -424,7 +424,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
   fout << "" << (sum/nROI) << ",-\n";
   uint8_t icol = 0;
   for(std::vector<SynapseCollection*>::iterator scit = m_synapseCollections.begin(); scit != m_synapseCollections.end(); scit++){
-    fout << "\"Type " << icol << " synapses\",";
+    fout << "\"Type " << (int)icol << " synapses\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
       fout << "" << (*rit)->nSynapses.at(icol) << ",";
@@ -437,7 +437,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
       fout << "" << densityA << ",";
       sum += densityA;
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average size\",";
+    fout << "" << (sum/nROI) << ",-\n\"Average size (um^2)\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
       fout << "" << (*rit)->avgSynapseSize.at(icol) << ",";
@@ -445,7 +445,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
     }
     fout << "" << (sum/nROI) << ",-\n";
     for(int i = 0; i < (*scit)->nRequirements(); i++){
-      fout << "\"Average overlap " << i << "\",";
+      fout << "\"Average overlap " << i << " (um^2)\",";
       sum = 0;
       for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
 	fout << "" << (*rit)->avgOverlap.at(icol).at(i) << ",";
@@ -477,7 +477,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
       fout << "" << densityA << ",";
       sum += densityA;
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average size\",";
+    fout << "" << (sum/nROI) << ",-\n\"Average size (um^2)\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
       fout << "" << (*rit)->avgPunctaSize.at(chan) << ",";
