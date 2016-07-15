@@ -2,10 +2,9 @@
 #define NIA_CORE_HPP
 
 #include <gtkmm-2.4/gtkmm.h>
-//#include "ImSeries.hpp"
-//#include "ImageAnalysisToolkit.hpp"
+#include <boost/thread.hpp>
 #include "BatchService.hpp"
-//#include "FileManager.hpp"
+#include "BatchWindow.hpp"
 #include "ConfigurationDialog.hpp"
 #include "NiaViewer.hpp"
 
@@ -17,12 +16,14 @@ protected:
   FileManager m_fileManager;
   ImageAnalysisToolkit m_iat;
   BatchService m_batchService;
+  boost::thread_group m_threads;
 
   //gui components
   Gtk::VBox m_vbox;
   NiaViewer m_viewer;
   Glib::RefPtr<Gtk::UIManager> m_refUIManager;
   Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+  BatchWindow m_batchWindow;
 
   //signal handlers
   void on_menu_load();

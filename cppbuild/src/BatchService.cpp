@@ -101,7 +101,7 @@ void BatchService::run()
   m_fileManager->clearInputFiles();
 }
 
-void BatchService::run(std::vector<ImRecord*> recs)
+void BatchService::run2(std::vector<ImRecord*> recs)
 {
   if(m_fileManager->empty()) return;
   m_fileManager->reset();
@@ -193,6 +193,9 @@ void BatchService::run(std::vector<ImRecord*> recs)
 
 void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
 {
+  //---------- Windows only ----------
+  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  //----------------------------------
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t);
   if(!record){
@@ -228,10 +231,17 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
     fout.close();
   }
   m_activeThreads--;
+  m_progressWindow->taskCompleted();
+  //---------- Windows only ----------
+  SetThreadExecutionState(ES_CONTINUOUS);
+  //----------------------------------
 }
 
 void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
 {
+  //---------- Windows only ----------
+  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  //----------------------------------
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z);
   if(!record){
@@ -270,4 +280,8 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
     }
   }
   m_activeThreads--;
+  m_progressWindow->taskCompleted();
+  //---------- Windows only ----------
+  SetThreadExecutionState(ES_CONTINUOUS);
+  //----------------------------------
 }

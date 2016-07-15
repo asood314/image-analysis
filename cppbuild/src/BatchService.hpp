@@ -1,10 +1,16 @@
 #ifndef BATCH_SERVICE_HPP
 #define BATCH_SERVICE_HPP
 
+//---------- Windows only ----------
+#include <windows.h>
+//----------------------------------
+
 #include <boost/bind.hpp>
 #include <boost/thread/thread.hpp>
 #include "FileManager.hpp"
 #include "ImageAnalysisToolkit.hpp"
+#include "NiaBuffer.hpp"
+#include "BatchWindow.hpp"
 
 class BatchService
 {
@@ -23,6 +29,7 @@ protected:
   std::vector<int> m_nStacks;
   std::vector< std::vector<int> >m_nPlanes;
   std::vector< std::vector<ImRecord*> > m_records;
+  BatchWindow* m_progressWindow;
 
 public:
   BatchService();
@@ -30,7 +37,7 @@ public:
   void analyzeProjection(int seriesID, uint8_t p, uint8_t t);
   void analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z);
   void run();
-  void run(std::vector<ImRecord*> recs);
+  void run2(std::vector<ImRecord*> recs);
   void setName(std::string name){ m_name = name; }
   std::string name(){ return m_name; }
   void setMaxThreads(uint8_t max){ m_maxThreads = max; }
@@ -43,6 +50,7 @@ public:
   bool writeTables(){ return m_writeTables; }
   ImageAnalysisToolkit* iat(){ return m_iat; };
   FileManager* fileManager(){ return m_fileManager; }
+  void setProgressWindow(BatchWindow* bw){ m_progressWindow = bw; }
   
 };
 

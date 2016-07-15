@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <boost/thread.hpp>
 #include "NiaUtils.hpp"
 #include "Mask.hpp"
 
@@ -22,8 +23,13 @@ public:
   static std::vector<ImFrame*> load(const char* fname);
   static std::vector<ImFrame*> loadLittle(char* buf, std::ifstream &fin);
   static std::vector<ImFrame*> loadBig(char* buf, std::ifstream &fin);
+  static void loadMT(std::vector<ImFrame*>* frames, const char* fname);
+  static void loadLittleMT(std::vector<ImFrame*>* frames, char* buf, const char* fname);
+  static void loadBigMT(std::vector<ImFrame*>* frames, char* buf, const char* fname);
   void readLittle(char* buf, std::ifstream &fin, uint32_t offset);
   void readBig(char* buf, std::ifstream &fin, uint32_t offset);
+  void readLittleMT(char* buf, const char* fname, uint32_t offset);
+  void readBigMT(char* buf, const char* fname, uint32_t offset);
   void divide(int d);
   uint16_t getPixel(int x, int y){ return m_pixels[x][y]; }
   void setPixel(int x, int y, uint16_t value){ m_pixels[x][y] = value; }

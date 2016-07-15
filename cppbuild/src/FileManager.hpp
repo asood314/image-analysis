@@ -5,6 +5,7 @@
 #include "ImSeries.hpp"
 #include <iostream>
 #include <fstream>
+#include <boost/thread.hpp>
 
 class FileManager
 {
@@ -32,6 +33,8 @@ public:
   virtual ~FileManager();
   ImSeries* load();
   ImSeries* loadNext();
+  ImSeries* loadMT();
+  int ntasks(bool zproject);
   bool empty(){ return m_fileList.size() == 0; }
   void reset(){ m_it = m_fileList.begin(); }
   void addInputFile(input_file phil){ m_fileList.push_back(phil); }

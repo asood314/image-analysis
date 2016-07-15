@@ -225,6 +225,107 @@ void ImFrame::readBig(char* buf, std::ifstream &fin, uint32_t offset)
   }
 }
 
+void ImFrame::loadMT(std::vector<ImFrame*>* frames, const char* fname)
+{
+  std::ifstream fin(fname,std::ifstream::binary);
+  char* buf = new char[42000000];
+  fin.read(buf,4);
+  if(NiaUtils::convertToShort(buf[2],buf[3]) != 42){
+    if(NiaUtils::convertToShort(buf[3],buf[2]) != 42){
+      std::cout << "ERROR: Can't find right byte order\n";
+      delete[] buf;
+    }
+    loadBigMT(frames,buf,fname);
+  }
+  else loadLittleMT(frames,buf,fname);
+  delete[] buf;
+}
+
+void ImFrame::loadLittleMT(std::vector<ImFrame*>* frames, char* buf, const char* fname)
+{
+  std::ifstream fin(fname,std::ifstream::binary);
+  std::vector<uint32_t> offsets;
+  uint32_t nOffsets = 0;
+  fin.read(buf,4);
+  offsets.push_back(NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]));
+  while(offsets.at(nOffsets) > 0){
+    fin.seekg(offsets.at(nOffsets));
+    fin.read(buf,2);
+    uint16_t nTags = NiaUtils::convertToShort(buf[0],buf[1]);
+    fin.seekg(offsets.at(nOffsets) + 2 + 12*nTags);
+    nOffsets++;
+    fin.read(buf,4);
+    offsets.push_back(NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]));
+  }
+  fin.seekg(offsets.at(0));
+  fin.read(buf,2);
+  uint16_t nTags = NiaUtils::convertToShort(buf[0],buf[1]);
+  uint32_t width = 1;
+  uint32_t height = 1;
+  for(uint16_t i = 0; i < nTags; i++){
+    fin.read(buf,12);
+    uint16_t tag = NiaUtils::convertToShort(buf[0],buf[1]);
+    if(tag == 256) width = NiaUtils::convertToInt(buf[8],buf[9],buf[10],buf[11]);
+    else if(tag == 257) height = NiaUtils::convertToInt(buf[8],buf[9],buf[10],buf[11]);
+  }
+  boost::thread_group tgroup;
+  for(uint32_t i = 0; i < nOffsets; i++){
+    frames->push_back(new ImFrame(width,height));
+    tgroup.create_thread(boost::bind(&ImFrame::readLittleMT,frames->at(i),buf,fname,offsets[i]));
+  }
+  tgroup.join_all();
+}
+
+void ImFrame::loadBigMT(std::vector<ImFrame*>* frames, char* buf, const char* fname)
+{
+  std::ifstream fin(fname,std::ifstream::binary);
+  std::vector<uint32_t> offsets;
+  uint32_t nOffsets = 0;
+  fin.read(buf,4);
+  offsets.push_back(NiaUtils::convertToInt(buf[3],buf[2],buf[1],buf[0]));
+  while(offsets.at(nOffsets) > 0){
+    fin.seekg(offsets.at(nOffsets));
+    fin.read(buf,2);
+    uint16_t nTags = NiaUtils::convertToShort(buf[1],buf[0]);
+    fin.seekg(offsets.at(nOffsets) + 2 + 12*nTags);
+    nOffsets++;
+    fin.read(buf,4);
+    offsets.push_back(NiaUtils::convertToInt(buf[3],buf[2],buf[1],buf[0]));
+  }
+  std::vector<ImFrame*> retVal;
+  fin.seekg(offsets.at(0));
+  fin.read(buf,2);
+  uint16_t nTags = NiaUtils::convertToShort(buf[1],buf[0]);
+  uint32_t width = 1;
+  uint32_t height = 1;
+  for(uint16_t i = 0; i < nTags; i++){
+    fin.read(buf,12);
+    uint16_t tag = NiaUtils::convertToShort(buf[1],buf[0]);
+    if(tag == 256) width = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+    else if(tag == 257) height = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+  }
+  boost::thread_group tgroup;
+  for(int i = 0; i < nOffsets; i++){
+    frames->push_back(new ImFrame(width,height));
+    tgroup.create_thread(boost::bind(&ImFrame::readBigMT,frames->at(i),buf,fname,offsets[i]));
+  }
+  tgroup.join_all();
+}
+
+void ImFrame::readLittleMT(char* buf, const char* fname, uint32_t offset)
+{
+  std::ifstream fin(fname,std::ifstream::binary);
+  readLittle(buf,fin,offset);
+  fin.close();
+}
+
+void ImFrame::readBigMT(char* buf, const char* fname, uint32_t offset)
+{
+  std::ifstream fin(fname,std::ifstream::binary);
+  readBig(buf,fin,offset);
+  fin.close();
+}
+
 void ImFrame::divide(int d)
 {
   for(uint16_t i = 0; i < m_width; i++){

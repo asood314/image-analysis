@@ -3,6 +3,7 @@
 
 #include "ImSeries.hpp"
 #include "ImRecord.hpp"
+#include "NiaBuffer.hpp"
 #include <cmath>
 
 class ImageAnalysisToolkit

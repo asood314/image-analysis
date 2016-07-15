@@ -89,6 +89,7 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
       }
     }
   }
+  nia::nout << "Done signal finding" << "\n";
   
   for(uint8_t w = 0; w < analysisStack->nwaves(); w++){
     findPuncta(analysisStack->frame(w,zplane),rec,w);
@@ -192,7 +193,6 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t cha
   }
   rec->setSignalMask(chan,m);
   delete used;
-  std::cout << "Done signal finding" << std::endl;
 }
 
 uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
@@ -348,7 +348,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	finished = false;
       }
       delete subMask;
-      //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
+      //nia::nout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << "\n";
     }
     if(step < 1.01) break;
     if(best < 0) break;
@@ -373,7 +373,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     }
   }
   delete m;
-  //std::cout << "Best threshold: " << best << std::endl;
+  //nia::nout << "Best threshold: " << best << "\n";
   return (uint16_t)best;
 }
 
@@ -498,7 +498,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
       double minThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold.at(configChan)*localStd);
       double localThreshold = localMedian + m_peakThreshold.at(configChan)*localStd;
       double minIntensity = punctaAreaThreshold*(localMedian + m_floorThreshold.at(configChan)*localStd);
-      //if(minIntensity < 1.0) std::cout << "Intensity threshold ridiculously small: " << minIntensity << std::endl;
+      //if(minIntensity < 1.0) nia::nout << "Intensity threshold ridiculously small: " << minIntensity << "\n";
       if(Imax < localThreshold) continue;
       localThreshold = Imax;
       Cluster* c = new Cluster();
@@ -591,7 +591,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
       if(c->contains(c->center())){
 	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
 	  LocalizedObject::Point seed = c->getPoint(0);
-	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << std::endl;
+	  nia::nout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << "\n";
 	  for(int i = c->size()-1; i >=0; i--){
 	    LocalizedObject::Point pt = c->getPoint(i);
 	    cMask->setValue(pt.x,pt.y,0);
@@ -621,12 +621,12 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
   delete used;
 
   resolveOverlaps(frame,rec,chan);
-  std::cout << "Found " << rec->nPuncta(chan) << " puncta in channel " << (int)chan << "after " << (int)count << " iterations." << std::endl;
+  nia::nout << "Found " << rec->nPuncta(chan) << " puncta in channel " << (int)chan << " after " << (int)count << " iterations." << "\n";
 }
 
 void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, uint8_t chan)
 {
-  //std::cout << "Find saturated puncta" << std::endl;
+  //nia::nout << "Find saturated puncta" << "\n";
   Mask* m = rec->getSignalMask(chan);
   Mask* used = m->getCopy();
   Mask* cMask = new Mask(frame->width(),frame->height());
@@ -787,7 +787,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
       if(index < c->size()){
 	if(c->size() > 10.6/(rec->resolutionXY()*rec->resolutionXY())){
 	  LocalizedObject::Point seed = c->getPoint(0);
-	  std::cout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << std::endl;
+	  nia::nout << "Found ridiculously large punctum of size " << c->size() << " seeded at (" << seed.x << "," << seed.y << ")" << "\n";
 	  cMask->clear(x1,x2,y1,y2);
 	  delete c;
 	  continue;
@@ -819,7 +819,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 
 void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_t chan)
 {
-  //std::cout << "Resolve overlaps" << std::endl;
+  //nia::nout << "Resolve overlaps" << "\n";
   std::vector<Cluster*> clusters = rec->puncta(chan);
   std::vector<Cluster*> satClusters;
   //std::vector<Cluster*> unsatClusters;
@@ -858,9 +858,9 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
       m->setValue(peak.x,peak.y,0);
     }
   }
-  //std::cout << "Original: (" << (int)unsatClusters[0]->getPoint(0).x << "," << (int)unsatClusters[0]->getPoint(0).y << "), " << (int)unsatClusters[0]->size() << std::endl;
-  //std::cout << "Original: (" << (int)unsatClusters[1]->getPoint(0).x << "," << (int)unsatClusters[1]->getPoint(0).y << "), " << (int)unsatClusters[1]->size() << std::endl;
-  //std::cout << "Original: (" << (int)unsatClusters[2]->getPoint(0).x << "," << (int)unsatClusters[2]->getPoint(0).y << "), " << (int)unsatClusters[2]->size() << std::endl;
+  //nia::nout << "Original: (" << (int)unsatClusters[0]->getPoint(0).x << "," << (int)unsatClusters[0]->getPoint(0).y << "), " << (int)unsatClusters[0]->size() << "\n";
+  //nia::nout << "Original: (" << (int)unsatClusters[1]->getPoint(0).x << "," << (int)unsatClusters[1]->getPoint(0).y << "), " << (int)unsatClusters[1]->size() << "\n";
+  //nia::nout << "Original: (" << (int)unsatClusters[2]->getPoint(0).x << "," << (int)unsatClusters[2]->getPoint(0).y << "), " << (int)unsatClusters[2]->size() << "\n";
   
   double maxDist = 5.0 / (rec->resolutionXY()*rec->resolutionXY());
   for(int i = 0; i < frame->width(); i++){
@@ -895,9 +895,9 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
       else if(distK >= 0) newClusters.at(distK)->addPoint(i,j);
     }
   }
-  //std::cout << "New: (" << (int)newClusters[0]->getPoint(0).x << "," << (int)newClusters[0]->getPoint(0).y << "), " << (int)newClusters[0]->size() << std::endl;
-  //std::cout << "New: (" << (int)newClusters[1]->getPoint(0).x << "," << (int)newClusters[1]->getPoint(0).y << "), " << (int)newClusters[1]->size() << std::endl;
-  //std::cout << "New: (" << (int)newClusters[2]->getPoint(0).x << "," << (int)newClusters[2]->getPoint(0).y << "), " << (int)newClusters[2]->size() << std::endl;
+  //nia::nout << "New: (" << (int)newClusters[0]->getPoint(0).x << "," << (int)newClusters[0]->getPoint(0).y << "), " << (int)newClusters[0]->size() << "\n";
+  //nia::nout << "New: (" << (int)newClusters[1]->getPoint(0).x << "," << (int)newClusters[1]->getPoint(0).y << "), " << (int)newClusters[1]->size() << "\n";
+  //nia::nout << "New: (" << (int)newClusters[2]->getPoint(0).x << "," << (int)newClusters[2]->getPoint(0).y << "), " << (int)newClusters[2]->size() << "\n";
   
   m->clear(0,frame->width(),0,frame->height());
   std::vector<uint16_t> borderX;
@@ -1049,7 +1049,7 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
     }
     delete[] np;
     delete[] pi;
-    std::cout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << std::endl;
+    nia::nout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << "\n";
   }
 }
 

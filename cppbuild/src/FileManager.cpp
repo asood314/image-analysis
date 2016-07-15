@@ -99,6 +99,61 @@ ImSeries* FileManager::loadNext()
   return retVal;
 }
 
+ImSeries* FileManager::loadMT()
+{
+  uint8_t np = 0;
+  uint8_t nt = 0;
+  std::vector<ImStack*> stacks;
+  uint8_t nx[4] = {1,1,1,1};
+  for(m_it = m_fileList.begin(); m_it != m_fileList.end(); m_it++){
+    for(uint8_t i = 0; i < m_it->np*m_it->nt; i++) stacks.push_back(new ImStack(m_it->nw,m_it->nz));
+    Dimension* order = m_it->order;
+    nx[WAVELENGTH] = m_it->nw;
+    nx[ZSLICE] = m_it->nz;
+    nx[POSITION] = np + m_it->np;
+    nx[TIMEPOINT] = nt + m_it->nt;
+    uint8_t ix[4] = {0,0,np,nt};
+    np += m_it->np;
+    nt += m_it->nt;
+    std::vector< std::vector<ImFrame*>* > frames;
+    boost::thread_group tgroup;
+    for(std::vector<std::string>::iterator file_it = m_it->fnames.begin(); file_it != m_it->fnames.end(); file_it++){
+      std::vector<ImFrame*>* vec = new std::vector<ImFrame*>();
+      frames.push_back(vec);
+      tgroup.create_thread(boost::bind(&ImFrame::loadMT,vec,(*file_it).c_str()));
+    }
+    tgroup.join_all();
+    for(std::vector< std::vector<ImFrame*>* >::iterator fit = frames.begin(); fit != frames.end(); fit++){
+      for(std::vector<ImFrame*>::iterator fit2 = (*fit)->begin(); fit2 != (*fit)->end(); fit2++){
+	stacks.at(ix[POSITION]*nx[TIMEPOINT] + ix[TIMEPOINT])->insert(*fit2,ix[WAVELENGTH],ix[ZSLICE]);
+	ix[order[3]]++;
+	if(ix[order[3]] == nx[order[3]]){
+	  ix[order[3]] = 0;
+	  ix[order[2]]++;
+	  if(ix[order[2]] == nx[order[2]]){
+	    ix[order[2]] = 0;
+	    ix[order[1]]++;
+	    if(ix[order[1]] == nx[order[1]]){
+	      ix[order[1]] = 0;
+	      ix[order[0]]++;
+	    }
+	  }
+	}
+      }
+      delete *fit;
+    }
+  }
+  ImSeries* retVal = new ImSeries(np,nt);
+  retVal->setName(m_fileList.begin()->sname);
+  retVal->setResolutionXY(m_fileList.begin()->resolutionXY);
+  for(int i = 0; i < np; i++){
+    for(int j = 0; j < nt; j++){
+      retVal->insert(stacks.at(i*nt+j),i,j);
+    }
+  }
+  return retVal;
+}
+
 void FileManager::saveInputFiles(std::ofstream& fout, int index)
 {
   char buf[20];
@@ -123,4 +178,14 @@ void FileManager::saveInputFiles(std::ofstream& fout, int index)
     fout.write(buf,4);
     fout.write(it->c_str(),it->length());
   }
+}
+
+int FileManager::ntasks(bool zproject)
+{
+  int retVal = 0;
+  for(m_it = m_fileList.begin(); m_it != m_fileList.end(); m_it++){
+    if(zproject) retVal += m_it->np * m_it->nt * m_it->nz;
+    else retVal += m_it->np * m_it->nt;
+  }
+  return retVal;
 }
