@@ -159,6 +159,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	    ImRecord* rec = currentRecord();
 	    if(!rec){
 	      rec = new ImRecord(getNW(),m_width,m_height);
+	      rec->setResolutionXY(m_data->resolutionXY());
 	      setCurrentRecord(rec);
 	    }
 	    rec->addRegion(r);

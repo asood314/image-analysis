@@ -185,8 +185,8 @@ int FileManager::ntasks(bool zproject)
 {
   int retVal = 0;
   for(m_it = m_fileList.begin(); m_it != m_fileList.end(); m_it++){
-    if(zproject) retVal += m_it->np * m_it->nt * m_it->nz;
-    else retVal += m_it->np * m_it->nt;
+    if(zproject) retVal += m_it->np * m_it->nt;
+    else retVal += m_it->np * m_it->nt * m_it->nz;
   }
   return retVal;
 }

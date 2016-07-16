@@ -30,9 +30,12 @@ void BatchWindow::launch(int ntasks)
   m_hours = 0;
   m_minutes = 0;
   m_seconds = 0;
+  m_progressBar.set_fraction(0.0);
+  m_textBuffer->set_text("");
   Glib::signal_timeout().connect(sigc::mem_fun(*this, &BatchWindow::refresh), 1000);
   show();
   show_all_children();
+  raise();
 }
 
 void BatchWindow::taskCompleted()

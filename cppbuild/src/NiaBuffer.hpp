@@ -1,7 +1,6 @@
 #ifndef NIABUFFER_HPP
 #define NIABUFFER_HPP
 
-#include <gtkmm-2.4/gtkmm.h>
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 

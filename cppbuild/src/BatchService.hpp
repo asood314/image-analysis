@@ -2,7 +2,7 @@
 #define BATCH_SERVICE_HPP
 
 //---------- Windows only ----------
-#include <windows.h>
+//#include <windows.h>
 //----------------------------------
 
 #include <boost/bind.hpp>

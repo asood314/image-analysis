@@ -66,6 +66,7 @@ void BatchService::run()
 	}
       }
     }
+    boost::this_thread::sleep(boost::posix_time::millisec(1000));
     m_data.push_back(m_fileManager->loadNext());
     currentS++;
     if(!(m_data.at(currentS))) continue;
@@ -156,6 +157,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 	}
       }
     }
+    boost::this_thread::sleep(boost::posix_time::millisec(1000));
     m_data.push_back(m_fileManager->loadNext());
     currentS++;
     if(!(m_data.at(currentS))) continue;
@@ -200,7 +202,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
 {
   //---------- Windows only ----------
-  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  //SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
   nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
@@ -240,14 +242,14 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   m_activeThreads--;
   m_progressWindow->taskCompleted();
   //---------- Windows only ----------
-  SetThreadExecutionState(ES_CONTINUOUS);
+  //SetThreadExecutionState(ES_CONTINUOUS);
   //----------------------------------
 }
 
 void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
 {
   //---------- Windows only ----------
-  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  //SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
   nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << ", z-plane " << z << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
@@ -290,6 +292,6 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
   m_activeThreads--;
   m_progressWindow->taskCompleted();
   //---------- Windows only ----------
-  SetThreadExecutionState(ES_CONTINUOUS);
+  //SetThreadExecutionState(ES_CONTINUOUS);
   //----------------------------------
 }
