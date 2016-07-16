@@ -139,6 +139,7 @@ void FileSelector::on_select_button_clicked()
     }
     m_toolkit->read(fin);
     if(m_recs){
+      int prevSize = m_recs->size();
       fin.read(buf,1);
       int nrecs = np*nt;
       if((int)buf[0] < 1) nrecs *= nz;
@@ -147,7 +148,7 @@ void FileSelector::on_select_button_clicked()
 	rec->read(fin);
 	m_recs->push_back(rec);
       }
-      m_resolutionEntry.set_text(boost::lexical_cast<std::string>(m_recs->at(0)->resolutionXY()));
+      m_resolutionEntry.set_text(boost::lexical_cast<std::string>(m_recs->at(prevSize)->resolutionXY()));
     }
     fin.close();
   }

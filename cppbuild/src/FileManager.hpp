@@ -6,6 +6,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/thread.hpp>
+#include "NiaBuffer.hpp"
 
 class FileManager
 {

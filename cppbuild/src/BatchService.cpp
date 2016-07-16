@@ -168,7 +168,10 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 	for(int j = 0; j < m_data.at(currentS)->nt(); j++){
 	  int nz = m_data.at(currentS)->fourLocation(i,j)->nz();
 	  nvec.push_back(nz);
-	  for(int k = 0; k < nz; k++) rvec.push_back(NULL);
+	  for(int k = 0; k < nz; k++){
+	    rvec.push_back(recs[recIndex]);
+	    recIndex++;
+	  }
 	}
       }
       m_nPlanes.push_back(nvec);
@@ -176,7 +179,10 @@ void BatchService::run2(std::vector<ImRecord*> recs)
     }
     else{
       std::vector<ImRecord*> rvec;
-      rvec.assign(m_data.at(currentS)->npos()*m_data.at(currentS)->nt(),NULL);
+      for(int i = 0; i < m_data.at(currentS)->npos()*m_data.at(currentS)->nt(); i++){
+	rvec.push_back(recs[recIndex]);
+	recIndex++;
+      }
       m_records.push_back(rvec);
     }
   }
@@ -196,6 +202,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   //---------- Windows only ----------
   SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
+  nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t);
   if(!record){
@@ -209,7 +216,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   m_iat->standardAnalysis(stack,record,-1);
   if(m_writeTables){
     std::ostringstream tablename;
-    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_p" << (int)p << "_t" << (int)t << ".csv";
+    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << (int)p << "_t" << (int)t << ".csv";
     record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
   }
   boost::lock_guard<boost::mutex> guard(m_mtx);
@@ -242,6 +249,7 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
   //---------- Windows only ----------
   SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
+  nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << ", z-plane " << z << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
   ImRecord* record = m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z);
   if(!record){
@@ -255,7 +263,7 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
   m_iat->standardAnalysis(stack,record,z);
   if(m_writeTables){
     std::ostringstream tablename;
-    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_p" << (int)p << "_t" << (int)t << "_z" << (int)z << ".csv";
+    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << (int)p << "_t" << (int)t << "_z" << (int)z << ".csv";
     record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
   }
   boost::lock_guard<boost::mutex> guard(m_mtx);

@@ -370,9 +370,11 @@ void NiaViewer::unzoom()
 
 void NiaViewer::toggleMask(Mask* m)
 {
+  if(!m) return;
   for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
     if(m->equals(**it)){
       m_masks.erase(it);
+      delete m;
       updateImage();
       return;
     }
@@ -385,7 +387,7 @@ void NiaViewer::toggleSignalMask()
 {
   if(!m_data) return;
   int index = m_view_p*m_data->nt() + m_view_t;
-  if(m_records.at(index)) toggleMask(m_records.at(index)->getSignalMask(m_view_w));
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getSignalMask(m_view_w)->getCopy());
 }
 
 void NiaViewer::togglePunctaMask()

@@ -59,6 +59,7 @@ ImSeries* FileManager::load()
 ImSeries* FileManager::loadNext()
 {
   if(m_it == m_fileList.end()) return NULL;
+  nia::nout << "Loading image series " << m_it->sname << "\n";
   std::vector<ImStack*> stacks;
   for(uint8_t i = 0; i < m_it->np*m_it->nt; i++) stacks.push_back(new ImStack(m_it->nw,m_it->nz));
   Dimension* order = m_it->order;

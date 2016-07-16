@@ -8,7 +8,9 @@ class BatchWindow : public Gtk::Window
 {
 
 protected:
-  int m_pending,m_completed;
+  int m_tasks,m_completed;
+  int m_hours,m_minutes,m_seconds;
+  Gtk::Label m_label;
   Gtk::ProgressBar m_progressBar;
   Gtk::HSeparator m_hsep;
   Gtk::VBox m_vbox;
