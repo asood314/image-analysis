@@ -36,7 +36,7 @@ void SynapseCollection::removeSynapse(uint32_t index)
 void SynapseCollection::addRequiredColocalization(std::vector<uint8_t> chans)
 {
   std::vector<uint8_t> indices;
-  uint8_t size = chans.size();
+  uint8_t size = m_channels.size();
   for(std::vector<uint8_t>::iterator it = chans.begin(); it != chans.end(); it++){
     uint8_t index = getChannelIndex(*it);
     if(index == size) return;

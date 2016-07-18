@@ -371,9 +371,9 @@ void ImRecord::calculateRegionStats(Region* r, uint8_t postChan)
       if(!r->contains(s->center())) continue;
       (*nsyn)++;
       (*avgS) += s->size();
-      if((*it)->allRequired()) avgO->at(0) = s->punctaOverlap();
+      if((*it)->allRequired()) avgO->at(0) += s->punctaOverlap();
       else{
-	for(uint8_t ireq = 0; ireq < nreq; ireq++) avgO->at(ireq) += s->punctaOverlap((*it)->getRequiredColocalization(ireq));
+	for(uint8_t ireq = 0; ireq < nreq; ireq++) avgO->at(ireq) += s->punctaOverlap((*it)->getRequiredColocalizationByIndex(ireq));
       }
     }
     (*avgS) *= m_resolutionXY*m_resolutionXY/(*nsyn);
@@ -444,7 +444,8 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
       sum += (*rit)->avgSynapseSize.at(icol);
     }
     fout << "" << (sum/nROI) << ",-\n";
-    for(int i = 0; i < (*scit)->nRequirements(); i++){
+    int nreq = (*scit)->nRequirements();
+    for(int i = 0; i < nreq; i++){
       fout << "\"Average overlap " << i << " (um^2)\",";
       sum = 0;
       for(rit = m_regions.begin(); rit != m_regions.end(); rit++){

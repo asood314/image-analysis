@@ -10,6 +10,7 @@ BatchService::BatchService()
   m_writeTables = false;
   m_iat = new ImageAnalysisToolkit();
   m_fileManager = new FileManager();
+  m_progressWindow = NULL;
 }
 
 BatchService::~BatchService()
@@ -202,7 +203,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
 {
   //---------- Windows only ----------
-  //SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
   nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
@@ -240,16 +241,16 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
     fout.close();
   }
   m_activeThreads--;
-  m_progressWindow->taskCompleted();
+  if(m_progressWindow) m_progressWindow->taskCompleted();
   //---------- Windows only ----------
-  //SetThreadExecutionState(ES_CONTINUOUS);
+  SetThreadExecutionState(ES_CONTINUOUS);
   //----------------------------------
 }
 
 void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
 {
   //---------- Windows only ----------
-  //SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
+  SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
   //----------------------------------
   nia::nout << "Starting sample " << m_fileManager->getName(seriesID) << ", xy position " << p << ", timepoint " << t << ", z-plane " << z << "\n";
   ImStack* stack = m_data.at(seriesID)->fourLocation(p,t);
@@ -290,8 +291,8 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
     }
   }
   m_activeThreads--;
-  m_progressWindow->taskCompleted();
+  if(m_progressWindow) m_progressWindow->taskCompleted();
   //---------- Windows only ----------
-  //SetThreadExecutionState(ES_CONTINUOUS);
+  SetThreadExecutionState(ES_CONTINUOUS);
   //----------------------------------
 }

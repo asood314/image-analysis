@@ -6,7 +6,7 @@ BatchWindow::BatchWindow() :
   m_label("Job Progress:"),
   m_okButton("OK")
 {
-  set_default_size(400,150);
+  set_default_size(450,200);
   set_title("Batch Window");
   m_progressBar.set_fraction(0.0);
   m_okButton.signal_clicked().connect(sigc::mem_fun(*this, &BatchWindow::on_ok_clicked));
