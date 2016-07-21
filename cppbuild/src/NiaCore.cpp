@@ -58,6 +58,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
+  m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
   m_refActionGroup->add(Gtk::Action::create("navMenu","Navigate"));
   //Windows keys
@@ -130,6 +131,7 @@ void NiaCore::init()
     "    <menuitem action='puncMask'/>"
     "    <menuitem action='synMask'/>"
     "    <menuitem action='regMask'/>"
+    "    <menuitem action='conMap'/>"
     "    <menuitem action='clearMask'/>"
     "   </menu>"
     "   <menuitem action='zoomin'/>"

@@ -68,6 +68,7 @@ public:
   Cluster* selectPunctum(uint8_t chan, LocalizedObject::Point pt);
   Synapse* selectSynapse(LocalizedObject::Point pt);
   Synapse* selectSynapseFromCollection(uint8_t index, LocalizedObject::Point pt);
+  Mask* getContourMap(uint8_t chan);
   Mask* getPunctaMask(uint8_t chan, bool outline=false);
   Mask* getSynapseMask(bool outline=true);
   Mask* getSynapseMaskFromCollection(uint8_t index, bool outline=true);

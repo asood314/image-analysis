@@ -345,6 +345,41 @@ void NiaViewer::updateImage()
   m_displayImage.set(pb);
 }
 
+void NiaViewer::displayMask(Mask* m)
+{
+  if(!m_data) return;
+  uint8_t* buf = m_pixbuf->get_pixels();
+  double sf = 255.0 / (m_grayMax - m_grayMin);
+  uint64_t index = 0;
+  for(uint32_t j = 0; j < m->height(); j++){
+    for(uint32_t i = 0; i < m->width(); i++){
+      buf[index] = 0;
+      buf[index+1] = 0;
+      buf[index+2] = 0;
+      uint8_t val = m->getValue(i,j);
+      uint8_t scaled_p;
+      if(val > m_grayMax) scaled_p = 255;
+      else if(val < m_grayMin) scaled_p = 0;
+      else scaled_p = (uint8_t)(sf * (val - m_grayMin));
+      //buf[index] = scaled_p;
+      buf[index+((val%6)/2)] = scaled_p;
+      //buf[index+2] = scaled_p;
+      index += 3;
+    }
+  }
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
+  delete m;
+}
+
+void NiaViewer::showContourMap()
+{
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  displayMask(rec->getContourMap(m_view_w));
+}
+
 void NiaViewer::zoomIn()
 {
   m_zoom += 0.1;

@@ -112,6 +112,43 @@ Synapse* ImRecord::selectSynapseFromCollection(uint8_t index, LocalizedObject::P
   return closest;
 }
 
+Mask* ImRecord::getContourMap(uint8_t chan)
+{
+  bool finished = false;
+  Mask* oldMask = m_signalMasks[chan]->getCopy();
+  Mask* newMask = oldMask->getCopy();
+  uint16_t count = 1;
+  while(!finished){
+    finished = true;
+    for(int i = 0; i < m_imWidth; i++){
+      for(int j = 0; j < m_imHeight; j++){
+	if(oldMask->getValue(i,j) < count) continue;
+	finished = false;
+	uint16_t sum = 0;
+	for(int i2 = i-1; i2 < i+2; i2++){
+	  if(i2 < 0 || i2 >= m_imWidth){
+	    sum += 3*count;
+	    continue;
+	  }
+	  for(int j2 = j-1; j2 < j+2; j2++){
+	    if(j2 < 0 || j2 >= m_imHeight){
+	      sum += count;
+	      continue;
+	    }
+	    sum += oldMask->getValue(i2,j2);
+	  }
+	}
+	newMask->setValue(i,j,count + sum/(9*count));
+      }
+    }
+    delete oldMask;
+    oldMask = newMask->getCopy();
+    count++;
+  }
+  delete oldMask;
+  return newMask;
+}
+
 Mask* ImRecord::getPunctaMask(uint8_t chan, bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);

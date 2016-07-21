@@ -61,6 +61,8 @@ public:
   void prevTimepoint();
   void nextTimepoint();
   void setData(ImSeries* data);
+  void displayMask(Mask* m);
+  void showContourMap();
   void zproject();
   void zoomIn();
   void zoomOut();
