@@ -26,6 +26,7 @@ public:
   uint8_t nVertices(){ return m_vertices.size(); }
   LocalizedObject::Point getVertex(uint8_t index){ return m_vertices.at(index); }
   std::vector<LocalizedObject::Point> vertices(){ return m_vertices; }
+  Region* getCopy(){ return new Region(m_vertices); }
 
 };
 

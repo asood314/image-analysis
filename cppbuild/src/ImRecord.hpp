@@ -53,6 +53,7 @@ public:
   Region* getRegion(uint8_t index){ return m_regions.at(index); }
   uint8_t nRegions(){ return m_regions.size(); }
   std::vector<Region*> regions(){ return m_regions; }
+  void clearRegions();
   void addPunctum(uint8_t chan, Cluster* c){ m_puncta.at(chan).push_back(c); }
   void removePunctum(uint8_t chan, uint32_t index);
   void clearPuncta(uint8_t chan);

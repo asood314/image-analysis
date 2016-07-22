@@ -46,6 +46,14 @@ void ImRecord::removeSynapseCollection(uint8_t index)
   m_synapseCollections.erase(m_synapseCollections.begin()+index);
 }
 
+void ImRecord::clearRegions()
+{
+  for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){
+    if(*it) delete *it;
+  }
+  m_regions.clear();
+}
+
 Cluster* ImRecord::selectPunctum(LocalizedObject::Point pt)
 {
   double minDist = 999999.9;

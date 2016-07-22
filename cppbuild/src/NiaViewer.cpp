@@ -190,7 +190,7 @@ void NiaViewer::setData(ImSeries* data)
     if(*it) delete *it;
   }
   m_records.clear();
-  m_records.assign(m_data->npos()*m_data->nt(),NULL);
+  m_records.assign(m_data->npos()*m_data->nt()*m_data->fourLocation(0,0)->nz(),NULL);
   m_view_w = 0;
   m_view_z = 0;
   m_view_p = 0;
@@ -214,7 +214,22 @@ void NiaViewer::zproject()
 {
   if(!m_data) return;
   m_view_z = 0;
+  uint8_t np = m_data->npos();
+  uint8_t nt = m_data->nt();
+  uint8_t nz = m_data->fourLocation(0,0)->nz();
   m_data->zproject();
+  if(m_records.size() > np*nt){
+    unsigned index = 0;
+    for(uint8_t p = 0; p < np; p++){
+      for(uint8_t t = 0; p < nt; t++){
+	index++;
+	for(uint8_t z = 1; z < nz; z++){
+	  if(m_records[index]) delete m_records[index];
+	  m_records.erase(m_records.begin()+index);
+	}
+      }
+    }
+  }
   autoscale();
   updateImage();
 }
@@ -422,28 +437,32 @@ void NiaViewer::toggleMask(Mask* m)
 void NiaViewer::toggleSignalMask()
 {
   if(!m_data) return;
-  int index = m_view_p*m_data->nt() + m_view_t;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records.at(index)) toggleMask(m_records.at(index)->getSignalMask(m_view_w)->getCopy());
 }
 
 void NiaViewer::togglePunctaMask()
 {
   if(!m_data) return;
-  int index = m_view_p*m_data->nt() + m_view_t;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records.at(index)) toggleMask(m_records.at(index)->getPunctaMask(m_view_w,false));
 }
 
 void NiaViewer::toggleSynapseMask()
 {
   if(!m_data) return;
-  int index = m_view_p*m_data->nt() + m_view_t;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records.at(index)) toggleMask(m_records.at(index)->getSynapseMask(false));
 }
 
 void NiaViewer::toggleRegionMask()
 {
   if(!m_data) return;
-  int index = m_view_p*m_data->nt() + m_view_t;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records.at(index)) toggleMask(m_records.at(index)->getRegionMask(true));
 }
 
@@ -465,12 +484,41 @@ void NiaViewer::setRecords(std::vector<ImRecord*> recs)
   for(std::vector<ImRecord*>::iterator it = recs.begin(); it != recs.end(); it++) m_records.push_back(*it);
 }
 
+ImRecord* NiaViewer::currentRecord()
+{
+  if(!m_data) return NULL;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  return m_records.at(m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z);
+}
+
 void NiaViewer::setCurrentRecord(ImRecord* rec)
 {
   if(!m_data) return;
-  int index = m_view_p*m_data->nt() + m_view_t;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records[index]) delete m_records[index];
   m_records[index] = rec;
+}
+
+void NiaViewer::shareRegions()
+{
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  int nt = m_data->nt();
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  for(int z = 0; z < nz; z++){
+    if(z == m_view_z) continue;
+    int index = m_view_p*nt*nz + m_view_t*nz + z;
+    ImRecord* rec2 = m_records[index];
+    if(!rec2){
+      ImFrame* frame = currentFrame();
+      rec2 = new ImRecord(getNW(),frame->width(),frame->height());
+      rec2->setResolutionXY(m_data->resolutionXY());
+      m_records[index] = rec2;
+    }
+    rec2->clearRegions();
+    for(uint8_t r = 0; r < rec->nRegions(); r++) rec2->addRegion(rec->getRegion(r)->getCopy());
+  }
 }
 
 Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)

@@ -75,6 +75,7 @@ public:
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
   void setCurrentRecord(ImRecord* rec);
+  void shareRegions();
   std::vector<ImRecord*> records(){ return m_records; }
   uint8_t getNW(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nwaves();
@@ -89,10 +90,7 @@ public:
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t);
     return NULL;
   }
-  ImRecord* currentRecord(){
-    if(m_data) return m_records.at(m_view_p*m_data->nt() + m_view_t);
-    return NULL;
-  }
+  ImRecord* currentRecord();
   void setRed(uint8_t chan){ m_red = chan; }
   void setGreen(uint8_t chan){ m_green = chan; }
   void setBlue(uint8_t chan){ m_blue = chan; }

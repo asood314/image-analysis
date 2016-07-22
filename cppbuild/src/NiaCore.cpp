@@ -49,7 +49,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
   m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
   m_refActionGroup->add(Gtk::Action::create("zproj","Z-projection"),Gtk::AccelKey("<control>Z"),sigc::mem_fun(m_viewer, &NiaViewer::zproject));
-  m_refActionGroup->add(Gtk::Action::create("scale","Adjust Scale"),sigc::mem_fun(m_viewer, &NiaViewer::showScaleBox));
+  m_refActionGroup->add(Gtk::Action::create("scale","Adjust Scale"),Gtk::AccelKey("<control>A"),sigc::mem_fun(m_viewer, &NiaViewer::showScaleBox));
   m_refActionGroup->add(Gtk::Action::create("zoomin","Zoom In"),Gtk::AccelKey(GDK_KEY_equal,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomIn));
   m_refActionGroup->add(Gtk::Action::create("zoomout","Zoom Out"),Gtk::AccelKey(GDK_KEY_minus,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomOut));
   m_refActionGroup->add(Gtk::Action::create("unzoom","Unzoom"),Gtk::AccelKey("<control>U"),sigc::mem_fun(m_viewer, &NiaViewer::unzoom));
@@ -77,16 +77,17 @@ void NiaCore::init()
   //m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
-  m_refActionGroup->add(Gtk::Action::create("findsig","Find signal"),sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked));
-  m_refActionGroup->add(Gtk::Action::create("findpunc","Find puncta"),sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked));
-  m_refActionGroup->add(Gtk::Action::create("fullanal","Full analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
-  m_refActionGroup->add(Gtk::Action::create("density","Print synapse density table"),sigc::mem_fun(*this, &NiaCore::on_print_density));
-  m_refActionGroup->add(Gtk::Action::create("batch","Start batch process"),Gtk::AccelKey("<control>B"),sigc::mem_fun(*this, &NiaCore::on_start_batch_jobs));
+  m_refActionGroup->add(Gtk::Action::create("findsig","Find Signal"),sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked));
+  m_refActionGroup->add(Gtk::Action::create("findpunc","Find Puncta"),sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked));
+  m_refActionGroup->add(Gtk::Action::create("fullanal","Full Analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
+  m_refActionGroup->add(Gtk::Action::create("density","Print Synapse Density Table"),sigc::mem_fun(*this, &NiaCore::on_print_density));
+  m_refActionGroup->add(Gtk::Action::create("batch","Start Batch Process"),Gtk::AccelKey("<control>B"),sigc::mem_fun(*this, &NiaCore::on_start_batch_jobs));
   m_refActionGroup->add(Gtk::Action::create("toolMenu","Tools"));
   m_refActionGroup->add(Gtk::Action::create("pixSel","Pixel Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPixelSelector));
   m_refActionGroup->add(Gtk::Action::create("punSel","Puncta Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPunctaSelector));
   m_refActionGroup->add(Gtk::Action::create("synSel","Synapse Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSynapseSelector));
   m_refActionGroup->add(Gtk::Action::create("regSel","Region Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setRegionSelector));
+  m_refActionGroup->add(Gtk::Action::create("regShare","Share Regions"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegions));
 
   m_refUIManager = Gtk::UIManager::create();
   m_refUIManager->insert_action_group(m_refActionGroup);
@@ -159,6 +160,7 @@ void NiaCore::init()
     "   <menuitem action='punSel'/>"
     "   <menuitem action='synSel'/>"
     "   <menuitem action='regSel'/>"
+    "   <menuitem action='regShare'/>"
     "  </menu>"
     " </menubar>"
     "</ui>";

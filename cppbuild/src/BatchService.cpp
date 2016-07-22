@@ -130,6 +130,21 @@ void BatchService::run2(std::vector<ImRecord*> recs)
     m_records.push_back(rvec);
   }
   else{
+    uint8_t np = m_data.at(0)->npos();
+    uint8_t nt = m_data.at(0)->nt();
+    uint8_t nz = m_data.at(0)->fourLocation(0,0)->nz();
+    if(recs.size() > np*nt){
+      unsigned index = 0;
+      for(uint8_t p = 0; p < np; p++){
+	for(uint8_t t = 0; p < nt; t++){
+	  index++;
+	  for(uint8_t z = 1; z < nz; z++){
+	    //if(recs[index]) delete recs[index];
+	    recs.erase(recs.begin()+index);
+	  }
+	}
+      }
+    }
     std::vector<ImRecord*> rvec;
     for(int i = 0; i < m_data.at(0)->npos()*m_data.at(0)->nt(); i++){
       rvec.push_back(recs[recIndex]);
