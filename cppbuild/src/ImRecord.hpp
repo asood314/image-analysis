@@ -7,6 +7,7 @@
 #include "NiaUtils.hpp"
 #include <iostream>
 #include <fstream>
+#include <cmath>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 
@@ -70,6 +71,8 @@ public:
   Synapse* selectSynapse(LocalizedObject::Point pt);
   Synapse* selectSynapseFromCollection(uint8_t index, LocalizedObject::Point pt);
   Mask* getContourMap(uint8_t chan);
+  Mask* segment(uint8_t chan);
+  void hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail);
   Mask* getPunctaMask(uint8_t chan, bool outline=false);
   Mask* getSynapseMask(bool outline=true);
   Mask* getSynapseMaskFromCollection(uint8_t index, bool outline=true);

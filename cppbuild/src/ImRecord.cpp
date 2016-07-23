@@ -157,6 +157,110 @@ Mask* ImRecord::getContourMap(uint8_t chan)
   return newMask;
 }
 
+Mask* ImRecord::segment(uint8_t chan)
+{
+  Mask* contourMask = getContourMap(chan);
+  Mask* nodeMask = new Mask(m_imWidth,m_imHeight);
+  std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail = new std::vector< std::vector< std::vector<LocalizedObject::Point> > >();
+  trail->assign(m_imWidth,std::vector< std::vector<LocalizedObject::Point> >());
+  for(int i = 0; i < m_imWidth; i++) trail->at(i).assign(m_imHeight,std::vector<LocalizedObject::Point>());
+  int di[8] = {-1,-1,-1,0,0,1,1,1};
+  int dj[8] = {-1,0,1,-1,1,-1,0,1};
+  std::cout << "Finding trails" << std::endl;
+  for(int i = 0; i < m_imWidth; i++){
+    for(int j = 0; j < m_imHeight; j++){
+      if(nodeMask->getValue(i,j) > 0) continue;
+      int base = contourMask->getValue(i,j);
+      if(base < 1) continue;
+      nodeMask->setValue(i,j,1);
+      int max = base;
+      std::vector<LocalizedObject::Point> steps;
+      for(int k = 0; k < 8; k++){
+	int i2 = i+di[k];
+	if(i2 < 0 || i2 >= m_imWidth) continue;
+	int j2 = j+dj[k];
+	if(j2 < 0 || j2 >= m_imHeight) continue;
+	int val = contourMask->getValue(i2,j2);
+	if(val > max){
+	  max = val;
+	  steps.clear();
+	  steps.push_back(LocalizedObject::Point(i2,j2));
+	}
+	else if(val == max) steps.push_back(LocalizedObject::Point(i2,j2));
+      }
+      if(steps.size() == 0){
+	nodeMask->setValue(i,j,2);
+	continue;
+      }
+      for(std::vector<LocalizedObject::Point>::iterator it = steps.begin(); it != steps.end(); it++){
+	trail->at(it->x).at(it->y).push_back(LocalizedObject::Point(i,j));
+	if(nodeMask->getValue(it->x,it->y) > 0) continue;
+	hike(*it,base,contourMask,nodeMask,trail);
+      }
+    }
+  }
+  std::cout << "Building segments" << std::endl;
+  Mask* segmentMask = new Mask(m_imWidth,m_imHeight);
+  int segmentID = 1;
+  for(int i = 0; i < m_imWidth; i++){
+    for(int j = 0; j < m_imHeight; j++){
+      if(nodeMask->getValue(i,j) < 2 || segmentMask->getValue(i,j) > 0) continue;
+      segmentMask->setValue(i,j,segmentID);
+      std::vector<LocalizedObject::Point> steps = trail->at(i).at(j);
+      int newSteps = steps.size();
+      while(newSteps > 0){
+	for(int k = 0; k < newSteps; k++){
+	  LocalizedObject::Point pt = steps[k];
+	  if(segmentMask->getValue(pt.x,pt.y) == segmentID){
+	    continue;
+	  }
+	  segmentMask->setValue(pt.x,pt.y,segmentID);
+	  std::vector<LocalizedObject::Point> tmp = trail->at(pt.x).at(pt.y);
+	  for(std::vector<LocalizedObject::Point>::iterator jt = tmp.begin(); jt != tmp.end(); jt++) steps.push_back(*jt);
+	}
+	for(int k = 0; k < newSteps; k++) steps.erase(steps.begin());
+	newSteps = steps.size();
+      }
+      segmentID++;
+    }
+  }
+  delete contourMask;
+  delete nodeMask;
+  delete trail;
+  return segmentMask;
+}
+
+void ImRecord::hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail)
+{
+  nodeMask->setValue(pt.x,pt.y,1);
+  int max = std::min((int)contourMask->getValue(pt.x,pt.y),base+1);
+  std::vector<LocalizedObject::Point> steps;
+  int di[8] = {-1,-1,-1,0,0,1,1,1};
+  int dj[8] = {-1,0,1,-1,1,-1,0,1};
+  for(int k = 0; k < 8; k++){
+    int i2 = pt.x+di[k];
+    if(i2 < 0 || i2 >= m_imWidth) continue;
+    int j2 = pt.y+dj[k];
+    if(j2 < 0 || j2 >= m_imHeight) continue;
+    int val = contourMask->getValue(i2,j2);
+    if(val > max){
+      max = val;
+      steps.clear();
+      steps.push_back(LocalizedObject::Point(i2,j2));
+    }
+    else if(val == max) steps.push_back(LocalizedObject::Point(i2,j2));
+  }
+  if(steps.size() == 0){
+    nodeMask->setValue(pt.x,pt.y,2);
+    return;
+  }
+  for(std::vector<LocalizedObject::Point>::iterator it = steps.begin(); it != steps.end(); it++){
+    trail->at(it->x).at(it->y).push_back(LocalizedObject::Point(pt.x,pt.y));
+    if(nodeMask->getValue(it->x,it->y) > 0) continue;
+    hike(*it,base,contourMask,nodeMask,trail);
+  }
+}
+
 Mask* ImRecord::getPunctaMask(uint8_t chan, bool outline)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight);

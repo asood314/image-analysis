@@ -377,8 +377,9 @@ void NiaViewer::displayMask(Mask* m)
       else if(val < m_grayMin) scaled_p = 0;
       else scaled_p = (uint8_t)(sf * (val - m_grayMin));
       //buf[index] = scaled_p;
-      buf[index+((val%6)/2)] = scaled_p;
+      //buf[index+((val%6)/2)] = scaled_p;
       //buf[index+2] = scaled_p;
+      buf[index+(val%3)] = scaled_p;
       index += 3;
     }
   }
@@ -392,7 +393,8 @@ void NiaViewer::showContourMap()
 {
   ImRecord* rec = currentRecord();
   if(!rec) return;
-  displayMask(rec->getContourMap(m_view_w));
+  //displayMask(rec->getContourMap(m_view_w));
+  displayMask(rec->segment(m_view_w));
 }
 
 void NiaViewer::zoomIn()
