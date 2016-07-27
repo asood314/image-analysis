@@ -596,7 +596,7 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
   std::vector<Region*>::iterator rit;
   std::ofstream fout(filename.c_str());
   fout << "Field,";
-  for(uint8_t r = 0; r < nROI; r++) fout << "\"Region " << r << "\",";
+  for(uint8_t r = 0; r < nROI; r++) fout << "\"Region " << (int)r << "\",";
   fout << "Average,Description\n";
   for(uint8_t chan = 0; chan < m_nchannels; chan++){
     fout << "Channel " << (int)chan << " threshold,";
@@ -604,6 +604,9 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
     fout << "" << m_thresholds.at(chan) << ",-\n";
   }
   fout << "\"Dendrite area (um^2)\",";
+  fout << "-,";
+  for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+  fout << "-,-\n";
   double sum = 0;
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
     fout << "" << (*rit)->dendriteArea << ",";
@@ -649,7 +652,9 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
 	fout << "\"\n";
       }
     }
-    fout << "-,-,-,-,-,-\n";
+    fout << "-,";
+    for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,-\n";
     icol++;
   }
   for(int chan = 0; chan < m_nchannels; chan++){
@@ -685,7 +690,9 @@ void ImRecord::printSynapseDensityTable(uint8_t postChan, std::string filename)
       sum += (*rit)->avgIntegratedIntensity.at(chan);
     }
     fout << "" << (sum/nROI) << ",-\n";
-    fout << "-,-,-,-,-,-\n";
+    fout << "-,";
+    for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,-\n";
   }
   fout.close();
 }

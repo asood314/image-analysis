@@ -28,7 +28,7 @@ protected:
   Gtk::CheckButton m_reqAllButton;
   Gtk::Entry m_thresholdEntry,m_requirementsEntry,m_descriptionEntry;
   Gtk::Label m_thresholdLabel,m_requirementsLabel,m_descriptionLabel;
-  Gtk::Button m_addButton;
+  Gtk::Button m_addButton,m_removeButton;
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel2;
   Gtk::TreeModel::ColumnRecord m_columns2;
   Gtk::TreeModelColumn<Glib::ustring> m_descriptionColumn;
@@ -43,10 +43,12 @@ protected:
   Gtk::Notebook m_Notebook;
   Gtk::ScrolledWindow m_synapseWindow;
   Gtk::VBox m_analysisBox,m_synapseBox,m_batchBox;
-  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12,m_hbox13,m_hbox14;
+  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12,m_hbox13,m_hbox14,m_hbox15;
   Gtk::VBox m_vbox1,m_vbox2,m_vbox3;
+  Gtk::HSeparator m_hsep1;
 
   void on_add_button_clicked();
+  void on_remove_button_clicked();
 
 public:
   ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t nchan, int maxThreads=-1, bool zproject=true);

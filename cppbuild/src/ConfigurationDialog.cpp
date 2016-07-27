@@ -18,6 +18,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_requirementsLabel("Set required colocalizations"),
   m_descriptionLabel("Add synapse description"),
   m_addButton("Add Synapse Type"),
+  m_removeButton("Remove Synapse Type"),
   m_scIndex(0),
   m_threadLabel("Set maximum number of threads"),
   m_zprojBox("Do Z-projections"),
@@ -116,6 +117,28 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_hbox9.pack_start(m_floorEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox9, Gtk::PACK_SHRINK);
 
+  m_columns2.add(m_indexColumn);
+  m_columns2.add(m_descriptionColumn);
+  //m_columns2.add(m_reqColumn);
+  m_refTreeModel2 = Gtk::ListStore::create(m_columns2);
+  m_treeView.set_model(m_refTreeModel2);
+  m_treeView.append_column("Current Synapse Definitions",m_descriptionColumn);
+  //m_treeView.append_column("Colocalization Requirements",m_reqColumn);
+  std::vector<SynapseCollection*> syncol = m_toolkit->synapseDefinitions();
+  for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++){
+    Gtk::TreeModel::Row row = *(m_refTreeModel2->append());
+    row[m_indexColumn] = m_scIndex;
+    m_scIndex++;
+    row[m_descriptionColumn] = (*it)->description();
+  }
+  m_synapseBox.pack_start(m_treeView,Gtk::PACK_EXPAND_WIDGET);
+  m_addButton.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_add_button_clicked));
+  m_removeButton.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_remove_button_clicked));
+  m_hbox15.pack_start(m_addButton, Gtk::PACK_SHRINK, 10);
+  m_hbox15.pack_start(m_removeButton, Gtk::PACK_SHRINK, 10);
+  m_synapseBox.pack_start(m_hbox15, Gtk::PACK_SHRINK);
+  m_synapseBox.pack_start(m_hsep1, Gtk::PACK_SHRINK, 15);
+  
   m_synapseChannels.assign(nchan, NULL);
   m_channelEntries.assign(nchan, NULL);
   m_channelBoxes.assign(nchan, NULL);
@@ -166,26 +189,8 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
 
   m_descriptionEntry.set_max_length(200);
   m_descriptionEntry.set_text("All colocalized");
-  m_addButton.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_add_button_clicked));
   m_synapseBox.pack_start(m_descriptionLabel, Gtk::PACK_SHRINK);
   m_synapseBox.pack_start(m_descriptionEntry, Gtk::PACK_SHRINK);
-  m_synapseBox.pack_start(m_addButton, Gtk::PACK_SHRINK);
-
-  m_columns2.add(m_indexColumn);
-  m_columns2.add(m_descriptionColumn);
-  //m_columns2.add(m_reqColumn);
-  m_refTreeModel2 = Gtk::ListStore::create(m_columns2);
-  m_treeView.set_model(m_refTreeModel2);
-  m_treeView.append_column("Current Synapse Definitions",m_descriptionColumn);
-  //m_treeView.append_column("Colocalization Requirements",m_reqColumn);
-  std::vector<SynapseCollection*> syncol = m_toolkit->synapseDefinitions();
-  for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++){
-    Gtk::TreeModel::Row row = *(m_refTreeModel2->append());
-    row[m_indexColumn] = m_scIndex;
-    m_scIndex++;
-    row[m_descriptionColumn] = (*it)->description();
-  }
-  m_synapseBox.pack_start(m_treeView,Gtk::PACK_EXPAND_WIDGET);
   m_synapseWindow.add(m_synapseBox);
 
   m_threadEntry.set_max_length(3);
@@ -270,6 +275,21 @@ void ConfigurationDialog::on_add_button_clicked()
   row[m_indexColumn] = m_scIndex;
   m_scIndex++;
   row[m_descriptionColumn] = sc->description();  
+}
+
+void ConfigurationDialog::on_remove_button_clicked()
+{
+  Glib::RefPtr<Gtk::TreeSelection> refTreeSelection = m_treeView.get_selection();
+  Gtk::TreeModel::iterator it = refTreeSelection->get_selected();
+  if(!it) return;
+  m_toolkit->removeSynapseDefinition((*it)[m_indexColumn]);
+  m_refTreeModel2->erase(it);
+  Gtk::TreeModel::Children rows = m_refTreeModel2->children();
+  m_scIndex = 0;
+  for(Gtk::TreeModel::Children::iterator jt = rows.begin(); jt != rows.end(); jt++){
+    (*jt)[m_indexColumn] = m_scIndex;
+    m_scIndex++;
+  }
 }
 
 uint8_t ConfigurationDialog::getMaster()

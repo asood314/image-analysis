@@ -100,7 +100,10 @@ public:
 
   void addSynapseDefinition(SynapseCollection* sc){ m_synapseDefinitions.push_back(sc); }
   std::vector<SynapseCollection*> synapseDefinitions(){ return m_synapseDefinitions; };
-
+  void removeSynapseDefinition(int index){
+    delete m_synapseDefinitions.at(index);
+    m_synapseDefinitions.erase(m_synapseDefinitions.begin()+index);
+  }
 };
 
 #endif
