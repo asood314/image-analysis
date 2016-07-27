@@ -167,7 +167,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, uint8_t cha
 	if(left < 0) left++;
 	if(right >= frame->width()) right--;
 	if(top < 0) top++;
-	if(bottom >= frame->width()) bottom--;
+	if(bottom >= frame->height()) bottom--;
 	for(int di = left; di < right; di++){
 	  for(int dj = top; dj < bottom; dj++){
 	    uint8_t val = used->getValue(di,dj);
@@ -262,7 +262,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	    if(left < 0) left++;
 	    if(right >= frame->width()) right--;
 	    if(top < 0) top++;
-	    if(bottom >= frame->width()) bottom--;
+	    if(bottom >= frame->height()) bottom--;
 	    for(int di = left; di < right; di++){
 	      for(int dj = top; dj < bottom; dj++){
 		uint16_t val = m->getValue(di,dj);
@@ -308,7 +308,7 @@ uint16_t ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	    if(left < 0) left++;
 	    if(right >= frame->width()) right--;
 	    if(top < 0) top++;
-	    if(bottom >= frame->width()) bottom--;
+	    if(bottom >= frame->height()) bottom--;
 	    for(int di = left; di < right; di++){
 	      for(int dj = top; dj < bottom; dj++){
 		int val = m->getValue(di,dj);
@@ -523,7 +523,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, uint8_t cha
 	  if(left < 0) left++;
 	  if(right >= frame->width()) right--;
 	  if(top < 0) top++;
-	  if(bottom >= frame->width()) bottom--;
+	  if(bottom >= frame->height()) bottom--;
 	  c->addPoint(bi,bj);
 	  double upperLimit = Imax;
 	  if((borderVal.at(0) - minThreshold)/(Imax - minThreshold) < 0.3) upperLimit = borderVal.at(0);
@@ -661,7 +661,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 	if(left < 0) left++;
 	if(right >= frame->width()) right--;
 	if(top < 0) top++;
-	if(bottom >= frame->width()) bottom--;
+	if(bottom >= frame->height()) bottom--;
 	for(int x = left; x < right; x++){
 	  for(int y = top; y < bottom; y++){
 	    value = frame->getPixel(x,y);
@@ -723,7 +723,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, ui
 	if(left < 0) left++;
 	if(right >= frame->width()) right--;
 	if(top < 0) top++;
-	if(bottom >= frame->width()) bottom--;
+	if(bottom >= frame->height()) bottom--;
 	for(int x = left; x < right; x++){
 	  for(int y = top; y < bottom; y++){
 	    uint16_t pixelValue = frame->getPixel(x,y);
@@ -921,7 +921,7 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, uint8_
 	if(left < 0) left++;
 	if(right >= frame->width()) right--;
 	if(top < 0) top++;
-	if(bottom >= frame->width()) bottom--;
+	if(bottom >= frame->height()) bottom--;
 	(*it)->addPoint(bi,bj,frame->getPixel(bi,bj));
 	for(int i = left; i < right; i++){
 	  for(int j = top; j < bottom; j++){
