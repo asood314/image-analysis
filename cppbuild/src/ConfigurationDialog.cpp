@@ -1,6 +1,6 @@
 #include "ConfigurationDialog.hpp"
 
-ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t nchan, int maxThreads, bool zproject) :
+ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, int maxThreads, bool zproject) :
   m_masterBox("Set master channel"),
   m_modeLabel("Select master mode"),
   m_pfiLabel("Set max puncta finding iterations"),
@@ -63,14 +63,14 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
 
   m_saturationEntry.set_max_length(3);
   m_saturationEntry.set_width_chars(5);
-  m_saturationEntry.set_text(boost::lexical_cast<std::string>((int)m_toolkit->getBitDepth()));
+  m_saturationEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->getBitDepth()));
   m_hbox2.pack_start(m_saturationLabel, Gtk::PACK_SHRINK);
   m_hbox2.pack_start(m_saturationEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox2, Gtk::PACK_SHRINK);
 
   m_pfiEntry.set_max_length(3);
   m_pfiEntry.set_width_chars(5);
-  m_pfiEntry.set_text(boost::lexical_cast<std::string>((int)m_toolkit->maxPunctaFindingIterations()));
+  m_pfiEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->maxPunctaFindingIterations()));
   m_hbox3.pack_start(m_pfiLabel, Gtk::PACK_SHRINK);
   m_hbox3.pack_start(m_pfiEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox3, Gtk::PACK_SHRINK);
@@ -143,16 +143,16 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_channelEntries.assign(nchan, NULL);
   m_channelBoxes.assign(nchan, NULL);
   std::vector<std::string> cNames = m_toolkit->getChannelNames();
-  for(uint8_t i = 0; i < nchan; i++){
+  for(int i = 0; i < nchan; i++){
     std::string channel = "Channel ";
-    channel.append(boost::lexical_cast<std::string>((int)i));
+    channel.append(boost::lexical_cast<std::string>(i));
     m_synapseChannels[i] = new  Gtk::CheckButton(channel);
     m_synapseChannels[i]->set_active(true);
     m_channelEntries[i] = new Gtk::Entry();
     m_channelEntries[i]->set_max_length(20);
     m_channelEntries[i]->set_width_chars(15);
     std::string name = "Protein ";
-    name.append(boost::lexical_cast<std::string>((int)i));
+    name.append(boost::lexical_cast<std::string>(i));
     if(cNames.size() > i) m_channelEntries[i]->set_text(cNames[i]);
     else m_channelEntries[i]->set_text(name);
     m_channelBoxes[i] = new Gtk::HBox();
@@ -179,7 +179,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t ncha
   m_requirementsEntry.set_width_chars(10);
   std::ostringstream s;
   s << "{0";
-  for(uint8_t i = 1; i < nchan; i++) s << "," << (int)i;
+  for(int i = 1; i < nchan; i++) s << "," << i;
   s << "}";
   m_requirementsEntry.set_text(s.str());
   m_synapseBox.pack_start(m_reqAllButton, Gtk::PACK_SHRINK);
@@ -242,8 +242,8 @@ ConfigurationDialog::~ConfigurationDialog()
 
 void ConfigurationDialog::on_add_button_clicked()
 {
-  std::vector<uint8_t> chans;
-  for(uint8_t i = 0; i < m_synapseChannels.size(); i++){
+  std::vector<int> chans;
+  for(int i = 0; i < m_synapseChannels.size(); i++){
     if(m_synapseChannels.at(i)->get_active()) chans.push_back(i);
   }
   SynapseCollection* sc = new SynapseCollection(chans);
@@ -264,8 +264,8 @@ void ConfigurationDialog::on_add_button_clicked()
     for(const auto& t : tokens){
       boost::char_separator<char> sep2(",");
       boost::tokenizer< boost::char_separator<char> > tokens2(t,sep2);
-      std::vector<uint8_t> reqChans;
-      for(const auto& t2 : tokens2) reqChans.push_back((uint8_t)boost::lexical_cast<int>(t2));
+      std::vector<int> reqChans;
+      for(const auto& t2 : tokens2) reqChans.push_back(boost::lexical_cast<int>(t2));
       sc->addRequiredColocalization(reqChans);
     }
   }
@@ -292,9 +292,9 @@ void ConfigurationDialog::on_remove_button_clicked()
   }
 }
 
-uint8_t ConfigurationDialog::getMaster()
+int ConfigurationDialog::getMaster()
 {
-  if(m_masterBox.get_active()) return (uint8_t)boost::lexical_cast<int>(m_masterEntry.get_text());
+  if(m_masterBox.get_active()) return boost::lexical_cast<int>(m_masterEntry.get_text());
   return 255;
 }
 

@@ -20,11 +20,11 @@ public:
 protected:
   ImSeries* m_data;
   std::vector<ImRecord*> m_records;
-  uint16_t m_width,m_height;
+  int m_width,m_height;
   double m_zoom;
-  uint8_t m_view_w,m_view_z,m_view_p,m_view_t;
-  uint8_t m_red,m_green,m_blue;
-  uint16_t m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
+  int m_view_w,m_view_z,m_view_p,m_view_t;
+  int m_red,m_green,m_blue;
+  int m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
   ImageMode m_mode;
   Gtk::EventBox m_eventBox;
   Gtk::Label m_grayMinLabel,m_grayMaxLabel,m_redMinLabel,m_redMaxLabel,m_greenMinLabel,m_greenMaxLabel,m_blueMinLabel,m_blueMaxLabel;
@@ -53,7 +53,7 @@ public:
   virtual ~NiaViewer();
   void autoscale();
   void setMode(ImageMode mode);
-  void setWavelength(uint8_t w);
+  void setWavelength(int w);
   void prevZ();
   void nextZ();
   void prevPosition();
@@ -77,11 +77,11 @@ public:
   void setCurrentRecord(ImRecord* rec);
   void shareRegions();
   std::vector<ImRecord*> records(){ return m_records; }
-  uint8_t getNW(){
+  int getNW(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nwaves();
     return 0;
   }
-  uint8_t viewW(){ return m_view_w; }
+  int viewW(){ return m_view_w; }
   ImFrame* currentFrame(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
     return NULL;
@@ -91,9 +91,9 @@ public:
     return NULL;
   }
   ImRecord* currentRecord();
-  void setRed(uint8_t chan){ m_red = chan; }
-  void setGreen(uint8_t chan){ m_green = chan; }
-  void setBlue(uint8_t chan){ m_blue = chan; }
+  void setRed(int chan){ m_red = chan; }
+  void setGreen(int chan){ m_green = chan; }
+  void setBlue(int chan){ m_blue = chan; }
   void hideScaleBox(){ m_scaleBox.hide(); }
   void showScaleBox(){ m_scaleBox.show(); }
   void setPixelSelector(){

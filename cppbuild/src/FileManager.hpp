@@ -17,10 +17,10 @@ public:
   typedef struct input_file{
     std::vector<std::string> fnames;
     std::string sname;
-    uint8_t nw;
-    uint8_t nz;
-    uint8_t np;
-    uint8_t nt;
+    int nw;
+    int nz;
+    int np;
+    int nt;
     Dimension order[4];
     double resolutionXY;
   } input_file;
@@ -42,10 +42,10 @@ public:
   void clearInputFiles(){ m_fileList.clear(); }
   void saveInputFiles(std::ofstream& fout, int index);
   std::string getName(int index){ return m_fileList.at(index).sname; }
-  uint8_t getNW(int index){ return m_fileList.at(index).nw; }
-  uint8_t getNZ(int index){ return m_fileList.at(index).nz; }
-  uint8_t getNP(int index){ return m_fileList.at(index).np; }
-  uint8_t getNT(int index){ return m_fileList.at(index).nt; }
+  int getNW(int index){ return m_fileList.at(index).nw; }
+  int getNZ(int index){ return m_fileList.at(index).nz; }
+  int getNP(int index){ return m_fileList.at(index).np; }
+  int getNT(int index){ return m_fileList.at(index).nt; }
   Dimension* getOrder(int index){ return m_fileList.at(index).order; }
 
 };

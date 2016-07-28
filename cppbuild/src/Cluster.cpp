@@ -22,7 +22,7 @@ Cluster* Cluster::getCopy()
   return c;
 }
 
-void Cluster::addPoint(uint16_t x, uint16_t y)
+void Cluster::addPoint(int x, int y)
 {
   LocalizedObject::Point pt;
   pt.x = x;
@@ -30,7 +30,7 @@ void Cluster::addPoint(uint16_t x, uint16_t y)
   m_points.push_back(pt);
 }
 
-void Cluster::addPoint(uint16_t x, uint16_t y, uint16_t i)
+void Cluster::addPoint(int x, int y, int i)
 {
   LocalizedObject::Point pt;
   pt.x = x;
@@ -39,7 +39,7 @@ void Cluster::addPoint(uint16_t x, uint16_t y, uint16_t i)
   m_total += i;
 }
 
-void Cluster::addPoint(LocalizedObject::Point pt, uint16_t i)
+void Cluster::addPoint(LocalizedObject::Point pt, int i)
 {
   m_points.push_back(pt);
   m_total += i;
@@ -55,9 +55,9 @@ void Cluster::removePoint(LocalizedObject::Point pt)
   }
 }
 
-uint32_t Cluster::indexOf(LocalizedObject::Point pt)
+int Cluster::indexOf(LocalizedObject::Point pt)
 {
-  uint32_t i = 0;
+  int i = 0;
   for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
     if(it->x == pt.x && it->y == pt.y) return i;
     i++;
@@ -65,14 +65,14 @@ uint32_t Cluster::indexOf(LocalizedObject::Point pt)
   return i;
 }
 
-uint32_t Cluster::getBorderLength(Cluster* c)
+int Cluster::getBorderLength(Cluster* c)
 {
-  uint32_t len = 0;
+  int len = 0;
   std::vector<LocalizedObject::Point> points2 = c->getPoints();
   for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
     for(std::vector<LocalizedObject::Point>::iterator it2 = points2.begin(); it2 != points2.end(); it2++){
-      uint16_t xdiff = 0;
-      uint16_t ydiff = 0;
+      int xdiff = 0;
+      int ydiff = 0;
       if(it2->x > it->x) xdiff = it2->x - it->x;
       else xdiff = it->x - it2->x;
       if(xdiff > 1) continue;
@@ -99,14 +99,14 @@ double Cluster::peakToPeakDistance2(Cluster* c)
 {
   LocalizedObject::Point pt = c->getPoint(0);
   LocalizedObject::Point pt2 = m_points.at(0);
-  return pow((int)pt.x - pt2.x,2) + pow((int)pt.y - pt2.y,2);
+  return pow(pt.x - pt2.x,2) + pow(pt.y - pt2.y,2);
 }
 
 void Cluster::computeCenter()
 {
-  uint32_t x = 0;
-  uint32_t y = 0;
-  uint32_t size = 0;
+  int x = 0;
+  int y = 0;
+  int size = 0;
   for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
     x += it->x;
     y += it->y;
@@ -114,8 +114,8 @@ void Cluster::computeCenter()
   }
   x = x / size;
   y = y / size;
-  m_center.x = (uint16_t)x;
-  m_center.y = (uint16_t)y;
+  m_center.x = x;
+  m_center.y = y;
 }
 
 bool Cluster::contains(LocalizedObject::Point pt)
@@ -133,7 +133,7 @@ Mask* Cluster::getMask(int width, int height, bool outline)
     Mask* m2 = m->getCopy();
     for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++) m->setValue(kt->x,kt->y,1);
     for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++){
-      uint8_t sum = 0;
+      int sum = 0;
       for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
 	if(dx < 0 || dx >= width){
 	  sum += 3;

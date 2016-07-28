@@ -12,9 +12,9 @@ class ImFrame
 {
 
 protected:
-  std::vector< std::vector<uint16_t> > m_pixels;
-  uint32_t m_width;
-  uint32_t m_height;
+  std::vector< std::vector<int> > m_pixels;
+  int m_width;
+  int m_height;
 
 public:
   ImFrame();
@@ -31,20 +31,20 @@ public:
   void readLittleMT(char* buf, const char* fname, uint32_t offset);
   void readBigMT(char* buf, const char* fname, uint32_t offset);
   void divide(int d);
-  uint16_t getPixel(int x, int y){ return m_pixels[x][y]; }
-  void setPixel(int x, int y, uint16_t value){ m_pixels[x][y] = value; }
-  uint32_t width(){ return m_width; }
-  uint32_t height(){ return m_height; }
+  int getPixel(int x, int y){ return m_pixels[x][y]; }
+  void setPixel(int x, int y, int value){ m_pixels[x][y] = value; }
+  int width(){ return m_width; }
+  int height(){ return m_height; }
 
-  double mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-  double mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
-  double median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-  double median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
-  double mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-  double mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
-  double std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2);
-  double std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m);
-  void getMedianStd(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m, double& med, double& std);
+  double mean(int x1, int x2, int y1, int y2);
+  double mean(int x1, int x2, int y1, int y2, Mask* m);
+  double median(int x1, int x2, int y1, int y2);
+  double median(int x1, int x2, int y1, int y2, Mask* m);
+  double mode(int x1, int x2, int y1, int y2);
+  double mode(int x1, int x2, int y1, int y2, Mask* m);
+  double std(int x1, int x2, int y1, int y2);
+  double std(int x1, int x2, int y1, int y2, Mask* m);
+  void getMedianStd(int x1, int x2, int y1, int y2, Mask* m, double& med, double& std);
 
   double mean(){ return mean(0,m_width,0,m_height); }
   double mean(Mask* m){ return mean(0,m_width,0,m_height,m); }

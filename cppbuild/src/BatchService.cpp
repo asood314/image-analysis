@@ -47,8 +47,8 @@ void BatchService::run()
     m_records.push_back(rvec);
   }
   while(m_data.at(currentS)){
-    for(uint8_t currentP = 0; currentP < m_data.at(currentS)->npos(); currentP++){
-      for(uint8_t currentT = 0; currentT < m_data.at(currentS)->nt(); currentT++){
+    for(int currentP = 0; currentP < m_data.at(currentS)->npos(); currentP++){
+      for(int currentT = 0; currentT < m_data.at(currentS)->nt(); currentT++){
 	if(m_zproject){
 	  while(m_activeThreads == m_maxThreads) boost::this_thread::sleep(boost::posix_time::millisec(60000));
 	  m_mtx.lock();
@@ -57,7 +57,7 @@ void BatchService::run()
 	  m_mtx.unlock();
 	}
 	else{
-	  for(uint8_t currentZ = 0; currentZ < m_data.at(currentS)->fourLocation(currentP,currentT)->nz(); currentZ++){
+	  for(int currentZ = 0; currentZ < m_data.at(currentS)->fourLocation(currentP,currentT)->nz(); currentZ++){
 	    while(m_activeThreads == m_maxThreads) boost::this_thread::sleep(boost::posix_time::millisec(60000));
 	    m_mtx.lock();
 	    m_threadpool.create_thread(boost::bind(&BatchService::analyzePlane, this, currentS, currentP, currentT, currentZ));
@@ -130,15 +130,15 @@ void BatchService::run2(std::vector<ImRecord*> recs)
     m_records.push_back(rvec);
   }
   else{
-    uint8_t np = m_data.at(0)->npos();
-    uint8_t nt = m_data.at(0)->nt();
-    uint8_t nz = m_data.at(0)->fourLocation(0,0)->nz();
+    int np = m_data.at(0)->npos();
+    int nt = m_data.at(0)->nt();
+    int nz = m_data.at(0)->fourLocation(0,0)->nz();
     if(recs.size() > np*nt){
       unsigned index = 0;
-      for(uint8_t p = 0; p < np; p++){
-	for(uint8_t t = 0; p < nt; t++){
+      for(int p = 0; p < np; p++){
+	for(int t = 0; p < nt; t++){
 	  index++;
-	  for(uint8_t z = 1; z < nz; z++){
+	  for(int z = 1; z < nz; z++){
 	    //if(recs[index]) delete recs[index];
 	    recs.erase(recs.begin()+index);
 	  }
@@ -153,8 +153,8 @@ void BatchService::run2(std::vector<ImRecord*> recs)
     m_records.push_back(rvec);
   }
   while(m_data.at(currentS)){
-    for(uint8_t currentP = 0; currentP < m_data.at(currentS)->npos(); currentP++){
-      for(uint8_t currentT = 0; currentT < m_data.at(currentS)->nt(); currentT++){
+    for(int currentP = 0; currentP < m_data.at(currentS)->npos(); currentP++){
+      for(int currentT = 0; currentT < m_data.at(currentS)->nt(); currentT++){
 	if(m_zproject){
 	  while(m_activeThreads == m_maxThreads) boost::this_thread::sleep(boost::posix_time::millisec(60000));
 	  m_mtx.lock();
@@ -163,7 +163,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 	  m_mtx.unlock();
 	}
 	else{
-	  for(uint8_t currentZ = 0; currentZ < m_data.at(currentS)->fourLocation(currentP,currentT)->nz(); currentZ++){
+	  for(int currentZ = 0; currentZ < m_data.at(currentS)->fourLocation(currentP,currentT)->nz(); currentZ++){
 	    while(m_activeThreads == m_maxThreads) boost::this_thread::sleep(boost::posix_time::millisec(60000));
 	    m_mtx.lock();
 	    m_threadpool.create_thread(boost::bind(&BatchService::analyzePlane, this, currentS, currentP, currentT, currentZ));
@@ -215,7 +215,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
   m_fileManager->clearInputFiles();
 }
 
-void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
+void BatchService::analyzeProjection(int seriesID, int p, int t)
 {
   //---------- Windows only ----------
   SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -228,13 +228,13 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t) = record;
   }
-  for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
+  for(int i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,-1);
   if(m_writeTables){
     std::ostringstream tablename;
-    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << (int)p << "_t" << (int)t << ".csv";
+    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << p << "_t" << t << ".csv";
     record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
   }
   boost::lock_guard<boost::mutex> guard(m_mtx);
@@ -262,7 +262,7 @@ void BatchService::analyzeProjection(int seriesID, uint8_t p, uint8_t t)
   //----------------------------------
 }
 
-void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
+void BatchService::analyzePlane(int seriesID, int p, int t, int z)
 {
   //---------- Windows only ----------
   SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED);
@@ -275,13 +275,13 @@ void BatchService::analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z)
     record->setResolutionXY(m_data.at(seriesID)->resolutionXY());
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z) = record;
   }
-  for(uint8_t i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
+  for(int i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,z);
   if(m_writeTables){
     std::ostringstream tablename;
-    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << (int)p << "_t" << (int)t << "_z" << (int)z << ".csv";
+    tablename << m_name << "_" << m_fileManager->getName(seriesID) << "_xy" << p << "_t" << t << "_z" << z << ".csv";
     record->printSynapseDensityTable(m_iat->postChan(),tablename.str());
   }
   boost::lock_guard<boost::mutex> guard(m_mtx);

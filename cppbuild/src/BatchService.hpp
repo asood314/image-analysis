@@ -19,7 +19,7 @@ protected:
   std::string m_name;
   boost::thread_group m_threadpool;
   boost::mutex m_mtx;
-  uint8_t m_maxThreads,m_activeThreads;
+  int m_maxThreads,m_activeThreads;
   bool m_zproject;
   int m_divisor;
   bool m_writeTables;
@@ -34,14 +34,14 @@ protected:
 public:
   BatchService();
   virtual ~BatchService();
-  void analyzeProjection(int seriesID, uint8_t p, uint8_t t);
-  void analyzePlane(int seriesID, uint8_t p, uint8_t t, uint8_t z);
+  void analyzeProjection(int seriesID, int p, int t);
+  void analyzePlane(int seriesID, int p, int t, int z);
   void run();
   void run2(std::vector<ImRecord*> recs);
   void setName(std::string name){ m_name = name; }
   std::string name(){ return m_name; }
-  void setMaxThreads(uint8_t max){ m_maxThreads = max; }
-  uint8_t maxThreads(){ return m_maxThreads; }
+  void setMaxThreads(int max){ m_maxThreads = max; }
+  int maxThreads(){ return m_maxThreads; }
   void setZProject(bool tf){ m_zproject = tf; }
   bool zproject(){ return m_zproject; }
   void setDivisor(int d){ m_divisor = d; }

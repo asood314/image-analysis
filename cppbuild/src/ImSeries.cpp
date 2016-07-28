@@ -8,7 +8,7 @@ ImSeries::ImSeries()
   m_resolutionXY = 0.046;
 }
 
-ImSeries::ImSeries(uint8_t npos, uint8_t nt)
+ImSeries::ImSeries(int npos, int nt)
 {
   m_npos = npos;
   m_nt = nt;
@@ -24,19 +24,19 @@ ImSeries::~ImSeries()
   }
 }
 
-void ImSeries::insert(ImStack* stack, uint8_t pos, uint8_t t)
+void ImSeries::insert(ImStack* stack, int pos, int t)
 {
   if(pos < m_npos && t < m_nt){
-    uint16_t index = pos*m_nt + t;
+    int index = pos*m_nt + t;
     if(m_fourLocations.at(index)) delete m_fourLocations.at(index);
     m_fourLocations.at(index) = stack;
   }
 }
 
-void ImSeries::remove(uint8_t pos, uint8_t t)
+void ImSeries::remove(int pos, int t)
 {
   if(pos < m_npos && t < m_nt){
-    uint16_t index = pos*m_nt + t;
+    int index = pos*m_nt + t;
     if(m_fourLocations.at(index)) delete m_fourLocations.at(index);
     m_fourLocations.at(index) = NULL;
   }

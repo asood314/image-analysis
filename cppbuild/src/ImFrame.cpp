@@ -5,16 +5,16 @@ ImFrame::ImFrame()
 {
   m_width = 2048;
   m_height = 2048;
-  m_pixels.assign(2048,std::vector<uint16_t>(2048));
-  //for(int i = 0; i < 2048; i++) m_pixels[i] = new uint16_t[2048];
+  m_pixels.assign(2048,std::vector<int>(2048));
+  //for(int i = 0; i < 2048; i++) m_pixels[i] = new int[2048];
 }
 
 ImFrame::ImFrame(const int width, const int height)
 {
   m_width = width;
   m_height = height;
-  m_pixels.assign(width,std::vector<uint16_t>(height));
-  //for(int i = 0; i < width; i++) m_pixels[i] = new uint16_t[height];
+  m_pixels.assign(width,std::vector<int>(height));
+  //for(int i = 0; i < width; i++) m_pixels[i] = new int[height];
 }
 
 ImFrame::~ImFrame()
@@ -328,30 +328,30 @@ void ImFrame::readBigMT(char* buf, const char* fname, uint32_t offset)
 
 void ImFrame::divide(int d)
 {
-  for(uint16_t i = 0; i < m_width; i++){
-    for(uint16_t j = 0; j < m_height; j++){
+  for(int i = 0; i < m_width; i++){
+    for(int j = 0; j < m_height; j++){
       m_pixels[i][j] = m_pixels[i][j] / d;
     }
   }
 }
 
-double ImFrame::mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+double ImFrame::mean(int x1, int x2, int y1, int y2)
 {
   double sum = 0.0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       sum += m_pixels[i][j];
     }
   }
   return sum / ((x2-x1)*(y2-y1));
 }
 
-double ImFrame::mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m)
+double ImFrame::mean(int x1, int x2, int y1, int y2, Mask* m)
 {
   double sum = 0.0;
   int npix = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       int a = m->getValue(i,j);
       sum += a * m_pixels[i][j];
       npix += a;
@@ -361,12 +361,12 @@ double ImFrame::mean(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m
   else return 65536.0;
 }
 
-double ImFrame::median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+double ImFrame::median(int x1, int x2, int y1, int y2)
 {
   int* values = new int[65536];
   for(int i = 0; i < 65536; i++) values[i] = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       values[m_pixels[i][j]]++;
     }
   }
@@ -378,13 +378,13 @@ double ImFrame::median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
   return (double)index;
 }
 
-double ImFrame::median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m)
+double ImFrame::median(int x1, int x2, int y1, int y2, Mask* m)
 {
   int* values = new int[65536];
   int target = 0;
   for(int i = 0; i < 65536; i++) values[i] = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       int a = m->getValue(i,j);
       values[m_pixels[i][j]] += a;
       target += a;
@@ -398,12 +398,12 @@ double ImFrame::median(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask*
   return (double)index;
 }
 
-double ImFrame::mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+double ImFrame::mode(int x1, int x2, int y1, int y2)
 {
   int* values = new int[65536];
   for(int i = 0; i < 65536; i++) values[i] = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       values[m_pixels[i][j]]++;
     }
   }
@@ -419,13 +419,13 @@ double ImFrame::mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
   return (double)index;
 }
 
-double ImFrame::mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m)
+double ImFrame::mode(int x1, int x2, int y1, int y2, Mask* m)
 {
   int* values = new int[65536];
   int target = 0;
   for(int i = 0; i < 65536; i++) values[i] = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       int a = m->getValue(i,j);
       values[m_pixels[i][j]] += a;
       target += a;
@@ -443,25 +443,25 @@ double ImFrame::mode(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m
   return (double)index;
 }
 
-double ImFrame::std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2)
+double ImFrame::std(int x1, int x2, int y1, int y2)
 {
   double mn = mean(x1,x2,y1,y2);
   double sum = 0.0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       sum += pow(m_pixels[i][j] - mn,2);
     }
   }
   return sqrt(sum / ((x2-x1)*(y2-y1) - 1));
 }
 
-double ImFrame::std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m)
+double ImFrame::std(int x1, int x2, int y1, int y2, Mask* m)
 {
   double mn = mean(x1,x2,y1,y2,m);
   double sum = 0.0;
   int npix = 0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       int a = m->getValue(i,j);
       sum += a * pow(m_pixels[i][j] - mn,2);
       npix += a;
@@ -471,7 +471,7 @@ double ImFrame::std(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m)
   else return mn;
 }
 
-void ImFrame::getMedianStd(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, Mask* m, double& med, double& stdv)
+void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, double& med, double& stdv)
 {
   int* values = new int[4096];
   int target = 0;
@@ -479,8 +479,8 @@ void ImFrame::getMedianStd(uint16_t x1, uint16_t x2, uint16_t y1, uint16_t y2, M
   double mn = 0.0;
   med = 0.0;
   stdv = 0.0;
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       int a = m->getValue(i,j);
       int val = m_pixels[i][j] * a;
       values[val] += a;

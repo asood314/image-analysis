@@ -19,7 +19,7 @@ protected:
   Gtk::Button m_selectButton;
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
   Gtk::TreeModel::ColumnRecord m_columnRecord;
-  Gtk::TreeModelColumn<uint8_t> m_idColumn;
+  Gtk::TreeModelColumn<uint16_t> m_idColumn;
   Gtk::TreeModelColumn<Glib::ustring> m_fileNameColumn;
   Gtk::TreeView m_treeView;
   Gtk::ScrolledWindow m_treeWindow;

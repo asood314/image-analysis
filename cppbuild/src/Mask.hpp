@@ -8,40 +8,34 @@ class Mask
 {
 
 protected:
-  //uint8_t** m_mask;
-  std::vector< std::vector<uint8_t> > m_mask;
-  uint16_t m_width;
-  uint16_t m_height;
+  std::vector< std::vector<int> > m_mask;
+  int m_width;
+  int m_height;
 
 public:
-  Mask(){}// m_mask = NULL; }
-  Mask(uint16_t w, uint16_t h){ init(w,h,0); }
-  Mask(uint16_t w, uint16_t h, uint8_t startValue){ init(w,h,startValue); }
+  Mask(){}
+  Mask(int w, int h){ init(w,h,0); }
+  Mask(int w, int h, int startValue){ init(w,h,startValue); }
   Mask(Mask& m);
   virtual ~Mask();
-  void init(uint16_t w, uint16_t h, uint8_t startValue);
+  void init(int w, int h, int startValue);
   bool equals(Mask& m);
-  uint16_t width(){ return m_width; }
-  uint16_t height(){ return m_height; }
-  //uint8_t getValue(uint16_t& x, uint16_t& y){ return m_mask[x][y]; }
-  uint8_t getValue(int x, int y){ return m_mask[x][y]; }
-  //void setValue(uint16_t& x, uint16_t& y, uint8_t value){ m_mask[x][y] = value; }
-  void setValue(int x, int y, uint8_t value){ m_mask[x][y] = value; }
+  int width(){ return m_width; }
+  int height(){ return m_height; }
+  int getValue(int x, int y){ return m_mask[x][y]; }
+  void setValue(int x, int y, int value){ m_mask[x][y] = value; }
   Mask* inverse();
   void copy(Mask& m);
   Mask* getCopy(){ return new Mask(*this); }
   void OR(Mask& m);
-  void multiply(uint8_t& val);
+  void multiply(int& val);
   void multiply(Mask& m);
   void add(Mask& m);
   void subtract(Mask& m);
-  uint32_t sum();
-  uint32_t sum(int x1, int x2, int y1, int y2);
+  int sum();
+  int sum(int x1, int x2, int y1, int y2);
   void clear(int x1, int x2, int y1, int y2);
-  uint16_t max(int x1, int x2, int y1, int y2);
-  //uint32_t sum(int x1, int x2, int y1, int y2){ return sum((uint16_t)x1,(uint16_t)x2,(uint16_t)y1,(uint16_t)y2); }
-  //void clear(int x1, int x2, int y1, int y2){ clear((uint16_t)x1,(uint16_t)x2,(uint16_t)y1,(uint16_t)y2); }
-  //uint16_t max(int x1, int x2, int y1, int y2){ return max((uint16_t)x1,(uint16_t)x2,(uint16_t)y1,(uint16_t)y2); }
+  int max(int x1, int x2, int y1, int y2);
 
 };
 

@@ -32,22 +32,22 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("quit","Quit"),Gtk::AccelKey("<control>Q"),sigc::mem_fun(*this, &NiaCore::on_quit));
   m_refActionGroup->add(Gtk::Action::create("viewMenu","View"));
   m_refActionGroup->add(Gtk::Action::create("single","Single Wavelength"));
-  m_refActionGroup->add(Gtk::Action::create("chan0","Channel 0"),Gtk::AccelKey("<control>0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),0));
-  m_refActionGroup->add(Gtk::Action::create("chan1","Channel 1"),Gtk::AccelKey("<control>1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),1));
-  m_refActionGroup->add(Gtk::Action::create("chan2","Channel 2"),Gtk::AccelKey("<control>2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),2));
+  m_refActionGroup->add(Gtk::Action::create("chan0","Channel 0"),Gtk::AccelKey("<control>0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),0));
+  m_refActionGroup->add(Gtk::Action::create("chan1","Channel 1"),Gtk::AccelKey("<control>1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),1));
+  m_refActionGroup->add(Gtk::Action::create("chan2","Channel 2"),Gtk::AccelKey("<control>2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),2));
   m_refActionGroup->add(Gtk::Action::create("composite","Color Composite"),Gtk::AccelKey("<control>C"),sigc::bind<NiaViewer::ImageMode>(sigc::mem_fun(m_viewer, &NiaViewer::setMode),NiaViewer::RGB));
   m_refActionGroup->add(Gtk::Action::create("setRed","Set Red Channel"));
-  m_refActionGroup->add(Gtk::Action::create("redChan0","Channel 0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),0));
-  m_refActionGroup->add(Gtk::Action::create("redChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),1));
-  m_refActionGroup->add(Gtk::Action::create("redChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),2));
+  m_refActionGroup->add(Gtk::Action::create("redChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),0));
+  m_refActionGroup->add(Gtk::Action::create("redChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),1));
+  m_refActionGroup->add(Gtk::Action::create("redChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),2));
   m_refActionGroup->add(Gtk::Action::create("setGreen","Set Green Channel"));
-  m_refActionGroup->add(Gtk::Action::create("greenChan0","Channel 0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),0));
-  m_refActionGroup->add(Gtk::Action::create("greenChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),1));
-  m_refActionGroup->add(Gtk::Action::create("greenChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),2));
+  m_refActionGroup->add(Gtk::Action::create("greenChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),0));
+  m_refActionGroup->add(Gtk::Action::create("greenChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),1));
+  m_refActionGroup->add(Gtk::Action::create("greenChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),2));
   m_refActionGroup->add(Gtk::Action::create("setBlue","Set Blue Channel"));
-  m_refActionGroup->add(Gtk::Action::create("blueChan0","Channel 0"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),0));
-  m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
-  m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<uint8_t>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
+  m_refActionGroup->add(Gtk::Action::create("blueChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),0));
+  m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
+  m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
   m_refActionGroup->add(Gtk::Action::create("zproj","Z-projection"),Gtk::AccelKey("<control>Z"),sigc::mem_fun(m_viewer, &NiaViewer::zproject));
   m_refActionGroup->add(Gtk::Action::create("scale","Adjust Scale"),Gtk::AccelKey("<control>A"),sigc::mem_fun(m_viewer, &NiaViewer::showScaleBox));
   m_refActionGroup->add(Gtk::Action::create("zoomin","Zoom In"),Gtk::AccelKey(GDK_KEY_equal,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomIn));
@@ -321,7 +321,7 @@ void NiaCore::on_start_batch_jobs()
 
 void NiaCore::on_configure_clicked()
 {
-  uint8_t nchan = m_viewer.getNW();
+  int nchan = m_viewer.getNW();
   if(nchan == 0) nchan = 1;
   ConfigurationDialog cd(&m_iat,nchan);
   cd.set_transient_for(*this);
@@ -349,7 +349,7 @@ void NiaCore::on_find_signal_clicked()
     rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
     rec->setResolutionXY(m_viewer.data()->resolutionXY());
     std::vector<std::string> chanNames = m_iat.getChannelNames();
-    for(uint8_t i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
+    for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
   m_iat.findSignal(frame,rec,m_viewer.viewW());
@@ -364,7 +364,7 @@ void NiaCore::on_find_puncta_clicked()
     rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
     rec->setResolutionXY(m_viewer.data()->resolutionXY());
     std::vector<std::string> chanNames = m_iat.getChannelNames();
-    for(uint8_t i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
+    for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
   m_iat.findPuncta(frame,rec,m_viewer.viewW());
@@ -379,7 +379,7 @@ void NiaCore::on_full_analysis_clicked()
     rec = new ImRecord(m_viewer.getNW(),stack->frame(0,0)->width(),stack->frame(0,0)->height());
     rec->setResolutionXY(m_viewer.data()->resolutionXY());
     std::vector<std::string> chanNames = m_iat.getChannelNames();
-    for(uint8_t i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
+    for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
   m_iat.standardAnalysis(stack,rec,-1);

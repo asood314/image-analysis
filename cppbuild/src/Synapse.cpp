@@ -11,13 +11,13 @@ Synapse::~Synapse()
   m_indices.clear();
 }
 
-void Synapse::addPunctum(Cluster* c, uint32_t index)
+void Synapse::addPunctum(Cluster* c, int index)
 {
   m_puncta.push_back(c);
   m_indices.push_back(index);
 }
 
-uint32_t Synapse::punctaOverlap()
+int Synapse::punctaOverlap()
 {
   std::vector<LocalizedObject*> c;
   for(std::vector<Cluster*>::iterator it = m_puncta.begin(); it != m_puncta.end(); it++)
@@ -25,25 +25,25 @@ uint32_t Synapse::punctaOverlap()
   return LocalizedObject::findOverlap(c);
 }
 
-uint32_t Synapse::punctaOverlap(std::vector<uint8_t> indices)
+int Synapse::punctaOverlap(std::vector<int> indices)
 {
   std::vector<LocalizedObject*> c;
-  for(std::vector<uint8_t>::iterator it = indices.begin(); it != indices.end(); it++)
+  for(std::vector<int>::iterator it = indices.begin(); it != indices.end(); it++)
     c.push_back(dynamic_cast<LocalizedObject*>(m_puncta.at(*it)));
   return LocalizedObject::findOverlap(c);
 }
 
-uint32_t Synapse::size()
+int Synapse::size()
 {
-  uint32_t size = 0;
+  int size = 0;
   for(std::vector<Cluster*>::iterator it = m_puncta.begin(); it!= m_puncta.end(); it++) size += (*it)->size();
   return size - punctaOverlap();
 }
 
-double Synapse::maxPunctaDistance(std::vector<uint8_t> indices)
+double Synapse::maxPunctaDistance(std::vector<int> indices)
 {
   std::vector<LocalizedObject*> c;
-  for(std::vector<uint8_t>::iterator it = indices.begin(); it != indices.end(); it++)
+  for(std::vector<int>::iterator it = indices.begin(); it != indices.end(); it++)
     c.push_back(dynamic_cast<LocalizedObject*>(m_puncta.at(*it)));
   return LocalizedObject::findMaxDistance(c);
 }
@@ -56,17 +56,17 @@ bool Synapse::isColocalized()
 
 void Synapse::computeCenter()
 {
-  uint32_t x = 0;
-  uint32_t y = 0;
-  uint32_t n = 0;
+  int x = 0;
+  int y = 0;
+  int n = 0;
   for(std::vector<Cluster*>::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
     LocalizedObject::Point pt = (*it)->center();
     x += pt.x;
     y += pt.y;
     n++;
   }
-  m_center.x = (uint16_t)(x / n);
-  m_center.y = (uint16_t)(y / n);
+  m_center.x = (x / n);
+  m_center.y = (y / n);
 }
 
 std::vector<LocalizedObject::Point> Synapse::getPoints()
@@ -95,7 +95,7 @@ Mask* Synapse::getMask(int width, int height, bool outline)
     std::vector<LocalizedObject::Point> pts = getPoints();
     for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++) m->setValue(kt->x,kt->y,1);
     for(std::vector<LocalizedObject::Point>::iterator kt = pts.begin(); kt != pts.end(); kt++){
-      uint8_t sum = 0;
+      int sum = 0;
       for(int dx = kt->x - 1; dx < kt->x + 2; dx++){
 	if(dx < 0 || dx >= width){
 	  sum += 3;

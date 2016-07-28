@@ -13,7 +13,7 @@ bool Region::contains(LocalizedObject::Point pt)
   return inside;
 }
 
-bool Region::contains(uint16_t x, uint16_t y)
+bool Region::contains(int x, int y)
 {
   bool inside = false;
   for(std::vector<LocalizedObject::Point>::iterator it = m_vertices.begin(); it != m_vertices.end()-1; it++){
@@ -26,7 +26,7 @@ bool Region::contains(uint16_t x, uint16_t y)
   return inside;
 }
 
-void Region::getEnclosure(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2)
+void Region::getEnclosure(int& x1, int& x2, int& y1, int& y2)
 {
   x1 = 65535;
   x2 = 0;
@@ -43,7 +43,7 @@ void Region::getEnclosure(uint16_t& x1, uint16_t& x2, uint16_t& y1, uint16_t& y2
 Mask* Region::getMask(int width, int height, bool outline)
 {
   Mask* m = new Mask(width,height);
-  uint16_t x1,x2,y1,y2;
+  int x1,x2,y1,y2;
   if(outline){
     Mask* m2 = m->getCopy();
     getEnclosure(x1,x2,y1,y2);
@@ -51,14 +51,14 @@ Mask* Region::getMask(int width, int height, bool outline)
     x2--;
     y1++;
     y2--;
-    for(uint16_t i = x1; i < x2; i++){
-      for(uint16_t j = y1; j < y2; j++){
+    for(int i = x1; i < x2; i++){
+      for(int j = y1; j < y2; j++){
 	if(contains(i,j)) m->setValue(i,j,1);
 	else m->setValue(i,j,0);
       }
     }
-    for(uint16_t i = x1; i < x2; i++){
-      for(uint16_t j = y1; j < y2; j++){
+    for(int i = x1; i < x2; i++){
+      for(int j = y1; j < y2; j++){
 	if(m->getValue(i,j) == 0) continue;
 	int sum = 0;
 	for(int dx = i - 1; dx < i + 2; dx++){
@@ -74,8 +74,8 @@ Mask* Region::getMask(int width, int height, bool outline)
     return m2;
   }
   getEnclosure(x1,x2,y1,y2);
-  for(uint16_t i = x1; i < x2; i++){
-    for(uint16_t j = y1; j < y2; j++){
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
       if(contains(i,j)) m->setValue(i,j,1);
     }
   }

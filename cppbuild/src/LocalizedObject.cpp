@@ -1,9 +1,9 @@
 #include "LocalizedObject.hpp"
 #include <cmath>
 
-uint32_t LocalizedObject::overlapWith(LocalizedObject& obj)
+int LocalizedObject::overlapWith(LocalizedObject& obj)
 {
-  uint32_t overlap = 0;
+  int overlap = 0;
   std::vector<Point> points = obj.getPoints();
   for(std::vector<Point>::iterator it = points.begin(); it != points.end(); it++){
     if(contains(*it)) overlap++;
@@ -11,9 +11,9 @@ uint32_t LocalizedObject::overlapWith(LocalizedObject& obj)
   return overlap;
 }
 
-uint32_t LocalizedObject::findOverlap(std::vector<LocalizedObject*> objs)
+int LocalizedObject::findOverlap(std::vector<LocalizedObject*> objs)
 {
-  uint32_t overlap = 0;
+  int overlap = 0;
   std::vector<Point> points = objs.at(0)->getPoints();
   for(std::vector<Point>::iterator it = points.begin(); it != points.end(); it++){
     bool overlapping = true;

@@ -32,8 +32,8 @@ protected:
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel2;
   Gtk::TreeModel::ColumnRecord m_columns2;
   Gtk::TreeModelColumn<Glib::ustring> m_descriptionColumn;
-  Gtk::TreeModelColumn<uint8_t> m_indexColumn;
-  uint8_t m_scIndex;
+  Gtk::TreeModelColumn<int> m_indexColumn;
+  int m_scIndex;
   Gtk::TreeView m_treeView;
 
   Gtk::Entry m_threadEntry,m_divideEntry,m_postChanEntry;
@@ -51,11 +51,11 @@ protected:
   void on_remove_button_clicked();
 
 public:
-  ConfigurationDialog(ImageAnalysisToolkit* iat, uint8_t nchan, int maxThreads=-1, bool zproject=true);
+  ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, int maxThreads=-1, bool zproject=true);
   virtual ~ConfigurationDialog();
-  uint8_t getMaster();
+  int getMaster();
   ImageAnalysisToolkit::MasterMode getMode();
-  uint8_t getPunctaFindingIterations(){ return (uint8_t)boost::lexical_cast<int>(m_pfiEntry.get_text()); }
+  int getPunctaFindingIterations(){ return boost::lexical_cast<int>(m_pfiEntry.get_text()); }
   double getLocalWindow(){ return boost::lexical_cast<double>(m_lwEntry.get_text()); }
   double getRadius(){ return boost::lexical_cast<double>(m_radiusEntry.get_text()); }
   double getRecluster(){ return boost::lexical_cast<double>(m_reclusterEntry.get_text()); }
@@ -63,11 +63,11 @@ public:
   double getPeak(){ return boost::lexical_cast<double>(m_peakEntry.get_text()); }
   double getFloor(){ return boost::lexical_cast<double>(m_floorEntry.get_text()); }
   std::vector<std::string> getChannelNames();
-  uint8_t getThreads(){ return (uint8_t)boost::lexical_cast<int>(m_threadEntry.get_text()); }
+  int getThreads(){ return boost::lexical_cast<int>(m_threadEntry.get_text()); }
   bool getZProject(){ return m_zprojBox.get_active(); }
   int getDivisor();
   bool getWriteTables(){ return m_writeTablesBox.get_active(); }
-  uint8_t getPostChan(){ return (uint8_t)boost::lexical_cast<int>(m_postChanEntry.get_text()); }
+  int getPostChan(){ return boost::lexical_cast<int>(m_postChanEntry.get_text()); }
 
 };
 

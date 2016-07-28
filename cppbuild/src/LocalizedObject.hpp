@@ -9,10 +9,10 @@ class LocalizedObject
 
 public:
   typedef struct point{
-    uint16_t x;
-    uint16_t y;
+    int x;
+    int y;
     point(){}
-    point(uint16_t i, uint16_t j){
+    point(int i, int j){
       x = i;
       y = j;
     }
@@ -27,8 +27,8 @@ public:
   virtual void computeCenter(){}
   virtual bool contains(Point pt){ return false; }
   virtual std::vector<Point> getPoints(){ return std::vector<Point>(); }
-  uint32_t overlapWith(LocalizedObject& obj);
-  static uint32_t findOverlap(std::vector<LocalizedObject*> objs);
+  int overlapWith(LocalizedObject& obj);
+  static int findOverlap(std::vector<LocalizedObject*> objs);
   double distanceTo(Point pt);
   double distanceTo(LocalizedObject& obj);
   static double findMaxDistance(std::vector<LocalizedObject*> objs);

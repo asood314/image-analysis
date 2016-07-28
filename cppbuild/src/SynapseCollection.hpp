@@ -7,9 +7,9 @@ class SynapseCollection
 {
 
 protected:
-  std::vector<uint8_t> m_channels;
+  std::vector<int> m_channels;
   bool m_requireAllColocalized;
-  std::vector< std::vector<uint8_t> > m_requiredColocalizations;
+  std::vector< std::vector<int> > m_requiredColocalizations;
   uint32_t m_overlapThreshold;
   double m_distanceThreshold;
   bool m_useOverlap;
@@ -17,7 +17,7 @@ protected:
   std::string m_description;
 
 public:
-  SynapseCollection(std::vector<uint8_t> chans);
+  SynapseCollection(std::vector<int> chans);
   virtual ~SynapseCollection();
   SynapseCollection* emptyCopy();
   void addSynapse(Synapse* s){ m_synapses.push_back(s); }
@@ -27,21 +27,21 @@ public:
   std::vector<Synapse*> synapses(){ return m_synapses; }
   void setRequireAll(bool tf){ m_requireAllColocalized = tf; }
   bool allRequired(){ return m_requireAllColocalized; }
-  void addRequiredColocalization(std::vector<uint8_t> chans);
-  void addRequiredColocalizationByIndex(std::vector<uint8_t> indices){ m_requiredColocalizations.push_back(indices); }
-  std::vector<uint8_t> getRequiredColocalization(uint8_t index);
-  std::vector<uint8_t> getRequiredColocalizationByIndex(uint8_t index){ return m_requiredColocalizations.at(index); }
-  uint8_t nRequirements();
+  void addRequiredColocalization(std::vector<int> chans);
+  void addRequiredColocalizationByIndex(std::vector<int> indices){ m_requiredColocalizations.push_back(indices); }
+  std::vector<int> getRequiredColocalization(int index);
+  std::vector<int> getRequiredColocalizationByIndex(int index){ return m_requiredColocalizations.at(index); }
+  int nRequirements();
   void setOverlapThreshold(uint32_t threshold){ m_overlapThreshold = threshold; }
   uint32_t overlapThreshold(){ return m_overlapThreshold; }
   void setDistanceThreshold(double threshold){ m_distanceThreshold = threshold; }
   double distanceThreshold(){ return m_distanceThreshold; }
   void setUseOverlap(bool tf){ m_useOverlap = tf; }
   bool useOverlap(){ return m_useOverlap; }
-  uint8_t nChannels(){ return m_channels.size(); }
-  std::vector<uint8_t> channels(){ return m_channels; }
-  uint8_t getChannel(uint8_t index){ return m_channels.at(index); }
-  uint8_t getChannelIndex(uint8_t chan);
+  int nChannels(){ return m_channels.size(); }
+  std::vector<int> channels(){ return m_channels; }
+  int getChannel(int index){ return m_channels.at(index); }
+  int getChannelIndex(int chan);
   void setDescription(std::string msg){ m_description = msg; }
   std::string description(){ return m_description; }
   bool computeColocalization(Synapse* s);

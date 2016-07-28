@@ -26,13 +26,13 @@ double NiaUtils::convertToDouble(char c0, char c1, char c2, char c3)
   return double(t1000) / 1000.0;
 }
 
-void NiaUtils::writeShortToBuffer(char* buf, uint64_t offset, uint16_t data)
+void NiaUtils::writeShortToBuffer(char* buf, uint64_t offset, int data)
 {
-  buf[offset] = (char)(data & 0x00ff);
-  buf[offset+1] = (char)((data & 0xff00) >> 8);
+  buf[offset] = (char)(data & 0x000000ff);
+  buf[offset+1] = (char)((data & 0x0000ff00) >> 8);
 }
 
-void NiaUtils::writeIntToBuffer(char* buf, uint64_t offset, uint32_t data)
+void NiaUtils::writeIntToBuffer(char* buf, uint64_t offset, int data)
 {
   buf[offset] = (char)(data & 0x000000ff);
   buf[offset+1] = (char)((data & 0x0000ff00) >> 8);
