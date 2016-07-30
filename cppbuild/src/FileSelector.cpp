@@ -13,7 +13,9 @@ FileSelector::FileSelector(FileManager* fm, ImageAnalysisToolkit* iat, std::vect
   m_resolutionLabel("Image Resolution: "),
   m_nameLabel("Name: "),
   m_addButton("Add Image Series"),
-  m_cancelButton("Clear"),
+  m_clearButton("Clear"),
+  m_cancelButton("Cancel"),
+  m_finishButton("Finished"),
   m_nextRow(0)
 {
   m_fileManager = fm;
@@ -82,21 +84,25 @@ FileSelector::FileSelector(FileManager* fm, ImageAnalysisToolkit* iat, std::vect
   m_hbox4.pack_end(m_seriesName, Gtk::PACK_SHRINK);
   m_configBox.pack_start(m_hbox4, Gtk::PACK_SHRINK);
 
-  m_hbox5.pack_start(m_cancelButton, Gtk::PACK_SHRINK);
+  m_hbox5.pack_start(m_clearButton, Gtk::PACK_SHRINK);
   m_hbox5.pack_start(m_addButton, Gtk::PACK_SHRINK);
   m_configBox.pack_start(m_hbox5, Gtk::PACK_SHRINK);
   m_hboxBig.pack_start(m_configBox, Gtk::PACK_SHRINK);
 
+  m_hbox6.pack_end(m_finishButton, Gtk::PACK_SHRINK, 10);
+  m_hbox6.pack_end(m_cancelButton, Gtk::PACK_SHRINK, 10);
+
   m_selectButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_select_button_clicked));
   m_addButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_add_button_clicked));
+  m_clearButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_clear_button_clicked));
   m_cancelButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_cancel_button_clicked));
+  m_finishButton.signal_clicked().connect(sigc::mem_fun(*this, &FileSelector::on_finish_button_clicked));
   
   Gtk::Box* vbox = get_vbox();
   vbox->pack_start(m_selectButton, Gtk::PACK_SHRINK);
   vbox->pack_start(m_hboxBig, Gtk::PACK_SHRINK);
+  vbox->pack_start(m_hbox6, Gtk::PACK_SHRINK);
   vbox->show_all_children();
-  add_button("Cancel", Gtk::RESPONSE_CANCEL);
-  add_button("Finished", Gtk::RESPONSE_OK);
 }
 
 FileSelector::~FileSelector()
@@ -181,8 +187,26 @@ void FileSelector::on_add_button_clicked()
   m_names.clear();
 }
 
-void FileSelector::on_cancel_button_clicked()
+void FileSelector::on_clear_button_clicked()
 {
   m_refTreeModel->clear();
   m_names.clear();
+}
+
+void FileSelector::on_cancel_button_clicked()
+{
+  response(Gtk::RESPONSE_CANCEL);
+}
+
+void FileSelector::on_finish_button_clicked()
+{
+  if(m_fileManager->nInputFiles() == 0){
+    Gtk::MessageDialog messenger(*this,"No image series has been added.");
+    return;
+  }
+  if(m_refTreeModel->children().size() > 0){
+    Gtk::MessageDialog messenger(*this,"Files selected but not added.");
+    return;
+  }
+  response(Gtk::RESPONSE_OK);
 }

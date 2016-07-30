@@ -41,6 +41,7 @@ public:
   void addInputFile(input_file phil){ m_fileList.push_back(phil); }
   void clearInputFiles(){ m_fileList.clear(); }
   void saveInputFiles(std::ofstream& fout, int index);
+  int nInputFiles(){ return m_fileList.size(); }
   std::string getName(int index){ return m_fileList.at(index).sname; }
   int getNW(int index){ return m_fileList.at(index).nw; }
   int getNZ(int index){ return m_fileList.at(index).nz; }
