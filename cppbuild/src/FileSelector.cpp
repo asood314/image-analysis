@@ -177,10 +177,10 @@ void FileSelector::on_add_button_clicked()
   infile.order[3-ordString.find_first_of('Z')] = FileManager::ZSLICE;
   infile.order[3-ordString.find_first_of('P')] = FileManager::POSITION;
   infile.order[3-ordString.find_first_of('T')] = FileManager::TIMEPOINT;
-  sscanf(m_wField.get_text().c_str(),"%hhu",&infile.nw);
-  sscanf(m_zField.get_text().c_str(),"%hhu",&infile.nz);
-  sscanf(m_tField.get_text().c_str(),"%hhu",&infile.nt);
-  sscanf(m_pField.get_text().c_str(),"%hhu",&infile.np);
+  sscanf(m_wField.get_text().c_str(),"%d",&infile.nw);
+  sscanf(m_zField.get_text().c_str(),"%d",&infile.nz);
+  sscanf(m_tField.get_text().c_str(),"%d",&infile.nt);
+  sscanf(m_pField.get_text().c_str(),"%d",&infile.np);
   infile.resolutionXY = boost::lexical_cast<double>(m_resolutionEntry.get_text());
   m_fileManager->addInputFile(infile);
   m_refTreeModel->clear();

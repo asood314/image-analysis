@@ -54,6 +54,7 @@ void BatchService::run()
 	  m_mtx.lock();
 	  m_threadpool.create_thread(boost::bind(&BatchService::analyzeProjection, this, currentS, currentP, currentT));
 	  m_activeThreads++;
+	  boost::this_thread::sleep(boost::posix_time::millisec(1000));
 	  m_mtx.unlock();
 	}
 	else{
@@ -62,6 +63,7 @@ void BatchService::run()
 	    m_mtx.lock();
 	    m_threadpool.create_thread(boost::bind(&BatchService::analyzePlane, this, currentS, currentP, currentT, currentZ));
 	    m_activeThreads++;
+	    boost::this_thread::sleep(boost::posix_time::millisec(1000));
 	    m_mtx.unlock();
 	  }
 	}
@@ -160,6 +162,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 	  m_mtx.lock();
 	  m_threadpool.create_thread(boost::bind(&BatchService::analyzeProjection, this, currentS, currentP, currentT));
 	  m_activeThreads++;
+	  boost::this_thread::sleep(boost::posix_time::millisec(1000));
 	  m_mtx.unlock();
 	}
 	else{
@@ -168,6 +171,7 @@ void BatchService::run2(std::vector<ImRecord*> recs)
 	    m_mtx.lock();
 	    m_threadpool.create_thread(boost::bind(&BatchService::analyzePlane, this, currentS, currentP, currentT, currentZ));
 	    m_activeThreads++;
+	    boost::this_thread::sleep(boost::posix_time::millisec(1000));
 	    m_mtx.unlock();
 	  }
 	}

@@ -1,7 +1,7 @@
 #include "NiaViewer.hpp"
 
 NiaViewer::NiaViewer() :
-  ScrolledWindow(),
+  VBox(),
   m_view_w(0), m_view_z(0), m_view_p(0), m_view_t(0),
   m_red(255), m_green(255), m_blue(255),
   m_grayMin(0), m_grayMax(65535),
@@ -10,7 +10,8 @@ NiaViewer::NiaViewer() :
   m_width(0),m_height(0),m_zoom(1.0),
   m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
   m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
-  m_scaleHideButton("Hide")
+  m_scaleHideButton("Hide"),
+  m_alignment(Gtk::ALIGN_CENTER,Gtk::ALIGN_CENTER,0.0,0.0)
 {
   m_data = NULL;
   m_colors[0].r = 0xff;
@@ -87,14 +88,19 @@ NiaViewer::NiaViewer() :
   m_scaleBox.pack_start(m_vbox8,Gtk::PACK_SHRINK,15);
   m_scaleBox.pack_start(m_vsep2,Gtk::PACK_SHRINK,30);
   m_scaleBox.pack_start(m_scaleHideButton,Gtk::PACK_SHRINK,15);
-  m_mainBox.pack_start(m_scaleBox,Gtk::PACK_SHRINK);
-  
+  //m_mainBox.pack_start(m_scaleBox,Gtk::PACK_SHRINK);
+  pack_start(m_scaleBox,Gtk::PACK_SHRINK);
+  pack_start(m_swin,Gtk::PACK_EXPAND_WIDGET);
+
+  m_swin.add(m_alignment);
+  m_alignment.add(m_eventBox);
   m_eventBox.set_events(Gdk::BUTTON_PRESS_MASK);
   m_eventBox.signal_button_press_event().connect(sigc::mem_fun(*this, &NiaViewer::on_button_press));
   m_eventBox.add(m_displayImage);
-  m_mainBox.pack_start(m_eventBox,Gtk::PACK_EXPAND_WIDGET);
+  //m_eventBox.set_size_request(0,0);
+  //m_mainBox.pack_start(m_eventBox,false,false);
 
-  add(m_mainBox);
+  //add(m_mainBox);
 }
 
 NiaViewer::~NiaViewer()
@@ -208,6 +214,9 @@ void NiaViewer::setData(ImSeries* data)
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
 }
 
 void NiaViewer::zproject()
@@ -358,6 +367,9 @@ void NiaViewer::updateImage()
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
 }
 
 void NiaViewer::displayMask(Mask* m)
@@ -386,6 +398,9 @@ void NiaViewer::displayMask(Mask* m)
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
   delete m;
 }
 
@@ -403,6 +418,9 @@ void NiaViewer::zoomIn()
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
 }
 
 void NiaViewer::zoomOut()
@@ -411,6 +429,9 @@ void NiaViewer::zoomOut()
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
 }
 
 void NiaViewer::unzoom()
@@ -419,6 +440,9 @@ void NiaViewer::unzoom()
   Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
   m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
   m_displayImage.set(pb);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*m_zoom,m_height*m_zoom);
+  m_eventBox.show();
 }
 
 void NiaViewer::toggleMask(Mask* m)
