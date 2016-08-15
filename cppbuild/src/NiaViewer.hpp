@@ -124,6 +124,7 @@ public:
   }
   ImSeries* data(){ return m_data; }
   void saveScreenshot(std::string filename){ m_pixbuf->save(filename,"png"); }
+  void unscale(){ if(m_data) m_data->divide(16); }
 
 };
 

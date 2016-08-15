@@ -26,6 +26,7 @@ void NiaCore::init()
   m_refActionGroup = Gtk::ActionGroup::create();
   m_refActionGroup->add(Gtk::Action::create("fileMenu","File"));
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
+  m_refActionGroup->add(Gtk::Action::create("unscale","Unscale Myka's Images"),sigc::mem_fun(m_viewer, &NiaViewer::unscale));
   m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
   m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
   m_refActionGroup->add(Gtk::Action::create("screenshot","Save Screenshot"),sigc::mem_fun(*this, &NiaCore::on_save_screenshot));
@@ -98,6 +99,7 @@ void NiaCore::init()
     " <menubar name='menuBar'>"
     "  <menu action='fileMenu'>"
     "   <menuitem action='load'/>"
+    "   <menuitem action='unscale'/>"
     "   <menuitem action='loadMMR'/>"
     "   <menuitem action='save'/>"
     "   <menuitem action='screenshot'/>"
@@ -287,6 +289,7 @@ void NiaCore::on_start_batch_jobs()
   if(result != Gtk::RESPONSE_OK) return;
   biat->setMaster(cd.getMaster());
   biat->setMode(cd.getMode());
+  biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   biat->setLocalWindow(cd.getLocalWindow());
   biat->setMinPunctaRadius(cd.getRadius());
@@ -329,6 +332,7 @@ void NiaCore::on_configure_clicked()
   if(result != Gtk::RESPONSE_OK) return;
   m_iat.setMaster(cd.getMaster());
   m_iat.setMode(cd.getMode());
+  m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   m_iat.setLocalWindow(cd.getLocalWindow());
   m_iat.setMinPunctaRadius(cd.getRadius());

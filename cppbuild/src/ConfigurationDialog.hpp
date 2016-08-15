@@ -55,6 +55,7 @@ public:
   virtual ~ConfigurationDialog();
   int getMaster();
   ImageAnalysisToolkit::MasterMode getMode();
+  int getBitDepth(){ return boost::lexical_cast<int>(m_saturationEntry.get_text()); }
   int getPunctaFindingIterations(){ return boost::lexical_cast<int>(m_pfiEntry.get_text()); }
   double getLocalWindow(){ return boost::lexical_cast<double>(m_lwEntry.get_text()); }
   double getRadius(){ return boost::lexical_cast<double>(m_radiusEntry.get_text()); }
