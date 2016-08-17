@@ -89,6 +89,20 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
 	    if(f->getPixel(i,j) > threshold) m2->setValue(i,j,1);
 	  }
 	}
+	bool unpruned = true;
+	while(unpruned){
+	  unpruned = false;
+	  for(int i = 1; i < f->width()-1; i++){
+	    for(int j = 1; j < f->height()-1; j++){
+	      if(m2->getValue(i,j) < 1) continue;
+	      int sum = m2->getValue(i-1,j-1) + m2->getValue(i,j-1) + m2->getValue(i+1,j-1) + m2->getValue(i-1,j) + m2->getValue(i+1,j) + m2->getValue(i-1,j+1) + m2->getValue(i,j+1) + m2->getValue(i+1,j+1);
+	      if(sum < 3){
+		m2->setValue(i,j,0);
+		unpruned = true;
+	      }
+	    }
+	  }
+	}
 	rec->setSignalMask(w,m2);
       }
     }
