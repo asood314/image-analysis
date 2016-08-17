@@ -26,7 +26,7 @@ void NiaCore::init()
   m_refActionGroup = Gtk::ActionGroup::create();
   m_refActionGroup->add(Gtk::Action::create("fileMenu","File"));
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
-  m_refActionGroup->add(Gtk::Action::create("unscale","Unscale Myka's Images"),sigc::mem_fun(m_viewer, &NiaViewer::unscale));
+  m_refActionGroup->add(Gtk::Action::create("unscale","Fix Myka's Images"),sigc::mem_fun(m_viewer, &NiaViewer::unscale));
   m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
   m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
   m_refActionGroup->add(Gtk::Action::create("screenshot","Save Screenshot"),sigc::mem_fun(*this, &NiaCore::on_save_screenshot));
@@ -78,8 +78,13 @@ void NiaCore::init()
   //m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
-  m_refActionGroup->add(Gtk::Action::create("findsig","Find Signal"),sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked));
-  m_refActionGroup->add(Gtk::Action::create("findpunc","Find Puncta"),sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked));
+  m_refActionGroup->add(Gtk::Action::create("findsigMenu","Find Signal"));
+  m_refActionGroup->add(Gtk::Action::create("findsigOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),false));
+  m_refActionGroup->add(Gtk::Action::create("findsigAll","All channels"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),true));
+  m_refActionGroup->add(Gtk::Action::create("findpuncMenu","Find Puncta"));
+  m_refActionGroup->add(Gtk::Action::create("findpuncOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked),false));
+  m_refActionGroup->add(Gtk::Action::create("findpuncAll","All channels"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked),true));
+  m_refActionGroup->add(Gtk::Action::create("findsyn","Find Synapses"),sigc::mem_fun(*this, &NiaCore::on_find_synapses_clicked));
   m_refActionGroup->add(Gtk::Action::create("fullanal","Full Analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
   m_refActionGroup->add(Gtk::Action::create("density","Print Synapse Density Table"),sigc::mem_fun(*this, &NiaCore::on_print_density));
   m_refActionGroup->add(Gtk::Action::create("batch","Start Batch Process"),Gtk::AccelKey("<control>B"),sigc::mem_fun(*this, &NiaCore::on_start_batch_jobs));
@@ -151,8 +156,15 @@ void NiaCore::init()
     "  </menu>"
     "  <menu action='analyzeMenu'>"
     "   <menuitem action='config'/>"
-    "   <menuitem action='findsig'/>"
-    "   <menuitem action='findpunc'/>"
+    "   <menu action='findsigMenu'>"
+    "    <menuitem action='findsigOne'/>"
+    "    <menuitem action='findsigAll'/>"
+    "   </menu>"
+    "   <menu action='findpuncMenu'>"
+    "    <menuitem action='findpuncOne'/>"
+    "    <menuitem action='findpuncAll'/>"
+    "   </menu>"
+    "   <menuitem action='findsyn'/>"
     "   <menuitem action='fullanal'/>"
     "   <menuitem action='density'/>"
     "   <menuitem action='batch'/>"
@@ -344,7 +356,7 @@ void NiaCore::on_configure_clicked()
   m_iat.setPostChan(cd.getPostChan());
 }
 
-void NiaCore::on_find_signal_clicked()
+void NiaCore::on_find_signal_clicked(bool doAll)
 {
   ImFrame* frame = m_viewer.currentFrame();
   if(!frame) return;
@@ -356,10 +368,16 @@ void NiaCore::on_find_signal_clicked()
     for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
-  m_iat.findSignal(frame,rec,m_viewer.viewW());
+  if(doAll){
+    ImStack* stack = m_viewer.currentStack();
+    m_iat.findSignal(stack,rec,m_viewer.viewZ());
+    std::cout << nia::nout.buffer() << std::endl;
+    nia::nout.clear();
+  }
+  else m_iat.findSignal(frame,rec,m_viewer.viewW());
 }
 
-void NiaCore::on_find_puncta_clicked()
+void NiaCore::on_find_puncta_clicked(bool doAll)
 {
   ImFrame* frame = m_viewer.currentFrame();
   if(!frame) return;
@@ -371,7 +389,33 @@ void NiaCore::on_find_puncta_clicked()
     for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
-  m_iat.findPuncta(frame,rec,m_viewer.viewW());
+  if(doAll){
+    ImStack* stack = m_viewer.currentStack();
+    for(int w = 0; w < stack->nwaves(); w++){
+      rec->clearPuncta(w);
+      m_iat.findPuncta(stack->frame(w,m_viewer.viewZ()),rec,w);
+    }
+  }
+  else{
+    rec->clearPuncta(m_viewer.viewW());
+    m_iat.findPuncta(frame,rec,m_viewer.viewW());
+  }
+  std::cout << nia::nout.buffer() << std::endl;
+  nia::nout.clear();
+}
+
+void NiaCore::on_find_synapses_clicked()
+{
+  ImRecord* rec = m_viewer.currentRecord();
+  if(!rec){
+    return;
+  }
+  rec->clearSynapseCollections();
+  std::vector<SynapseCollection*> syncol = m_iat.synapseDefinitions();
+  for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) rec->addSynapseCollection((*it)->emptyCopy());
+  m_iat.findSynapses(rec);
+  std::cout << nia::nout.buffer() << std::endl;
+  nia::nout.clear();
 }
 
 void NiaCore::on_full_analysis_clicked()
@@ -386,7 +430,9 @@ void NiaCore::on_full_analysis_clicked()
     for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
     m_viewer.setCurrentRecord(rec);
   }
-  m_iat.standardAnalysis(stack,rec,-1);
+  m_iat.standardAnalysis(stack,rec,m_viewer.viewZ());
+  std::cout << nia::nout.buffer() << std::endl;
+  nia::nout.clear();
 }
 
 void NiaCore::on_load_regions()

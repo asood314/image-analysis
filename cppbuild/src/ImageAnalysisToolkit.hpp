@@ -44,6 +44,7 @@ public:
   void makeSeparateConfigs(int nchan);
   void makeSingleConfig();
   void standardAnalysis(ImStack* stack, ImRecord* rec, int arg_zplane=-1);
+  void findSignal(ImStack* analysisStack, ImRecord* rec, int zplane);
   void findSignal(ImFrame* frame, ImRecord* rec, int chan);
   int findThreshold(ImFrame* frame);
   void findPuncta(ImFrame* frame, ImRecord* rec, int chan);

@@ -63,6 +63,7 @@ public:
   std::vector<Cluster*> puncta(int chan){ return m_puncta.at(chan); }
   void addSynapseCollection(SynapseCollection* sc){ m_synapseCollections.push_back(sc); }
   void removeSynapseCollection(int index);
+  void clearSynapseCollections();
   SynapseCollection* getSynapseCollection(int index){ return m_synapseCollections.at(index); }
   int nSynapseCollections(){ return m_synapseCollections.size(); }
   std::vector<SynapseCollection*> synapseCollections(){ return m_synapseCollections; }

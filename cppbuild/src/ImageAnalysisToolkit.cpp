@@ -58,6 +58,18 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
     zplane = 0;
   }
 
+  findSignal(analysisStack,rec,zplane);
+  
+  for(int w = 0; w < analysisStack->nwaves(); w++){
+    findPuncta(analysisStack->frame(w,zplane),rec,w);
+  }
+
+  findSynapses(rec);
+  
+}
+
+void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int zplane)
+{
   if(m_master == 255){
     for(int w = 0; w < analysisStack->nwaves(); w++) findSignal(analysisStack->frame(w,zplane),rec,w);
   }
@@ -90,13 +102,6 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
     }
   }
   nia::nout << "Done signal finding" << "\n";
-  
-  for(int w = 0; w < analysisStack->nwaves(); w++){
-    findPuncta(analysisStack->frame(w,zplane),rec,w);
-  }
-
-  findSynapses(rec);
-  
 }
 
 void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)

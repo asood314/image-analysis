@@ -46,6 +46,12 @@ void ImRecord::removeSynapseCollection(int index)
   m_synapseCollections.erase(m_synapseCollections.begin()+index);
 }
 
+void ImRecord::clearSynapseCollections()
+{
+  for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++) delete *it;
+  m_synapseCollections.clear();
+}
+
 void ImRecord::clearRegions()
 {
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){
@@ -604,15 +610,15 @@ void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
     fout << "" << m_thresholds.at(chan) << ",-\n";
   }
   fout << "\"Dendrite area (um^2)\",";
-  fout << "-,";
-  for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
-  fout << "-,-\n";
   double sum = 0;
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
     fout << "" << (*rit)->dendriteArea << ",";
     sum += (*rit)->dendriteArea;
   }
   fout << "" << (sum/nROI) << ",-\n";
+  fout << "-,";
+  for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+  fout << "-,-\n";
   int icol = 0;
   for(std::vector<SynapseCollection*>::iterator scit = m_synapseCollections.begin(); scit != m_synapseCollections.end(); scit++){
     fout << "\"Type " << icol << " synapses\",";

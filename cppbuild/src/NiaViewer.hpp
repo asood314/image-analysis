@@ -84,6 +84,7 @@ public:
     return 0;
   }
   int viewW(){ return m_view_w; }
+  int viewZ(){ return m_view_z; }
   ImFrame* currentFrame(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
     return NULL;

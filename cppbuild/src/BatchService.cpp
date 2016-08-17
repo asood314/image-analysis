@@ -233,6 +233,7 @@ void BatchService::analyzeProjection(int seriesID, int p, int t)
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt() + t) = record;
   }
   for(int i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
+  record->clearSynapseCollections();
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,-1);
@@ -280,6 +281,7 @@ void BatchService::analyzePlane(int seriesID, int p, int t, int z)
     m_records.at(seriesID).at(p*m_data.at(seriesID)->nt()*stack->nz() + t*stack->nz() + z) = record;
   }
   for(int i = 0; i < stack->nwaves(); i++) record->setChannelName(i,m_iat->getChannelName(i));
+  record->clearSynapseCollections();
   std::vector<SynapseCollection*> syncol = m_iat->synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) record->addSynapseCollection((*it)->emptyCopy());
   m_iat->standardAnalysis(stack,record,z);
