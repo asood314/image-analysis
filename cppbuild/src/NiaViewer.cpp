@@ -230,7 +230,7 @@ void NiaViewer::zproject()
   if(m_records.size() > np*nt){
     unsigned index = 0;
     for(int p = 0; p < np; p++){
-      for(int t = 0; p < nt; t++){
+      for(int t = 0; t < nt; t++){
 	index++;
 	for(int z = 1; z < nz; z++){
 	  if(m_records[index]) delete m_records[index];
