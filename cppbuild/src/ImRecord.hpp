@@ -52,6 +52,7 @@ public:
   Mask* getUtilityMask(int chan){ return m_utilityMasks.at(chan); }
   void addRegion(Region* r){ m_regions.push_back(r); }
   Region* getRegion(int index){ return m_regions.at(index); }
+  void removeRegion(int index);
   int nRegions(){ return m_regions.size(); }
   std::vector<Region*> regions(){ return m_regions; }
   void clearRegions();

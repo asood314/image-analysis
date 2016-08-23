@@ -52,6 +52,12 @@ void ImRecord::clearSynapseCollections()
   m_synapseCollections.clear();
 }
 
+void ImRecord::removeRegion(int index)
+{
+  if(m_regions.at(index)) delete m_regions.at(index);
+  m_regions.erase(m_regions.begin()+index);
+}
+
 void ImRecord::clearRegions()
 {
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){

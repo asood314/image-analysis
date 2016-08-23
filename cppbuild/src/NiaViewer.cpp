@@ -11,7 +11,8 @@ NiaViewer::NiaViewer() :
   m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
   m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
   m_scaleHideButton("Hide"),
-  m_alignment(Gtk::ALIGN_CENTER,Gtk::ALIGN_CENTER,0.0,0.0)
+  m_alignment(Gtk::ALIGN_CENTER,Gtk::ALIGN_CENTER,0.0,0.0),
+  m_prevButton(0)
 {
   m_data = NULL;
   m_colors[0].r = 0xff;
@@ -175,7 +176,18 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	}
 	else m_prevClicks.push_back(thisClick);
       }
-      else if(evt->button == 3) m_prevClicks.clear();
+      else if(evt->button == 3){
+	m_prevClicks.clear();
+	if(m_prevButton == 3){
+	  ImRecord* rec = currentRecord();
+	  if(rec){
+	    int lastReg = rec->nRegions() - 1;
+	    removeMask(rec->getRegion(lastReg)->getMask(m_width,m_height,true));
+	    if(lastReg >= 0) rec->removeRegion(lastReg);
+	  }
+	}
+      }
+      m_prevButton = evt->button;
       return true;
     }
   }
@@ -458,6 +470,19 @@ void NiaViewer::toggleMask(Mask* m)
   }
   m_masks.push_back(m);
   updateImage();
+}
+
+void NiaViewer::removeMask(Mask* m)
+{
+  if(!m) return;
+  for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
+    if(m->equals(**it)){
+      m_masks.erase(it);
+      delete m;
+      updateImage();
+      return;
+    }
+  }
 }
 
 void NiaViewer::toggleSignalMask()

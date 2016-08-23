@@ -42,6 +42,7 @@ protected:
   Color m_colors[m_ncolors];
   bool m_pixelSelector,m_punctaSelector,m_synapseSelector,m_regionSelector;
   std::vector<LocalizedObject::Point> m_prevClicks;
+  int m_prevButton;
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImStack* stack);
   void autoscaleGray();
@@ -70,6 +71,7 @@ public:
   void zoomOut();
   void unzoom();
   void toggleMask(Mask* m);
+  void removeMask(Mask* m);
   void toggleSignalMask();
   void togglePunctaMask();
   void toggleSynapseMask();
