@@ -471,11 +471,11 @@ double ImFrame::std(int x1, int x2, int y1, int y2, Mask* m)
   else return mn;
 }
 
-void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, double& med, double& stdv)
+void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, double& med, double& stdv)
 {
-  int* values = new int[4096];
+  int* values = new int[nVals];
   int target = 0;
-  for(int i = 0; i < 4096; i++) values[i] = 0;
+  for(int i = 0; i < nVals; i++) values[i] = 0;
   double mn = 0.0;
   med = 0.0;
   stdv = 0.0;
@@ -489,7 +489,7 @@ void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, double& med,
     }
   }
   mn = mn / target;
-  for(int i = 0; i < 4096; i++) stdv += values[i]*(i - mn)*(i - mn);
+  for(int i = 0; i < nVals; i++) stdv += values[i]*(i - mn)*(i - mn);
   if(target > 1) stdv = sqrt(stdv/(target-1));
   else stdv = mn;
   int sum = 0;

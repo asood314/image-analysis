@@ -477,6 +477,7 @@ void NiaViewer::removeMask(Mask* m)
   if(!m) return;
   for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
     if(m->equals(**it)){
+      delete *it;
       m_masks.erase(it);
       delete m;
       updateImage();

@@ -504,7 +504,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, int chan)
       int Imax = frame->getPixel(lm.x,lm.y);
       double localMedian;
       double localStd;
-      frame->getMedianStd(ul.x,lr.x,ul.y,lr.y,used,localMedian,localStd);
+      frame->getMedianStd(ul.x,lr.x,ul.y,lr.y,used,m_saturationThreshold+2,localMedian,localStd);
       double minThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold.at(configChan)*localStd);
       double localThreshold = localMedian + m_peakThreshold.at(configChan)*localStd;
       double minIntensity = punctaAreaThreshold*(localMedian + m_floorThreshold.at(configChan)*localStd);
@@ -712,8 +712,9 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, in
 	nSignal = m->sum(x1,x2,y1,y2);
       }
       int Imax = m_saturationThreshold;
-      double localMedian = frame->median(x1,x2,y1,y2,used);
-      double localStd = frame->std(x1,x2,y1,y2,used);
+      double localMedian;// = frame->median(x1,x2,y1,y2,used);
+      double localStd;// = frame->std(x1,x2,y1,y2,used);
+      frame->getMedianStd(x1,x2,y1,y2,used,m_saturationThreshold+2,localMedian,localStd);
       double localThreshold = std::min(localMedian + (Imax - localMedian)/2, localMedian + m_floorThreshold.at(configChan)*localStd);
       while(borderUnsatX.size() > 0){
 	int upperLimit = Imax;
@@ -1002,12 +1003,18 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
     int nchans = sc->nChannels();
     int* np = new int[nchans];
     int* pi = new int[nchans];
-    int maxIndex = 1;
+    int nCombos = 1;
     for(int i = 0; i < nchans; i++){
       np[i] = rec->nPuncta(chan.at(i));
+      nCombos *= np[i];
       pi[i] = 0;
     }
-    for(int i = 1; i < nchans; i++) maxIndex *= np[i];
+    if(nCombos == 0){
+      delete[] np;
+      delete[] pi;
+      continue;
+      nia::nout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << "\n";
+    }
     for(int j = 0; j < np[0]; j++){
       Synapse* best = NULL;
       double bestScore = -999;

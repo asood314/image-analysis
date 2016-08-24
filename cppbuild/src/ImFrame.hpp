@@ -44,7 +44,7 @@ public:
   double mode(int x1, int x2, int y1, int y2, Mask* m);
   double std(int x1, int x2, int y1, int y2);
   double std(int x1, int x2, int y1, int y2, Mask* m);
-  void getMedianStd(int x1, int x2, int y1, int y2, Mask* m, double& med, double& std);
+  void getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, double& med, double& std);
 
   double mean(){ return mean(0,m_width,0,m_height); }
   double mean(Mask* m){ return mean(0,m_width,0,m_height,m); }
