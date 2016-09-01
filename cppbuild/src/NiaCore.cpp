@@ -78,6 +78,7 @@ void NiaCore::init()
   //m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
+  m_refActionGroup->add(Gtk::Action::create("findout","Find Outliers"),sigc::mem_fun(*this, &NiaCore::on_find_outliers_clicked));
   m_refActionGroup->add(Gtk::Action::create("findsigMenu","Find Signal"));
   m_refActionGroup->add(Gtk::Action::create("findsigOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),false));
   m_refActionGroup->add(Gtk::Action::create("findsigAll","All channels"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),true));
@@ -88,6 +89,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("fullanal","Full Analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
   m_refActionGroup->add(Gtk::Action::create("density","Print Synapse Density Table"),sigc::mem_fun(*this, &NiaCore::on_print_density));
   m_refActionGroup->add(Gtk::Action::create("batch","Start Batch Process"),Gtk::AccelKey("<control>B"),sigc::mem_fun(*this, &NiaCore::on_start_batch_jobs));
+  m_refActionGroup->add(Gtk::Action::create("bpd","Batch Print Tables"),sigc::mem_fun(*this, &NiaCore::on_batch_print_density));
   m_refActionGroup->add(Gtk::Action::create("toolMenu","Tools"));
   m_refActionGroup->add(Gtk::Action::create("pixSel","Pixel Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPixelSelector));
   m_refActionGroup->add(Gtk::Action::create("punSel","Puncta Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPunctaSelector));
@@ -156,6 +158,7 @@ void NiaCore::init()
     "  </menu>"
     "  <menu action='analyzeMenu'>"
     "   <menuitem action='config'/>"
+    "   <menuitem action='findout'/>"
     "   <menu action='findsigMenu'>"
     "    <menuitem action='findsigOne'/>"
     "    <menuitem action='findsigAll'/>"
@@ -168,6 +171,7 @@ void NiaCore::init()
     "   <menuitem action='fullanal'/>"
     "   <menuitem action='density'/>"
     "   <menuitem action='batch'/>"
+    "   <menuitem action='bpd'/>"
     "  </menu>"
     "  <menu action='toolMenu'>"
     "   <menuitem action='pixSel'/>"
@@ -356,6 +360,15 @@ void NiaCore::on_configure_clicked()
   m_iat.setPostChan(cd.getPostChan());
 }
 
+void NiaCore::on_find_outliers_clicked()
+{
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
+  Mask* m = m_iat.findOutliers(frame);
+  m_viewer.toggleMask(m->inverse());
+  delete m;
+}
+
 void NiaCore::on_find_signal_clicked(bool doAll)
 {
   ImFrame* frame = m_viewer.currentFrame();
@@ -478,5 +491,35 @@ void NiaCore::on_print_density()
     std::string filename = fcd.get_filename();
     if(filename.find(".csv") == std::string::npos) filename.append(".csv");
     rec->printSynapseDensityTable(m_iat.postChan(),filename);
+  }
+}
+
+void NiaCore::on_batch_print_density()
+{
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Save",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("CSV files");
+  filt2.add_pattern("*.csv");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  if(result == Gtk::RESPONSE_OK){
+    std::string basename = fcd.get_filename();
+    int np = m_viewer.getNP();
+    int nt = m_viewer.getNT();
+    int nz = m_viewer.getNZ();
+    for(int ip = 0; ip < np; ip++){
+      for(int it = 0; it < nt; it++){
+	for(int iz = 0; iz < nz; iz++){
+	  ImRecord* rec = m_viewer.getRecord(ip,it,iz);
+	  if(!rec) continue;
+	  std::ostringstream filename;
+	  filename << basename << "_" << m_fileManager.sname() << "_xy" << ip << "_t" << it << "_z" << iz << ".csv";
+	  rec->printSynapseDensityTable(m_iat.postChan(),filename.str());
+	}
+      }
+    }
   }
 }

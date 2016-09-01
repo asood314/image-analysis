@@ -536,6 +536,13 @@ void NiaViewer::setRecords(std::vector<ImRecord*> recs)
   for(std::vector<ImRecord*>::iterator it = recs.begin(); it != recs.end(); it++) m_records.push_back(*it);
 }
 
+ImRecord* NiaViewer::getRecord(int pos, int t, int z)
+{
+  if(!m_data) return NULL;
+  int nz = m_data->fourLocation(pos,t)->nz();
+  return m_records.at(pos*m_data->nt()*nz + t*nz + z);
+}
+
 ImRecord* NiaViewer::currentRecord()
 {
   if(!m_data) return NULL;

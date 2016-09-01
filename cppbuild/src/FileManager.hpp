@@ -47,6 +47,7 @@ public:
   int getNZ(int index){ return m_fileList.at(index).nz; }
   int getNP(int index){ return m_fileList.at(index).np; }
   int getNT(int index){ return m_fileList.at(index).nt; }
+  std::string sname(int index = 0){ return m_fileList.at(index).sname; }
   Dimension* getOrder(int index){ return m_fileList.at(index).order; }
 
 };

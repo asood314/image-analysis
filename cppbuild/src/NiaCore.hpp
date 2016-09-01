@@ -31,12 +31,14 @@ protected:
   void on_save_screenshot();
   void on_start_batch_jobs();
   void on_configure_clicked();
+  void on_find_outliers_clicked();
   void on_find_signal_clicked(bool doAll);
   void on_find_puncta_clicked(bool doAll);
   void on_find_synapses_clicked();
   void on_full_analysis_clicked();
   void on_load_regions();
   void on_print_density();
+  void on_batch_print_density();
   void on_quit(){ hide(); }
   
 public:

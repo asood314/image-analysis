@@ -79,14 +79,29 @@ public:
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
   void setCurrentRecord(ImRecord* rec);
+  ImRecord* getRecord(int pos, int t, int z);
   void shareRegions();
   std::vector<ImRecord*> records(){ return m_records; }
   int getNW(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nwaves();
     return 0;
   }
+  int getNZ(){
+    if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nz();
+    return 0;
+  }
+  int getNT(){
+    if(m_data) return m_data->nt();
+    return 0;
+  }
+  int getNP(){
+    if(m_data) return m_data->npos();
+    return 0;
+  }
   int viewW(){ return m_view_w; }
   int viewZ(){ return m_view_z; }
+  int viewT(){ return m_view_t; }
+  int viewP(){ return m_view_p; }
   ImFrame* currentFrame(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
     return NULL;

@@ -242,6 +242,7 @@ Mask* ImRecord::segment(int chan)
 	    for(int j2 = top; j2 < bottom; j2++){
 	      if(nodeMask->getValue(i2,j2) == 2){
 		nodeMask->setValue(i2,j2,3);
+		segmentMask->setValue(i2,j2,segmentID);
 		borderX.push_back(i2);
 		borderY.push_back(j2);
 		std::vector<LocalizedObject::Point> tmp = trail->at(i2).at(j2);
@@ -269,7 +270,7 @@ Mask* ImRecord::segment(int chan)
 	newSteps = steps.size();
       }
       segmentID++;
-      segmentID = segmentID % 256;
+      //segmentID = segmentID % 256;
     }
   }
   
@@ -284,7 +285,7 @@ void ImRecord::hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask
 {
   nodeMask->setValue(pt.x,pt.y,1);
   int max = contourMask->getValue(pt.x,pt.y);
-  if(max > base) max++;
+  //if(max > base) max++;
   std::vector<LocalizedObject::Point> steps;
   int di[8] = {-1,-1,-1,0,0,1,1,1};
   int dj[8] = {-1,0,1,-1,1,-1,0,1};
@@ -301,14 +302,16 @@ void ImRecord::hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask
     }
     else if(val == max) steps.push_back(LocalizedObject::Point(i2,j2));
   }
-  if(steps.size() == 0){
-    nodeMask->setValue(pt.x,pt.y,2);
-    return;
-  }
+  int stepsTaken = 0;
   for(std::vector<LocalizedObject::Point>::iterator it = steps.begin(); it != steps.end(); it++){
     trail->at(it->x).at(it->y).push_back(LocalizedObject::Point(pt.x,pt.y));
     if(nodeMask->getValue(it->x,it->y) > 0) continue;
     hike(*it,base,contourMask,nodeMask,trail);
+    stepsTaken++;
+  }
+  if(stepsTaken == 0){
+    nodeMask->setValue(pt.x,pt.y,2);
+    return;
   }
 }
 

@@ -68,6 +68,32 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
   
 }
 
+Mask* ImageAnalysisToolkit::findOutliers(ImFrame* frame)
+{
+  double median = frame->median();
+  double std = frame->std();
+  int threshold = (int)(median + 10*std);
+  Mask* m = new Mask(frame->width(),frame->height(),1);
+  for(int i = 0; i < frame->width(); i++){
+    for(int j = 0; j < frame->height(); j++){
+      if(frame->getPixel(i,j) > threshold) m->setValue(i,j,0);
+    }
+  }
+  double std2 = frame->std(m);
+  while(std2/std < 0.9){
+    std = std2;
+    threshold = (int)(median + 10*std);
+    for(int i = 0; i < frame->width(); i++){
+      for(int j = 0; j < frame->height(); j++){
+	if(frame->getPixel(i,j) > threshold) m->setValue(i,j,0);
+      }
+    }
+    std2 = frame->std(m);
+  }
+  std::cout << frame->median(m) << std::endl << std2 << std::endl;
+  return m;
+}
+
 void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int zplane)
 {
   if(m_master == 255){
@@ -216,10 +242,11 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
 
 int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 {
+  //Mask* outMask = findOutliers(frame);
   Mask* m = new Mask(frame->width(),frame->height());
-  double lowerLimit = frame->mode();
+  double lowerLimit = frame->mode();//outMask);
   double mode = lowerLimit;
-  double best = frame->mean();
+  double best = frame->mean();//outMask);
   double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
   int nsteps = 10;
   double step = (upperLimit - lowerLimit) / nsteps;
@@ -227,6 +254,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     step = 1.0;
     nsteps = (int)(upperLimit - lowerLimit);
   }
+  std::cout << lowerLimit << ", " << upperLimit << ", " << nsteps << ", " << step << std::endl;
   double fom = 0;
   int maxClusters = 0;
   bool finished = false;
@@ -234,6 +262,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     finished = true;
     for(int istep = 0; istep < nsteps+1; istep++){
       double globalThreshold = lowerLimit + istep*step;
+      std::cout << globalThreshold << std::endl;
       for(int i = 0; i < frame->width(); i++){
 	for(int j = 0; j < frame->height(); j++){
 	  int value = frame->getPixel(i,j);
@@ -263,6 +292,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
       std::vector<int> borderX;
       std::vector<int> borderY;
       Mask* subMask = m->getCopy();
+      //subMask->multiply(*outMask);
       for(int i = 0; i < frame->width(); i++){
 	for(int j = 0; j < frame->height(); j++){
 	  if(subMask->getValue(i,j) != 1) continue;
@@ -358,7 +388,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	finished = false;
       }
       delete subMask;
-      //nia::nout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << "\n";
+      std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
     }
     if(step < 1.01) break;
     if(best < 0) break;
