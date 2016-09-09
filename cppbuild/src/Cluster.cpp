@@ -152,3 +152,31 @@ Mask* Cluster::getMask(int width, int height, bool outline)
   for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++) m->setValue(kt->x,kt->y,1);
   return m;
 }
+
+void Cluster::write(char* buf, std::ofstream& fout)
+{
+  NiaUtils::writeShortToBuffer(buf,0,size());
+  NiaUtils::writeShortToBuffer(buf,2,peak());
+  NiaUtils::writeIntToBuffer(buf,4,integratedIntensity());
+  long offset = 8;
+  for(std::vector<LocalizedObject::Point>::iterator jt = m_points.begin(); jt != m_points.end(); jt++){
+    NiaUtils::writeShortToBuffer(buf,offset,jt->x);
+    NiaUtils::writeShortToBuffer(buf,offset+2,jt->y);
+    offset += 4;
+  }
+  fout.write(buf,offset);
+}
+
+void Cluster::read(char* buf, std::ifstream& fin)
+{
+  fin.read(buf,8);
+  int npix = NiaUtils::convertToShort(buf[0],buf[1]);
+  setPeakIntensity(NiaUtils::convertToShort(buf[2],buf[3]));
+  setIntegratedIntensity(NiaUtils::convertToInt(buf[4],buf[5],buf[6],buf[7]));
+  fin.read(buf,4*npix);
+  long offset = 0;
+  for(int j = 0; j < npix; j++){
+    addPoint(NiaUtils::convertToShort(buf[offset],buf[offset+1]),NiaUtils::convertToShort(buf[offset+2],buf[offset+3]));
+    offset += 4;
+  }
+}

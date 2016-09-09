@@ -43,6 +43,7 @@ public:
   virtual ~ImageAnalysisToolkit();
   void makeSeparateConfigs(int nchan);
   void makeSingleConfig();
+  int nConfigs(){ return m_peakThreshold.size(); }
   void standardAnalysis(ImStack* stack, ImRecord* rec, int arg_zplane=-1);
   Mask* findOutliers(ImFrame* frame);
   void findSignal(ImStack* analysisStack, ImRecord* rec, int zplane);
@@ -85,20 +86,20 @@ public:
   int saturationThreshold(){ return m_saturationThreshold; }
   std::string getChannelName(int chan){ return m_channelNames.at(chan); }
   std::vector<std::string> getChannelNames(){ return m_channelNames; }
-  double localWindow(){ return m_localWindow.at(0); }
-  double localWindowIncrement(){ return m_localWindowIncrement.at(0); }
-  double minPunctaRadius(){ return m_minPunctaRadius.at(0); }
-  double reclusterThreshold(){ return m_reclusterThreshold.at(0); }
-  double noiseRemovalThreshold(){ return m_noiseRemovalThreshold.at(0); }
-  double peakThreshold(){ return m_peakThreshold.at(0); }
-  double floorThreshold(){ return m_floorThreshold.at(0); }
-  double getLocalWindow(int chan){ return m_localWindow.at(chan); }
-  double getLocalWindowIncrement(int chan){ return m_localWindowIncrement.at(chan); }
-  double getMinPunctaRadius(int chan){ return m_minPunctaRadius.at(chan); }
-  double getReclusterThreshold(int chan){ return m_reclusterThreshold.at(chan); }
-  double getNoiseRemovalThreshold(int chan){ return m_noiseRemovalThreshold.at(chan); }
-  double getPeakThreshold(int chan){ return m_peakThreshold.at(chan); }
-  double getFloorThreshold(int chan){ return m_floorThreshold.at(chan); }
+  //double localWindow(){ return m_localWindow.at(0); }
+  //double localWindowIncrement(){ return m_localWindowIncrement.at(0); }
+  //double minPunctaRadius(){ return m_minPunctaRadius.at(0); }
+  //double reclusterThreshold(){ return m_reclusterThreshold.at(0); }
+  //double noiseRemovalThreshold(){ return m_noiseRemovalThreshold.at(0); }
+  //double peakThreshold(){ return m_peakThreshold.at(0); }
+  //double floorThreshold(){ return m_floorThreshold.at(0); }
+  double localWindow(int chan = 0){ return m_localWindow.at(chan); }
+  double localWindowIncrement(int chan = 0){ return m_localWindowIncrement.at(chan); }
+  double minPunctaRadius(int chan = 0){ return m_minPunctaRadius.at(chan); }
+  double reclusterThreshold(int chan = 0){ return m_reclusterThreshold.at(chan); }
+  double noiseRemovalThreshold(int chan = 0){ return m_noiseRemovalThreshold.at(chan); }
+  double peakThreshold(int chan = 0){ return m_peakThreshold.at(chan); }
+  double floorThreshold(int chan = 0){ return m_floorThreshold.at(chan); }
 
   void addSynapseDefinition(SynapseCollection* sc){ m_synapseDefinitions.push_back(sc); }
   std::vector<SynapseCollection*> synapseDefinitions(){ return m_synapseDefinitions; };

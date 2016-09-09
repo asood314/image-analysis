@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 
 void NiaCore::init()
 {
-  set_title("Neuron Image Analysis");
+  set_title("Neuron Image Analysis v0.1");
   set_default_size(1200,1000);
   add(m_vbox);
 
@@ -95,6 +95,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("punSel","Puncta Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPunctaSelector));
   m_refActionGroup->add(Gtk::Action::create("synSel","Synapse Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSynapseSelector));
   m_refActionGroup->add(Gtk::Action::create("regSel","Region Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setRegionSelector));
+  m_refActionGroup->add(Gtk::Action::create("axSel","Axis Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setAxisSelector));
   m_refActionGroup->add(Gtk::Action::create("regShare","Share Regions"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegions));
 
   m_refUIManager = Gtk::UIManager::create();
@@ -178,6 +179,7 @@ void NiaCore::init()
     "   <menuitem action='punSel'/>"
     "   <menuitem action='synSel'/>"
     "   <menuitem action='regSel'/>"
+    "   <menuitem action='axSel'/>"
     "   <menuitem action='regShare'/>"
     "  </menu>"
     " </menubar>"
@@ -238,6 +240,9 @@ void NiaCore::on_save()
       filename.append(m_fileManager.getName(0));
       filename.append(".nia");
     }
+    std::vector<ImRecord*> recs = m_viewer.records();
+    FileConverter::write(&m_fileManager,&m_iat,&recs,filename,0,nia::niaVersion);
+    /*
     std::ofstream fout(filename.c_str(),std::ofstream::binary);
     m_fileManager.saveInputFiles(fout,0);
     m_iat.write(fout);
@@ -250,6 +255,7 @@ void NiaCore::on_save()
       (*rit)->write(fout);
     }
     fout.close();
+    */
   }
 }
 
@@ -307,12 +313,28 @@ void NiaCore::on_start_batch_jobs()
   biat->setMode(cd.getMode());
   biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
-  biat->setLocalWindow(cd.getLocalWindow());
-  biat->setMinPunctaRadius(cd.getRadius());
-  biat->setReclusterThreshold(cd.getRecluster());
-  biat->setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
-  biat->setPeakThreshold(cd.getPeak());
-  biat->setFloorThreshold(cd.getFloor());
+  if(cd.doSeparateConfigs()){
+    if(biat->nConfigs() < cd.nchannels()){
+      biat->makeSingleConfig();
+      biat->makeSeparateConfigs(cd.nchannels());
+    }
+    for(int i = 0; i < cd.nchannels(); i++){
+      biat->setLocalWindow(i,cd.getLocalWindow(i));
+      biat->setMinPunctaRadius(i,cd.getRadius(i));
+      biat->setReclusterThreshold(i,cd.getRecluster(i));
+      biat->setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
+      biat->setPeakThreshold(i,cd.getPeak(i));
+      biat->setFloorThreshold(i,cd.getFloor(i));
+    }
+  }
+  else{
+    biat->setLocalWindow(cd.getLocalWindow());
+    biat->setMinPunctaRadius(cd.getRadius());
+    biat->setReclusterThreshold(cd.getRecluster());
+    biat->setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
+    biat->setPeakThreshold(cd.getPeak());
+    biat->setFloorThreshold(cd.getFloor());
+  }
   biat->setChannelNames(cd.getChannelNames());
   biat->setPostChan(cd.getPostChan());
   m_batchService.setMaxThreads(cd.getThreads());
@@ -350,12 +372,28 @@ void NiaCore::on_configure_clicked()
   m_iat.setMode(cd.getMode());
   m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
-  m_iat.setLocalWindow(cd.getLocalWindow());
-  m_iat.setMinPunctaRadius(cd.getRadius());
-  m_iat.setReclusterThreshold(cd.getRecluster());
-  m_iat.setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
-  m_iat.setPeakThreshold(cd.getPeak());
-  m_iat.setFloorThreshold(cd.getFloor());
+  if(cd.doSeparateConfigs()){
+    if(m_iat.nConfigs() < nchan){
+      m_iat.makeSingleConfig();
+      m_iat.makeSeparateConfigs(nchan);
+    }
+    for(int i = 0; i < nchan; i++){
+      m_iat.setLocalWindow(i,cd.getLocalWindow(i));
+      m_iat.setMinPunctaRadius(i,cd.getRadius(i));
+      m_iat.setReclusterThreshold(i,cd.getRecluster(i));
+      m_iat.setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
+      m_iat.setPeakThreshold(i,cd.getPeak(i));
+      m_iat.setFloorThreshold(i,cd.getFloor(i));
+    }
+  }
+  else{
+    m_iat.setLocalWindow(cd.getLocalWindow());
+    m_iat.setMinPunctaRadius(cd.getRadius());
+    m_iat.setReclusterThreshold(cd.getRecluster());
+    m_iat.setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
+    m_iat.setPeakThreshold(cd.getPeak());
+    m_iat.setFloorThreshold(cd.getFloor());
+  }
   m_iat.setChannelNames(cd.getChannelNames());
   m_iat.setPostChan(cd.getPostChan());
 }

@@ -7,6 +7,7 @@
 #include "BatchWindow.hpp"
 #include "ConfigurationDialog.hpp"
 #include "NiaViewer.hpp"
+#include "FileConverter.hpp"
 
 class NiaCore : public Gtk::Window
 {

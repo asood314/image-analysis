@@ -28,6 +28,7 @@ NiaViewer::NiaViewer() :
   m_punctaSelector = false;
   m_synapseSelector = false;
   m_regionSelector = false;
+  m_axisSelector = false;
 
   m_grayMinEntry.set_max_length(5);
   m_grayMinEntry.set_width_chars(5);
@@ -184,6 +185,55 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	    int lastReg = rec->nRegions() - 1;
 	    removeMask(rec->getRegion(lastReg)->getMask(m_width,m_height,true));
 	    if(lastReg >= 0) rec->removeRegion(lastReg);
+	  }
+	}
+      }
+      m_prevButton = evt->button;
+      return true;
+    }
+    else if(m_axisSelector){
+      if(evt->button == 1){
+	LocalizedObject::Point lastClick;
+	if(m_prevClicks.size() > 0) lastClick = m_prevClicks.at(m_prevClicks.size()-1);
+	if(thisClick.x == lastClick.x && thisClick.y == lastClick.y){
+	  if(m_prevClicks.size() > 1){
+	    ImRecord* rec = currentRecord();
+	    if(rec){
+	      int maxContained = -1;
+	      Region* bestReg = NULL;
+	      for(int i = 0; i < rec->nRegions(); i++){
+		int nContained = 0;
+		Region* r = rec->getRegion(i);
+		for(std::vector<LocalizedObject::Point>::iterator it = m_prevClicks.begin(); it != m_prevClicks.end(); it++){
+		  if(r->contains(*it)) nContained++;
+		}
+		if(nContained > maxContained){
+		  maxContained = nContained;
+		  bestReg = r;
+		}
+	      }
+	      if(bestReg){
+		bestReg->setAxis(m_prevClicks);
+		toggleMask(bestReg->getMask(m_width,m_height,true));
+	      }
+	    }
+	  }
+	  m_prevClicks.clear();
+	}
+	else m_prevClicks.push_back(thisClick);
+      }
+      else if(evt->button == 3){
+	m_prevClicks.clear();
+	if(m_prevButton == 3){
+	  ImRecord* rec = currentRecord();
+	  if(rec){
+	    for(int i = 0; i < rec->nRegions(); i++){
+	      Region* r = rec->getRegion(i);
+	      if(r->contains(thisClick)){
+		r->clearAxis();
+		break;
+	      }
+	    }
 	  }
 	}
       }

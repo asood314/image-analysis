@@ -6,6 +6,7 @@
 #include <boost/lexical_cast.hpp>
 #include "FileManager.hpp"
 #include "ImageAnalysisToolkit.hpp"
+#include "FileConverter.hpp"
 
 class FileSelector : public Gtk::FileChooserDialog
 {

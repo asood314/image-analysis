@@ -254,7 +254,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     step = 1.0;
     nsteps = (int)(upperLimit - lowerLimit);
   }
-  std::cout << lowerLimit << ", " << upperLimit << ", " << nsteps << ", " << step << std::endl;
+  //std::cout << lowerLimit << ", " << upperLimit << ", " << nsteps << ", " << step << std::endl;
   double fom = 0;
   int maxClusters = 0;
   bool finished = false;
@@ -262,7 +262,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     finished = true;
     for(int istep = 0; istep < nsteps+1; istep++){
       double globalThreshold = lowerLimit + istep*step;
-      std::cout << globalThreshold << std::endl;
+      //std::cout << globalThreshold << std::endl;
       for(int i = 0; i < frame->width(); i++){
 	for(int j = 0; j < frame->height(); j++){
 	  int value = frame->getPixel(i,j);
@@ -331,7 +331,8 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	}
       }
 
-      int avgSize = 0;
+      int64_t avgSize = 0;
+      int64_t avgSize2 = 0;
       int nBkgClusters = 0;
       subMask->copy(*m);
       for(int i = 0; i < frame->width(); i++){
@@ -340,7 +341,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  borderX.push_back(i);
 	  borderY.push_back(j);
 	  subMask->setValue(i,j,1);
-	  int size = 1;
+	  int64_t size = 1;
 	  while(borderX.size() > 0){
 	    int bi = borderX.at(0);
 	    int bj = borderY.at(0);
@@ -367,28 +368,33 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	    borderY.erase(borderY.begin());
 	  }
 	  avgSize += size;
+	  avgSize2 += size*size;
 	  nBkgClusters++;
 	}
       }
 
       
+      //double ifom = ((double)avgSigSize2)/avgSigSize * avgSize2/avgSize;
+      //if(nSigClusters > 0) ifom = ifom/nSigClusters;
       double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
-      if(((double)avgSigSize)/(frame->height()*frame->width()) < 0.01) break;
+      //if(((double)avgSigSize)/(frame->height()*frame->width()) < 0.01) break;
       if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
       else ifom = 0;
+      /*
       if(nSigClusters >= maxClusters){
 	fom = ifom;
 	maxClusters = nSigClusters;
 	best = globalThreshold;
 	finished = false;
       }
-      else if(ifom > fom){
+      */
+      if(ifom > fom){
 	fom = ifom;
 	best = globalThreshold;
 	finished = false;
       }
       delete subMask;
-      std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
+      //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
     }
     if(step < 1.01) break;
     if(best < 0) break;
@@ -1139,6 +1145,13 @@ void ImageAnalysisToolkit::read(std::ifstream& fin)
   int nchan = (int)buf[6];
   fin.read(buf,nchan*28);
   uint32_t offset = 0;
+  m_localWindow.clear();
+  m_localWindowIncrement.clear();
+  m_minPunctaRadius.clear();
+  m_reclusterThreshold.clear();
+  m_noiseRemovalThreshold.clear();
+  m_peakThreshold.clear();
+  m_floorThreshold.clear();
   for(int i = 0; i < nchan; i++){
     m_localWindow.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
     offset += 4;

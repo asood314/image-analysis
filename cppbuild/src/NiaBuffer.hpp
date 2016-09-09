@@ -33,6 +33,7 @@ NiaBuffer& operator<<(NiaBuffer& buf, uint8_t i);
 namespace nia
 {
   extern NiaBuffer nout;
+  extern int niaVersion;
 }
 
 #endif

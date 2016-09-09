@@ -3,6 +3,7 @@
 namespace nia
 {
   NiaBuffer nout;
+  int niaVersion;
 }
 
 NiaBuffer& operator<<(NiaBuffer& buf, std::string s)

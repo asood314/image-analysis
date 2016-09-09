@@ -13,6 +13,7 @@ all:
 	g++ src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
+	g++ src/FileConverter.cpp -o obj/FileConverter.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/BatchWindow.cpp -o obj/BatchWindow.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
@@ -37,6 +38,7 @@ debug:
 	g++ -g src/ImSeries.cpp -o obj/ImSeries.o -c -std=c++11 -I/opt/local/include/
 	g++ -g src/ImageAnalysisToolkit.cpp -o obj/ImageAnalysisToolkit.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
+	g++ -g src/FileConverter.cpp -o obj/FileConverter.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/BatchWindow.cpp -o obj/BatchWindow.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ -g src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
@@ -48,6 +50,7 @@ debug:
 
 front:
 	g++ src/FileManager.cpp -o obj/FileManager.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
+	g++ src/FileConverter.cpp -o obj/FileConverter.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ src/BatchWindow.cpp -o obj/BatchWindow.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
 	g++ src/BatchService.cpp -o obj/BatchService.o -c -std=c++11 -I/opt/local/include/boost `pkg-config gtkmm-2.4 --cflags`
 	g++ src/FileSelector.cpp -o obj/FileSelector.o -c -std=c++11 -I/opt/local/include/ `pkg-config gtkmm-2.4 --cflags`

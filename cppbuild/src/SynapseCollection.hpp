@@ -1,6 +1,9 @@
 #ifndef SYNAPSE_COLLECTION_HPP
 #define SYNAPSE_COLLECTION_HPP
 
+#include <iostream>
+#include <fstream>
+#include "NiaUtils.hpp"
 #include "Synapse.hpp"
 
 class SynapseCollection
@@ -17,6 +20,7 @@ protected:
   std::string m_description;
 
 public:
+  SynapseCollection();
   SynapseCollection(std::vector<int> chans);
   virtual ~SynapseCollection();
   SynapseCollection* emptyCopy();
@@ -45,6 +49,8 @@ public:
   void setDescription(std::string msg){ m_description = msg; }
   std::string description(){ return m_description; }
   bool computeColocalization(Synapse* s);
+  void write(char* buf, std::ofstream& fout);
+  void read(char* buf, std::ifstream& fin, std::vector< std::vector<Cluster*> >* punks);
 
 };
 

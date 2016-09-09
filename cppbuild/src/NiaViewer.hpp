@@ -40,7 +40,7 @@ protected:
   std::vector<Mask*> m_masks;
   static const unsigned m_ncolors = 3;
   Color m_colors[m_ncolors];
-  bool m_pixelSelector,m_punctaSelector,m_synapseSelector,m_regionSelector;
+  bool m_pixelSelector,m_punctaSelector,m_synapseSelector,m_regionSelector,m_axisSelector;
   std::vector<LocalizedObject::Point> m_prevClicks;
   int m_prevButton;
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
@@ -121,24 +121,35 @@ public:
     m_punctaSelector = false;
     m_synapseSelector = false;
     m_regionSelector = false;
+    m_axisSelector = false;
   }
   void setPunctaSelector(){
     m_pixelSelector = false;
     m_punctaSelector = true;
     m_synapseSelector = false;
     m_regionSelector = false;
+    m_axisSelector = false;
   }
   void setSynapseSelector(){
     m_pixelSelector = false;
     m_punctaSelector = false;
     m_synapseSelector = true;
     m_regionSelector = false;
+    m_axisSelector = false;
   }
   void setRegionSelector(){
     m_pixelSelector = false;
     m_punctaSelector = false;
     m_synapseSelector = false;
     m_regionSelector = true;
+    m_axisSelector = false;
+  }
+  void setAxisSelector(){
+    m_pixelSelector = false;
+    m_punctaSelector = false;
+    m_synapseSelector = false;
+    m_regionSelector = false;
+    m_axisSelector = true;
   }
   ImSeries* data(){ return m_data; }
   void saveScreenshot(std::string filename){ m_pixbuf->save(filename,"png"); }

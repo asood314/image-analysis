@@ -83,10 +83,10 @@ public:
   Mask* getRegionMask(bool outline=true);
   void calculateRegionStats(Region* r, int postChan);
   void printSynapseDensityTable(int postChan, std::string filename);
-  void write(std::ofstream& fout);
+  void write(std::ofstream& fout, int version);
   uint64_t pack(char* buf, Mask* m, int startY);
   //void pack(char* buf, uint64_t& offset, Mask* m, int index);
-  void read(std::ifstream& fin);
+  void read(std::ifstream& fin, int version);
   void unpack(char* buf, Mask* m, int startY);
   //void unpack(char* buf, uint64_t offset, Mask* m, int index);
   void loadMetaMorphRegions(std::string filename);

@@ -5,6 +5,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_modeLabel("Select master mode"),
   m_pfiLabel("Set max puncta finding iterations"),
   m_saturationLabel("Set bit depth"),
+  m_splitConfigBox("Use separate channel configurations"),
   m_lwLabel("Set local window size (um^2)"),
   m_radiusLabel("Set min puncta radius (um)"),
   m_reclusterLabel("Set recluster threshold (N * min radius)"),
@@ -27,6 +28,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_postChanLabel("Set channel for dendrite area calculation: ")
 {
   m_toolkit = iat;
+  m_nchannels = nchan;
 
   int master;
   if(m_toolkit->master() == 255){
@@ -75,47 +77,84 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_hbox3.pack_start(m_pfiEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox3, Gtk::PACK_SHRINK);
 
-  m_radiusEntry.set_max_length(3);
-  m_radiusEntry.set_width_chars(5);
-  m_radiusEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->minPunctaRadius()));
+  int nconfig = m_toolkit->nConfigs();
+  if(nconfig > 1) m_splitConfigBox.set_active(true);
+  else m_splitConfigBox.set_active(false);
+  m_splitConfigBox.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_split_button_clicked));
+  m_analysisBox.pack_start(m_splitConfigBox, Gtk::PACK_SHRINK);
+
   m_hbox4.pack_start(m_radiusLabel, Gtk::PACK_SHRINK);
-  m_hbox4.pack_start(m_radiusEntry, Gtk::PACK_SHRINK);
+  m_radiusEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_radiusEntry[i] = new Gtk::Entry();
+    m_radiusEntry[i]->set_max_length(3);
+    m_radiusEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_radiusEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->minPunctaRadius(i)));
+    else m_radiusEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->minPunctaRadius()));
+    m_hbox4.pack_start(*(m_radiusEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox4, Gtk::PACK_SHRINK);
 
-  m_nrtEntry.set_max_length(3);
-  m_nrtEntry.set_width_chars(5);
-  m_nrtEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->noiseRemovalThreshold()));
   m_hbox5.pack_start(m_nrtLabel, Gtk::PACK_SHRINK);
-  m_hbox5.pack_start(m_nrtEntry, Gtk::PACK_SHRINK);
+  m_nrtEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_nrtEntry[i] = new Gtk::Entry();
+    m_nrtEntry[i]->set_max_length(3);
+    m_nrtEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_nrtEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->noiseRemovalThreshold(i)));
+    else m_nrtEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->noiseRemovalThreshold()));
+    m_hbox5.pack_start(*(m_nrtEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox5, Gtk::PACK_SHRINK);
 
-  m_reclusterEntry.set_max_length(3);
-  m_reclusterEntry.set_width_chars(5);
-  m_reclusterEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->reclusterThreshold()));
   m_hbox6.pack_start(m_reclusterLabel, Gtk::PACK_SHRINK);
-  m_hbox6.pack_start(m_reclusterEntry, Gtk::PACK_SHRINK);
+  m_reclusterEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_reclusterEntry[i] = new Gtk::Entry();
+    m_reclusterEntry[i]->set_max_length(3);
+    m_reclusterEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_reclusterEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->reclusterThreshold(i)));
+    else m_reclusterEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->reclusterThreshold()));
+    m_hbox6.pack_start(*(m_reclusterEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox6, Gtk::PACK_SHRINK);
 
-  m_lwEntry.set_max_length(3);
-  m_lwEntry.set_width_chars(5);
-  m_lwEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->localWindow()));
   m_hbox7.pack_start(m_lwLabel, Gtk::PACK_SHRINK);
-  m_hbox7.pack_start(m_lwEntry, Gtk::PACK_SHRINK);
+  m_lwEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_lwEntry[i] = new Gtk::Entry();
+    m_lwEntry[i]->set_max_length(3);
+    m_lwEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_lwEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->localWindow(i)));
+    else m_lwEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->localWindow()));
+    m_hbox7.pack_start(*(m_lwEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox7, Gtk::PACK_SHRINK);
 
-  m_peakEntry.set_max_length(3);
-  m_peakEntry.set_width_chars(5);
-  m_peakEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->peakThreshold()));
   m_hbox8.pack_start(m_peakLabel, Gtk::PACK_SHRINK);
-  m_hbox8.pack_start(m_peakEntry, Gtk::PACK_SHRINK);
+  m_peakEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_peakEntry[i] = new Gtk::Entry();
+    m_peakEntry[i]->set_max_length(3);
+    m_peakEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_peakEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->peakThreshold(i)));
+    else m_peakEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->peakThreshold()));
+    m_hbox8.pack_start(*(m_peakEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox8, Gtk::PACK_SHRINK);
 
-  m_floorEntry.set_max_length(3);
-  m_floorEntry.set_width_chars(5);
-  m_floorEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->floorThreshold()));
   m_hbox9.pack_start(m_floorLabel, Gtk::PACK_SHRINK);
-  m_hbox9.pack_start(m_floorEntry, Gtk::PACK_SHRINK);
+  m_floorEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_floorEntry[i] = new Gtk::Entry();
+    m_floorEntry[i]->set_max_length(3);
+    m_floorEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_floorEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->floorThreshold(i)));
+    else m_floorEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->floorThreshold()));
+    m_hbox9.pack_start(*(m_floorEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
   m_analysisBox.pack_start(m_hbox9, Gtk::PACK_SHRINK);
+
 
   m_columns2.add(m_indexColumn);
   m_columns2.add(m_descriptionColumn);
@@ -225,6 +264,17 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   add_button("Finished", Gtk::RESPONSE_OK);
 
   show_all_children();
+
+  if(!m_splitConfigBox.get_active()){
+    for(int i = 1; i < nchan; i++){
+      m_radiusEntry[i]->hide();
+      m_nrtEntry[i]->hide();
+      m_reclusterEntry[i]->hide();
+      m_lwEntry[i]->hide();
+      m_peakEntry[i]->hide();
+      m_floorEntry[i]->hide();
+    }
+  }
 }
 
 ConfigurationDialog::~ConfigurationDialog()
@@ -237,6 +287,48 @@ ConfigurationDialog::~ConfigurationDialog()
   }
   for(std::vector<Gtk::HBox*>::iterator it = m_channelBoxes.begin(); it != m_channelBoxes.end(); it++){
     if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_radiusEntry.begin(); it != m_radiusEntry.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_nrtEntry.begin(); it != m_nrtEntry.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_reclusterEntry.begin(); it != m_reclusterEntry.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_lwEntry.begin(); it != m_lwEntry.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_peakEntry.begin(); it != m_peakEntry.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_floorEntry.begin(); it != m_floorEntry.end(); it++){
+    if(*it) delete *it;
+  }
+}
+
+void ConfigurationDialog::on_split_button_clicked()
+{
+  if(m_splitConfigBox.get_active()){
+    for(int i = 1; i < m_nchannels; i++){
+      m_radiusEntry[i]->show();
+      m_nrtEntry[i]->show();
+      m_reclusterEntry[i]->show();
+      m_lwEntry[i]->show();
+      m_peakEntry[i]->show();
+      m_floorEntry[i]->show();
+    }
+  }
+  else{
+    for(int i = 1; i < m_nchannels; i++){
+      m_radiusEntry[i]->hide();
+      m_nrtEntry[i]->hide();
+      m_reclusterEntry[i]->hide();
+      m_lwEntry[i]->hide();
+      m_peakEntry[i]->hide();
+      m_floorEntry[i]->hide();
+    }
   }
 }
 

@@ -1,6 +1,9 @@
 #ifndef CLUSTER_HPP
 #define CLUSTER_HPP
 
+#include <iostream>
+#include <fstream>
+#include "NiaUtils.hpp"
 #include "LocalizedObject.hpp"
 #include "Mask.hpp"
 
@@ -35,6 +38,8 @@ public:
   void add(Cluster* c);
   double peakToPeakDistance2(Cluster* c);
   Mask* getMask(int width, int height, bool outline=false);
+  void write(char* buf, std::ofstream& fout);
+  void read(char* buf, std::ifstream& fin);
   void setCenter(LocalizedObject::Point cent){ m_center = cent; }
   void computeCenter();
   bool contains(LocalizedObject::Point pt);

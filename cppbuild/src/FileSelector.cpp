@@ -115,8 +115,29 @@ void FileSelector::on_select_button_clicked()
   if(phil.find(".nia") != std::string::npos){
     std::ifstream fin(phil.c_str(),std::ifstream::binary);
     char buf[500];
-    fin.read(buf,4);
-    int len = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+    fin.read(buf,7);
+    fin.close();
+    FileManager::input_file infile;
+    if(!(buf[0] == 'V' && buf[1] == 'V' && buf[2] == 'V')) infile = FileConverter::read(m_fileManager,m_toolkit,m_recs,phil,0);
+    else{
+      int version = NiaUtils::convertToInt(buf[3],buf[4],buf[5],buf[6]);
+      infile = FileConverter::read(m_fileManager,m_toolkit,m_recs,phil,version);
+    }
+    m_seriesName.set_text(infile.sname);
+    m_wField.set_text(boost::lexical_cast<std::string>(infile.nw));
+    m_zField.set_text(boost::lexical_cast<std::string>(infile.nz));
+    m_pField.set_text(boost::lexical_cast<std::string>(infile.np));
+    m_tField.set_text(boost::lexical_cast<std::string>(infile.nt));
+    m_orderField.set_text(FileManager::orderString(infile.order));
+    for(unsigned i = 0; i < infile.fnames.size(); i++){
+      Gtk::TreeModel::Row row = *(m_refTreeModel->append());
+      row[m_idColumn] = m_nextRow;
+      m_nextRow++;
+      row[m_fileNameColumn] = infile.fnames[i];
+      m_names.push_back(infile.fnames[i]);
+    }
+    m_resolutionEntry.set_text(boost::lexical_cast<std::string>(m_recs->at(m_recs->size()-1)->resolutionXY()));
+    /*
     fin.read(buf,len);
     m_seriesName.set_text(std::string(buf,len));
     fin.read(buf,12);
@@ -157,6 +178,7 @@ void FileSelector::on_select_button_clicked()
       m_resolutionEntry.set_text(boost::lexical_cast<std::string>(m_recs->at(prevSize)->resolutionXY()));
     }
     fin.close();
+    */
   }
   else{
     Gtk::TreeModel::Row row = *(m_refTreeModel->append());

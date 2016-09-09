@@ -532,6 +532,32 @@ Mask* ImRecord::getRegionMask(bool outline)
 	  m2->setValue(i,j,1 - sum/9);
 	}
       }
+      std::vector<LocalizedObject::Point> axPts = (*jt)->axis();
+      for(int i = axPts.size()-1; i > 0; i--){
+	double slope = ((double)(axPts[i-1].y) - axPts[i].y) / (axPts[i-1].x - axPts[i].x);
+	if(fabs(slope) > 1){
+	  double step = (axPts[i-1].y - axPts[i].y)/fabs(axPts[i-1].y - axPts[i].y);
+	  int nsteps = (int)((axPts[i-1].y - axPts[i].y)/step);
+	  double y = axPts[i].y;
+	  double x = axPts[i].x;
+	  for(int j = 0; j < nsteps; j++){
+	    m2->setValue((int)x,(int)y,1);
+	    y += step;
+	    x += step/slope;
+	  }
+	}
+	else{
+	  double step = (axPts[i-1].x - axPts[i].x)/fabs(axPts[i-1].x - axPts[i].x);
+	  int nsteps = (int)((axPts[i-1].x - axPts[i].x)/step);
+	  double x = axPts[i].x;
+	  double y = axPts[i].y;
+	  for(int j = 0; j < nsteps; j++){
+	    m2->setValue((int)x,(int)y,1);
+	    x += step;
+	    y += step*slope;
+	  }
+	}
+      }
     }
     delete m;
     return m2;
@@ -541,6 +567,32 @@ Mask* ImRecord::getRegionMask(bool outline)
     for(int i = x1; i < x2; i++){
       for(int j = y1; j < y2; j++){
 	if((*jt)->contains(i,j)) m->setValue(i,j,1);
+      }
+    }
+    std::vector<LocalizedObject::Point> axPts = (*jt)->axis();
+    for(int i = axPts.size()-1; i > 0; i--){
+      double slope = ((double)(axPts[i-1].y) - axPts[i].y) / (axPts[i-1].x - axPts[i].x);
+      if(fabs(slope) > 1){
+	double step = (axPts[i-1].y - axPts[i].y)/fabs(axPts[i-1].y - axPts[i].y);
+	int nsteps = (int)((axPts[i-1].y - axPts[i].y)/step);
+	double y = axPts[i].y;
+	double x = axPts[i].x;
+	for(int j = 0; j < nsteps; j++){
+	  m->setValue((int)x,(int)y,1);
+	  y += step;
+	  x += step/slope;
+	}
+      }
+      else{
+	double step = (axPts[i-1].x - axPts[i].x)/fabs(axPts[i-1].x - axPts[i].x);
+	int nsteps = (int)((axPts[i-1].x - axPts[i].x)/step);
+	double x = axPts[i].x;
+	double y = axPts[i].y;
+	for(int j = 0; j < nsteps; j++){
+	  m->setValue((int)x,(int)y,1);
+	  x += step;
+	  y += step*slope;
+	}
       }
     }
   }
@@ -559,6 +611,7 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
     }
   }
   r->dendriteArea *= m_resolutionXY*m_resolutionXY;
+  r->dendriteLength = r->getLength() * m_resolutionXY;
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
     r->nSynapses.push_back(0);
     r->avgSynapseSize.push_back(0.0);
@@ -623,6 +676,13 @@ void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
     fout << "" << (*rit)->dendriteArea << ",";
     sum += (*rit)->dendriteArea;
+  }
+  fout << "" << (sum/nROI) << ",-\n";
+  fout << "\"Dendrite length (um)\",";
+  sum = 0;
+  for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
+    fout << "" << (*rit)->dendriteLength << ",";
+    sum += (*rit)->dendriteLength;
   }
   fout << "" << (sum/nROI) << ",-\n";
   fout << "-,";
@@ -712,7 +772,7 @@ void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
   fout.close();
 }
 
-void ImRecord::write(std::ofstream& fout)
+void ImRecord::write(std::ofstream& fout, int version)
 {
   char* buf = new char[400000];
   buf[0] = (char)m_nchannels;
@@ -746,90 +806,28 @@ void ImRecord::write(std::ofstream& fout)
       buf[0] = (char)0;
       fout.write(buf,1);
     }
+    
     NiaUtils::writeIntToBuffer(buf,0,nPuncta(chan));
     fout.write(buf,4);
     for(std::vector<Cluster*>::iterator it = m_puncta.at(chan).begin(); it != m_puncta.at(chan).end(); it++){
-      NiaUtils::writeShortToBuffer(buf,0,(*it)->size());
-      NiaUtils::writeShortToBuffer(buf,2,(*it)->peak());
-      NiaUtils::writeIntToBuffer(buf,4,(*it)->integratedIntensity());
-      std::vector<LocalizedObject::Point> pts = (*it)->getPoints();
-      offset = 8;
-      for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++){
-	NiaUtils::writeShortToBuffer(buf,offset,jt->x);
-	NiaUtils::writeShortToBuffer(buf,offset+2,jt->y);
-	offset += 4;
-      }
-      fout.write(buf,offset);
+      (*it)->write(buf,fout);
     }
   }
+
+  
   buf[0] = (char)m_synapseCollections.size();
   fout.write(buf,1);
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
-    std::string d = (*it)->description();
-    offset = 0;
-    NiaUtils::writeShortToBuffer(buf,offset,d.length());
-    offset += 2;
-    for(int i = 0; i < d.length(); i++){
-      buf[offset] = d[i];
-      offset++;
-    }
-    buf[offset] = (char)(*it)->nChannels();
-    offset++;
-    std::vector<int> chans = (*it)->channels();
-    for(std::vector<int>::iterator jt = chans.begin(); jt != chans.end(); jt++){
-      buf[offset] = (char)(*jt);
-      offset++;
-    }
-    NiaUtils::writeIntToBuffer(buf,offset,(*it)->nSynapses());
-    offset += 4;
-    std::vector<Synapse*> vec = (*it)->synapses();
-    for(std::vector<Synapse*>::iterator jt = vec.begin(); jt != vec.end(); jt++){
-    NiaUtils::writeDoubleToBuffer(buf,offset,(*jt)->colocalizationScore());
-      offset += 4;
-      for(int i = 0; i < (*it)->nChannels(); i++){
-	NiaUtils::writeIntToBuffer(buf,offset,(*jt)->getPunctumIndex(i));
-	offset += 4;
-      }
-    }
-    NiaUtils::writeIntToBuffer(buf,offset,(*it)->overlapThreshold());
-    offset += 4;
-    NiaUtils::writeDoubleToBuffer(buf,offset,(*it)->distanceThreshold());
-    offset += 4;
-    buf[offset] = (char)(*it)->useOverlap();
-    offset++;
-    if((*it)->allRequired()){
-      buf[offset] = 1;
-      offset++;
-    }
-    else{
-      buf[offset] = 0;
-      buf[offset+1] = (char)(*it)->nRequirements();
-      offset += 2;
-      for(int i = 0; i < (*it)->nRequirements(); i++){
-	std::vector<int> reqs = (*it)->getRequiredColocalizationByIndex(i);
-	buf[offset] = (char)reqs.size();
-	offset++;
-	for(std::vector<int>::iterator jt = reqs.begin(); jt != reqs.end(); jt++){
-	  buf[offset] = (char)(*jt);
-	  offset++;
-	}
-      }
-    }
-    fout.write(buf,offset);
+    (*it)->write(buf,fout);
   }
+
+  
   buf[0] = (char)nRegions();
-  offset = 1;
+  fout.write(buf,1);
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++){
-    buf[offset] = (char)(*it)->nVertices();
-    offset++;
-    std::vector<LocalizedObject::Point> verts = (*it)->vertices();
-    for(std::vector<LocalizedObject::Point>::iterator jt = verts.begin(); jt != verts.end(); jt++){
-      NiaUtils::writeShortToBuffer(buf,offset,jt->x);
-      NiaUtils::writeShortToBuffer(buf,offset+2,jt->y);
-      offset += 4;
-    }
+    if(version == 0) (*it)->writeV00(buf,fout);
+    else (*it)->write(buf,fout);
   }
-  fout.write(buf,offset);
   delete[] buf;
 }
 
@@ -857,7 +855,7 @@ uint64_t ImRecord::pack(char* buf, Mask* m, int startY)
   return offset;
 }
 
-void ImRecord::read(std::ifstream& fin)
+void ImRecord::read(std::ifstream& fin, int version)
 {
   char* buf = new char[400000];
   fin.read(buf,9);
@@ -900,16 +898,7 @@ void ImRecord::read(std::ifstream& fin)
     int nClusters = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
     for(int i = 0; i < nClusters; i++){
       Cluster* c = new Cluster();
-      fin.read(buf,8);
-      int npix = NiaUtils::convertToShort(buf[0],buf[1]);
-      c->setPeakIntensity(NiaUtils::convertToShort(buf[2],buf[3]));
-      c->setIntegratedIntensity(NiaUtils::convertToInt(buf[4],buf[5],buf[6],buf[7]));
-      fin.read(buf,4*npix);
-      offset = 0;
-      for(int j = 0; j < npix; j++){
-	c->addPoint(NiaUtils::convertToShort(buf[offset],buf[offset+1]),NiaUtils::convertToShort(buf[offset+2],buf[offset+3]));
-	offset += 4;
-      }
+      c->read(buf,fin);
       c->computeCenter();
       clusters.push_back(c);
     }
@@ -919,49 +908,8 @@ void ImRecord::read(std::ifstream& fin)
   fin.read(buf,1);
   int ncol = (int)buf[0];
   for(int icol = 0; icol < ncol; icol++){
-    fin.read(buf,2);
-    int len = NiaUtils::convertToShort(buf[0],buf[1]);
-    fin.read(buf,len+1);
-    std::string d = "";
-    d.append(buf,len);
-    int nchan = (int)buf[len];
-    fin.read(buf,nchan);
-    std::vector<int> chans;
-    for(int i = 0; i < nchan; i++) chans.push_back((int)buf[i]);
-    SynapseCollection* sc = new SynapseCollection(chans);
-    fin.read(buf,4);
-    int nsyn = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
-    fin.read(buf,4*(nchan+1)*nsyn);
-    offset = 0;
-    for(int i = 0; i < nsyn; i++){
-      Synapse* s = new Synapse();
-      s->setColocalizationScore(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
-      offset += 4;
-      for(std::vector<int>::iterator it = chans.begin(); it != chans.end(); it++){
-	int index = NiaUtils::convertToInt(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]);
-	s->addPunctum(m_puncta.at(*it).at(index),index);
-	offset += 4;
-      }
-      s->computeCenter();
-      sc->addSynapse(s);
-    }
-    fin.read(buf,10);
-    sc->setOverlapThreshold(NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]));
-    sc->setDistanceThreshold(NiaUtils::convertToDouble(buf[4],buf[5],buf[6],buf[7]));
-    sc->setUseOverlap((int)buf[8] > 0);
-    sc->setRequireAll((int)buf[9] > 0);
-    if(!sc->allRequired()){
-      fin.read(buf,1);
-      int nreqs = (int)buf[0];
-      for(int i = 0; i < nreqs; i++){
-	std::vector<int> reqs;
-	fin.read(buf,1);
-	int n = (int)buf[0];
-	fin.read(buf,n);
-	for(int j = 0; j < n; j++) reqs.push_back((int)buf[j]);
-	sc->addRequiredColocalizationByIndex(reqs);
-      }
-    }
+    SynapseCollection* sc = new SynapseCollection();
+    sc->read(buf,fin,&m_puncta);
     m_synapseCollections.push_back(sc);
   }
   
@@ -969,17 +917,8 @@ void ImRecord::read(std::ifstream& fin)
   int nROI = (int)buf[0];
   for(int i = 0; i < nROI; i++){
     Region* r = new Region();
-    fin.read(buf,1);
-    int nVerts = (int)buf[0];
-    fin.read(buf,4*nVerts);
-    offset = 0;
-    for(int j = 0; j < nVerts; j++){
-      LocalizedObject::Point pt;
-      pt.x = NiaUtils::convertToShort(buf[offset],buf[offset+1]);
-      pt.y = NiaUtils::convertToShort(buf[offset+2],buf[offset+3]);
-      r->addVertex(pt);
-      offset += 4;
-    }
+    if(version == 0) r->readV00(buf,fin);
+    else r->read(buf,fin);
     m_regions.push_back(r);
   }
 

@@ -248,6 +248,8 @@ void BatchService::analyzeProjection(int seriesID, int p, int t)
   if(m_nStacks.at(seriesID) == 0){
     std::ostringstream filename;
     filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
+    FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
+    /*
     std::ofstream fout(filename.str().c_str(),std::ofstream::binary);
     m_fileManager->saveInputFiles(fout,seriesID);
     m_iat->write(fout);
@@ -259,6 +261,7 @@ void BatchService::analyzeProjection(int seriesID, int p, int t)
       delete *rit;
     }
     fout.close();
+    */
   }
   m_activeThreads--;
   if(m_progressWindow) m_progressWindow->taskCompleted();
@@ -298,6 +301,8 @@ void BatchService::analyzePlane(int seriesID, int p, int t, int z)
     if(m_nStacks.at(seriesID) == 0){
       std::ostringstream filename;
       filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
+      FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
+      /*
       std::ofstream fout(filename.str().c_str(),std::ofstream::binary);
       m_fileManager->saveInputFiles(fout,seriesID);
       m_iat->write(fout);
@@ -309,6 +314,7 @@ void BatchService::analyzePlane(int seriesID, int p, int t, int z)
 	delete *rit;
       }
       fout.close();
+      */
     }
   }
   m_activeThreads--;

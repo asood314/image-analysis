@@ -190,3 +190,15 @@ int FileManager::ntasks(bool zproject)
   }
   return retVal;
 }
+
+std::string FileManager::orderString(Dimension* order)
+{
+  std::string retVal = "WZTP";
+  for(int i = 3; i >= 0; i--){
+    if(order[i] == WAVELENGTH) retVal[3-i] = 'W';
+    else if(order[i] == ZSLICE) retVal[3-i] = 'Z';
+    else if(order[i] == TIMEPOINT) retVal[3-i] = 'T';
+    else if(order[i] == POSITION) retVal[3-i] = 'P';
+  }
+  return retVal;
+}

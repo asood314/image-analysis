@@ -11,6 +11,7 @@
 #include "ImageAnalysisToolkit.hpp"
 #include "NiaBuffer.hpp"
 #include "BatchWindow.hpp"
+#include "FileConverter.hpp"
 
 class BatchService
 {
