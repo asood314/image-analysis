@@ -284,7 +284,8 @@ void NiaCore::on_start_batch_jobs()
 {
   std::vector<ImRecord*> recs;
   m_batchService.fileManager()->clearInputFiles();
-  FileSelector fs(m_batchService.fileManager(),&m_iat,&recs,"Select input files",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  ImageAnalysisToolkit* biat = m_batchService.iat();
+  FileSelector fs(m_batchService.fileManager(),biat,&recs,"Select input files",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fs.set_transient_for(*this);
 
   Gtk::FileFilter filt;
@@ -304,7 +305,6 @@ void NiaCore::on_start_batch_jobs()
   if(result != Gtk::RESPONSE_OK) return;
   fs.hide();
   
-  ImageAnalysisToolkit* biat = m_batchService.iat();
   ConfigurationDialog cd(biat,m_batchService.fileManager()->getNW(0),m_batchService.maxThreads(),m_batchService.zproject());
   cd.set_transient_for(*this);
   result = cd.run();
@@ -325,6 +325,7 @@ void NiaCore::on_start_batch_jobs()
       biat->setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       biat->setPeakThreshold(i,cd.getPeak(i));
       biat->setFloorThreshold(i,cd.getFloor(i));
+      biat->setBackgroundThreshold(i,cd.getBackgroundThreshold(i));
     }
   }
   else{
@@ -334,6 +335,7 @@ void NiaCore::on_start_batch_jobs()
     biat->setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     biat->setPeakThreshold(cd.getPeak());
     biat->setFloorThreshold(cd.getFloor());
+    biat->setBackgroundThreshold(cd.getBackgroundThreshold());
   }
   biat->setChannelNames(cd.getChannelNames());
   biat->setPostChan(cd.getPostChan());
@@ -384,6 +386,7 @@ void NiaCore::on_configure_clicked()
       m_iat.setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       m_iat.setPeakThreshold(i,cd.getPeak(i));
       m_iat.setFloorThreshold(i,cd.getFloor(i));
+      m_iat.setBackgroundThreshold(i,cd.getBackgroundThreshold(i));
     }
   }
   else{
@@ -393,6 +396,7 @@ void NiaCore::on_configure_clicked()
     m_iat.setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     m_iat.setPeakThreshold(cd.getPeak());
     m_iat.setFloorThreshold(cd.getFloor());
+    m_iat.setBackgroundThreshold(cd.getBackgroundThreshold());
   }
   m_iat.setChannelNames(cd.getChannelNames());
   m_iat.setPostChan(cd.getPostChan());

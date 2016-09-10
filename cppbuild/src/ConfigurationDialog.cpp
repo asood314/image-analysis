@@ -12,6 +12,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_nrtLabel("Set noise removal threshold (N * min radius)"),
   m_peakLabel("Set peak intensity threshold (N std above local median)"),
   m_floorLabel("Set floor intensity threshold (N std above local median)"),
+  m_bkgLabel("Set intensity threshold over background (N std above global median)"),
   m_overlapButton("Use overlap threshold"),
   m_distanceButton("Use distance threshold"),
   m_thresholdLabel("Set colocalization threshold"),
@@ -154,6 +155,18 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
     m_hbox9.pack_start(*(m_floorEntry[i]), Gtk::PACK_SHRINK, 10);
   }
   m_analysisBox.pack_start(m_hbox9, Gtk::PACK_SHRINK);
+
+  m_hbox16.pack_start(m_bkgLabel, Gtk::PACK_SHRINK);
+  m_bkgEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_bkgEntry[i] = new Gtk::Entry();
+    m_bkgEntry[i]->set_max_length(3);
+    m_bkgEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_bkgEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->backgroundThreshold(i)));
+    else m_bkgEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->backgroundThreshold()));
+    m_hbox16.pack_start(*(m_bkgEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
+  m_analysisBox.pack_start(m_hbox16, Gtk::PACK_SHRINK);
 
 
   m_columns2.add(m_indexColumn);

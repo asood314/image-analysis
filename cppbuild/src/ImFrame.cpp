@@ -473,9 +473,11 @@ double ImFrame::std(int x1, int x2, int y1, int y2, Mask* m)
 
 void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, double& med, double& stdv)
 {
-  int* values = new int[nVals];
+  //int* values = new int[nVals];
+  std::vector<int> values;
+  values.assign(nVals, 0);
   int target = 0;
-  for(int i = 0; i < nVals; i++) values[i] = 0;
+  //for(int i = 0; i < nVals; i++) values[i] = 0;
   double mn = 0.0;
   med = 0.0;
   stdv = 0.0;
@@ -497,5 +499,5 @@ void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, d
   int index;
   for(index = 0; sum < target; index++) sum += values[index];
   med = index;
-  delete[] values;
+  //delete[] values;
 }

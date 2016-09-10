@@ -42,6 +42,12 @@ void SynapseCollection::removeSynapse(uint32_t index)
   m_synapses.erase(m_synapses.begin()+index);
 }
 
+void SynapseCollection::clearSynapses()
+{
+  for(std::vector<Synapse*>::iterator it = m_synapses.begin(); it != m_synapses.end(); it++) delete *it;
+  m_synapses.clear();
+}
+
 void SynapseCollection::addRequiredColocalization(std::vector<int> chans)
 {
   std::vector<int> indices;
