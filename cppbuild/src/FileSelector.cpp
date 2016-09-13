@@ -224,10 +224,12 @@ void FileSelector::on_finish_button_clicked()
 {
   if(m_fileManager->nInputFiles() == 0){
     Gtk::MessageDialog messenger(*this,"No image series has been added.");
+    messenger.run();
     return;
   }
   if(m_refTreeModel->children().size() > 0){
     Gtk::MessageDialog messenger(*this,"Files selected but not added.");
+    messenger.run();
     return;
   }
   response(Gtk::RESPONSE_OK);

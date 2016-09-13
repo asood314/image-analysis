@@ -224,6 +224,14 @@ void NiaCore::on_menu_load()
 
 void NiaCore::on_save()
 {
+  std::vector<ImRecord*> recs = m_viewer.records();
+  for(std::vector<ImRecord*>::iterator it = recs.begin(); it != recs.end(); it++){
+    if(!(*it)){
+      Gtk::MessageDialog messenger(*this,"ERROR: At least one data record is uninitialized.");
+      messenger.run();
+      return;
+    }
+  }
   Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_SAVE);
   fcd.set_transient_for(*this);
   fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
@@ -240,7 +248,6 @@ void NiaCore::on_save()
       filename.append(m_fileManager.getName(0));
       filename.append(".nia");
     }
-    std::vector<ImRecord*> recs = m_viewer.records();
     FileConverter::write(&m_fileManager,&m_iat,&recs,filename,0,nia::niaVersion);
     /*
     std::ofstream fout(filename.c_str(),std::ofstream::binary);
