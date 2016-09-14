@@ -10,3 +10,5 @@ cppbuild/obj/*
 cppbuild/launcher*
 cppbuild/src/my.rc
 cppbuild/Nia.app/*
+cppbuild/src/vidwriter.*
+cppbuild/vidwriter.*

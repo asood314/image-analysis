@@ -609,7 +609,7 @@ void NiaViewer::setCurrentRecord(ImRecord* rec)
   m_records[index] = rec;
 }
 
-void NiaViewer::shareRegions()
+void NiaViewer::shareRegionsZ()
 {
   ImRecord* rec = currentRecord();
   if(!rec) return;
@@ -618,6 +618,27 @@ void NiaViewer::shareRegions()
   for(int z = 0; z < nz; z++){
     if(z == m_view_z) continue;
     int index = m_view_p*nt*nz + m_view_t*nz + z;
+    ImRecord* rec2 = m_records[index];
+    if(!rec2){
+      ImFrame* frame = currentFrame();
+      rec2 = new ImRecord(getNW(),frame->width(),frame->height());
+      rec2->setResolutionXY(m_data->resolutionXY());
+      m_records[index] = rec2;
+    }
+    rec2->clearRegions();
+    for(int r = 0; r < rec->nRegions(); r++) rec2->addRegion(rec->getRegion(r)->getCopy());
+  }
+}
+
+void NiaViewer::shareRegionsT()
+{
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  int nt = m_data->nt();
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  for(int t = 0; t < nt; t++){
+    if(t == m_view_t) continue;
+    int index = m_view_p*nt*nz + t*nz + m_view_z;
     ImRecord* rec2 = m_records[index];
     if(!rec2){
       ImFrame* frame = currentFrame();

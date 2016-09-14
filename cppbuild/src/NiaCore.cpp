@@ -96,7 +96,9 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("synSel","Synapse Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSynapseSelector));
   m_refActionGroup->add(Gtk::Action::create("regSel","Region Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setRegionSelector));
   m_refActionGroup->add(Gtk::Action::create("axSel","Axis Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setAxisSelector));
-  m_refActionGroup->add(Gtk::Action::create("regShare","Share Regions"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegions));
+  m_refActionGroup->add(Gtk::Action::create("regShare","Share Regions"));
+  m_refActionGroup->add(Gtk::Action::create("regShareZ","Across Z-planes"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegionsZ));
+  m_refActionGroup->add(Gtk::Action::create("regShareT","Across Timepoints"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegionsT));
 
   m_refUIManager = Gtk::UIManager::create();
   m_refUIManager->insert_action_group(m_refActionGroup);
@@ -180,7 +182,10 @@ void NiaCore::init()
     "   <menuitem action='synSel'/>"
     "   <menuitem action='regSel'/>"
     "   <menuitem action='axSel'/>"
-    "   <menuitem action='regShare'/>"
+    "   <menu action='regShare'>"
+    "    <menuitem action='regShareZ'/>"
+    "    <menuitem action='regShareT'/>"
+    "   </menu>"
     "  </menu>"
     " </menubar>"
     "</ui>";
