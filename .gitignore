@@ -12,3 +12,4 @@ cppbuild/src/my.rc
 cppbuild/Nia.app/*
 cppbuild/src/vidwriter.*
 cppbuild/vidwriter.*
+cppbuild/make_vid.sh

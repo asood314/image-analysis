@@ -12,6 +12,7 @@ class Cluster : public LocalizedObject
 
 protected:
   std::vector<LocalizedObject::Point> m_points;
+  std::vector<LocalizedObject::Point> m_border;
   int m_peak;
   int m_total;
 
@@ -34,6 +35,8 @@ public:
   int integratedIntensity(){ return m_total; }
   int indexOf(LocalizedObject::Point pt);
   int size(){ return m_points.size(); }
+  void findBorder();
+  int perimeter(){ return m_border.size(); }
   int getBorderLength(Cluster* c);
   void add(Cluster* c);
   double peakToPeakDistance2(Cluster* c);
@@ -44,6 +47,10 @@ public:
   void computeCenter();
   bool contains(LocalizedObject::Point pt);
   std::vector<LocalizedObject::Point> getPoints(){ return m_points; }
+  std::vector<LocalizedObject::Point>::iterator begin(){ return m_points.begin(); }
+  std::vector<LocalizedObject::Point>::iterator end(){ return m_points.end(); }
+  std::vector<LocalizedObject::Point>::iterator borderBegin(){ return m_border.begin(); }
+  std::vector<LocalizedObject::Point>::iterator borderEnd(){ return m_border.end(); }
   
 };
 

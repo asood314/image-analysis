@@ -34,7 +34,7 @@ protected:
   Gtk::ScrolledWindow m_swin;
   Gtk::VSeparator m_vsep1,m_vsep2;
   Gtk::HBox m_scaleBox;
-  Gtk::Button m_scaleHideButton;
+  Gtk::Button m_autoscaleButton,m_scaleHideButton;
   Gtk::Image m_displayImage;
   Glib::RefPtr<Gdk::Pixbuf> m_pixbuf;
   std::vector<Mask*> m_masks;
@@ -64,6 +64,9 @@ public:
   void prevTimepoint();
   void nextTimepoint();
   void setData(ImSeries* data);
+  void showDerivative();
+  void showDerivative2();
+  void showStats();
   void displayMask(Mask* m);
   void showContourMap();
   void zproject();
@@ -154,7 +157,9 @@ public:
   }
   ImSeries* data(){ return m_data; }
   void saveScreenshot(std::string filename){ m_pixbuf->save(filename,"png"); }
+  void saveTimeSeries(std::string basename);
   void unscale(){ if(m_data) m_data->divide(16); }
+  int grayMin(){ return m_grayMin; }
 
 };
 

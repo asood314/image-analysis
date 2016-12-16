@@ -335,6 +335,17 @@ void ImFrame::divide(int d)
   }
 }
 
+int ImFrame::min(int x1, int x2, int y1, int y2)
+{
+  int min = 99999999;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      if(m_pixels[i][j] < min) min = m_pixels[i][j];
+    }
+  }
+  return min;
+}
+
 double ImFrame::mean(int x1, int x2, int y1, int y2)
 {
   double sum = 0.0;
@@ -398,6 +409,43 @@ double ImFrame::median(int x1, int x2, int y1, int y2, Mask* m)
   return (double)index;
 }
 
+double ImFrame::median(int x1, int x2, int y1, int y2, int offset)
+{
+  int* values = new int[65536];
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      values[m_pixels[i][j]-offset]++;
+    }
+  }
+  int sum = 0;
+  int target = (x2-x1)*(y2-y1)/2;
+  int index;
+  for(index = 0; sum < target; index++) sum += values[index];
+  delete[] values;
+  return (double)(index+offset);
+}
+
+double ImFrame::median(int x1, int x2, int y1, int y2, int offset, Mask* m)
+{
+  int* values = new int[65536];
+  int target = 0;
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      int a = m->getValue(i,j);
+      values[m_pixels[i][j]-offset] += a;
+      target += a;
+    }
+  }
+  int sum = 0;
+  target = target/2;
+  int index;
+  for(index = 0; sum < target; index++) sum += values[index];
+  delete[] values;
+  return (double)(index+offset);
+}
+
 double ImFrame::mode(int x1, int x2, int y1, int y2)
 {
   int* values = new int[65536];
@@ -441,6 +489,51 @@ double ImFrame::mode(int x1, int x2, int y1, int y2, Mask* m)
   }
   delete[] values;
   return (double)index;
+}
+
+double ImFrame::mode(int x1, int x2, int y1, int y2, int offset)
+{
+  int* values = new int[65536];
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      values[m_pixels[i][j]-offset]++;
+    }
+  }
+  int max = 0;
+  int index = 0;
+  for(int i = 0; i < 65536; i++){
+    if(values[i] > max){
+      max = values[i];
+      index = i;
+    }
+  }
+  delete[] values;
+  return (double)(index+offset);
+}
+
+double ImFrame::mode(int x1, int x2, int y1, int y2, int offset, Mask* m)
+{
+  int* values = new int[65536];
+  int target = 0;
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      int a = m->getValue(i,j);
+      values[m_pixels[i][j]-offset] += a;
+      target += a;
+    }
+  }
+  int max = 0;
+  int index = 0;
+  for(int i = 0; i < 65536; i++){
+    if(values[i] > max){
+      max = values[i];
+      index = i;
+    }
+  }
+  delete[] values;
+  return (double)(index+offset);
 }
 
 double ImFrame::std(int x1, int x2, int y1, int y2)
@@ -500,4 +593,72 @@ void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, d
   for(index = 0; sum < target; index++) sum += values[index];
   med = index;
   //delete[] values;
+}
+
+ImFrame* ImFrame::derivative()
+{
+  ImFrame* retVal = new ImFrame(m_width,m_height);
+  float dx = m_pixels[1][0] - m_pixels[0][0];
+  float dy = m_pixels[0][1] - m_pixels[0][0];
+  /*
+  retVal->setPixel(0,0,(int)sqrt(dx*dx + dy*dy));
+  dx = m_pixels[1][m_height-1] - m_pixels[0][m_height-1];
+  dy = m_pixels[0][m_height-1] - m_pixels[0][m_height-2];
+  retVal->setPixel(0,m_height-1,(int)sqrt(dx*dx + dy*dy));
+  dx = m_pixels[m_width-1][0] - m_pixels[m_width-2][0];
+  dy = m_pixels[m_width-1][1] - m_pixels[m_width-1][0];
+  retVal->setPixel(m_width-1,0,(int)sqrt(dx*dx + dy*dy));
+  dx = m_pixels[m_width-1][m_height-1] - m_pixels[m_width-2][m_height-1];
+  dy = m_pixels[m_width-1][m_height-1] - m_pixels[m_width-1][m_height-2];
+  retVal->setPixel(m_width-1,m_height-1,(int)sqrt(dx*dx + dy*dy));
+  for(int i = 1; i < m_height-1; i++){
+    dx = m_pixels[1][i] - m_pixels[0][i];
+    dy = (m_pixels[0][i+1] - m_pixels[0][i-1])/2;
+    retVal->setPixel(0,i,(int)sqrt(dx*dx + dy*dy));
+    dx = m_pixels[m_width-1][i] - m_pixels[m_width-2][i];
+    dy = (m_pixels[m_width-1][i+1] - m_pixels[m_width-1][i-1])/2;
+    retVal->setPixel(m_width-1,i,(int)sqrt(dx*dx + dy*dy));
+  }
+  for(int i = 1; i < m_width-1; i++){
+    dy = m_pixels[i][1] - m_pixels[i][0];
+    dx = (m_pixels[i+1][0] - m_pixels[i-1][0])/2;
+    retVal->setPixel(i,0,(int)sqrt(dx*dx + dy*dy));
+    dy = m_pixels[i][m_height-1] - m_pixels[i][m_height-2];
+    dx = (m_pixels[i+1][m_height-1] - m_pixels[i-1][m_height-1])/2;
+    retVal->setPixel(i,m_height-1,(int)sqrt(dx*dx + dy*dy));
+  }
+  for(int i = 1; i < m_width-1; i++){
+    for(int j = 1; j < m_height-1; j++){
+      dx = (m_pixels[i+1][j] - m_pixels[i-1][j])/2;
+      dy = (m_pixels[i][j+1] - m_pixels[i][j-1])/2;
+      retVal->setPixel(i,j,(int)sqrt(dx*dx + dy*dy));
+    }
+  }
+  */
+  for(int i = 1; i < m_width-1; i++){
+    for(int j = 1; j < m_height-1; j++){
+      dx = ((float)(m_pixels[i+1][j] - m_pixels[i-1][j]))/2.0;
+      dy = ((float)(m_pixels[i][j+1] - m_pixels[i][j-1]))/2.0;
+      retVal->setPixel(i,j,(int)sqrt(dx*dx + dy*dy));
+    }
+  }
+  return retVal;
+}
+
+ImFrame* ImFrame::d2EigenvalueMax()
+{
+  ImFrame* retVal = new ImFrame(m_width,m_height);
+  float fxx,fyy,fxy,sum,diff;
+  for(int i = 2; i < m_width-2; i++){
+    for(int j = 2; j < m_height-2; j++){
+      fxx = ((float)(m_pixels[i+2][j] + m_pixels[i-2][j] - 2*m_pixels[i][j]))/4.0;
+      fyy = ((float)(m_pixels[i][j+2] + m_pixels[i][j-2] - 2*m_pixels[i][j]))/4.0;
+      fxy = ((float)(m_pixels[i+1][j+1] - m_pixels[i+1][j-1] - m_pixels[i-1][j+1] + m_pixels[i-1][j-1]))/4.0;
+      sum = fxx + fyy;
+      diff = fxx - fyy;
+      if(sum < 0) retVal->setPixel(i,j,(int)((sum - sqrt(diff*diff + 4*fxy*fxy))/2.0));
+      else retVal->setPixel(i,j,(int)((sum + sqrt(diff*diff + 4*fxy*fxy))/2.0));
+    }
+  }
+  return retVal;
 }

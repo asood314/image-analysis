@@ -124,3 +124,105 @@ int Mask::max(int x1, int x2, int y1, int y2)
   return max;
 }
 
+Mask* Mask::getBorders()
+{
+  Mask* retVal = new Mask(m_width,m_height);
+  for(int i = 0; i < m_width; i++){
+    for(int j = 0; j < m_height; j++){
+      if(m_mask[i][j] < 1) continue;
+      int sum = 0;
+      for(int di = i-1; di < i+2; di++){
+	if(di < 0 || di >= m_width){
+	  sum += 3;
+	  continue;
+	}
+	for(int dj = j-1; dj < j+2; dj++){
+	  if(dj < 0 || dj >= m_height) sum += 1;
+	  else sum += m_mask[di][dj];
+	}
+      }
+      retVal->setValue(i,j,1 - sum/9);
+    }
+  }
+  return retVal;
+}
+
+bool Mask::isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, bool allowBorders)
+{
+  if(x1 == x2 && y1 == y2) return true;
+  double slope = ((double)(y2) - y1) / (x2 - x1);
+  if(x1 == x2) slope = 99999999.9;
+  if(fabs(slope) > 1){
+    double step = (y2 - y1)/fabs(y2 - y1);
+    int nsteps = (int)((y2 - y1)/step);
+    double y = y1;
+    double x = x1;
+    if(allowBorders){
+      for(int j = 0; j < nsteps; j++){
+	if(m_mask[(int)x][(int)y] == 0) return false;
+	y += step;
+	x += step/slope;
+      }
+    }
+    else{
+      for(int j = 0; j < nsteps; j++){
+	if(m_mask[(int)x][(int)y] < 2) return false;
+	y += step;
+	x += step/slope;
+      }
+    }
+  }
+  else{
+    double step = (x2 - x1)/fabs(x2 - x1);
+    int nsteps = (int)((x2 - x1)/step);
+    double x = x1;
+    double y = y1;
+    if(allowBorders){
+      for(int j = 0; j < nsteps; j++){
+	if(m_mask[(int)x][(int)y] == 0) return false;
+	x += step;
+	y += step*slope;
+      }
+    }
+    else{
+      for(int j = 0; j < nsteps; j++){
+	if(m_mask[(int)x][(int)y] < 2) return false;
+	x += step;
+	y += step*slope;
+      }
+    }
+  }
+  return true;
+  
+  /*
+  float minDist = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
+  float distTraveled = 0.0;
+  int dx[8] = {-1,1,0,0,-1,-1,1,1};
+  int dy[8] = {0,0,-1,1,-1,1,-1,1};
+  int curX = x1;
+  int curY = y1;
+  float curDist = minDist;
+  while(curDist > 0.0){
+    int minI = -1;
+    for(int i = 0; i < 8; i++){
+      int nextX = curX+dx[i];
+      if(nextX < 0 || nextX >= m_width) continue;
+      int nextY = curY+dy[i];
+      if(nextY < 0 || nextY >= m_height) continue;
+      if(m_mask[nextX][nextY] == 0) continue;
+      int xdiff = x2-nextX;
+      int ydiff = y2-nextY;
+      float iDist = sqrt(xdiff*xdiff - ydiff*ydiff);
+      if(iDist < curDist){
+	curDist = iDist;
+	minI = i;
+      }
+    }
+    if(minI < 0) break;
+    if(minI < 4) distTraveled += 1.0;
+    else distTraveled += 1.414;
+  }
+  if(curDist > 0.0 || distTraveled > minDist) return false;
+  return true;
+  */
+}

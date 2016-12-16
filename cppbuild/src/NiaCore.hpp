@@ -30,10 +30,12 @@ protected:
   void on_menu_load();
   void on_save();
   void on_save_screenshot();
+  void on_save_timeseries();
   void on_start_batch_jobs();
   void on_configure_clicked();
   void on_find_outliers_clicked();
   void on_find_signal_clicked(bool doAll);
+  void on_apply_threshold_clicked();
   void on_find_puncta_clicked(bool doAll);
   void on_find_synapses_clicked();
   void on_full_analysis_clicked();

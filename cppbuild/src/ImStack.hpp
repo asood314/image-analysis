@@ -19,6 +19,10 @@ public:
   void insert(ImFrame* frame, int w, int z);
   ImStack* zprojection();
   void divide(int d);
+  void derivative(int w, int z);
+  void derivative();
+  void d2EigenvalueMax(int w, int z);
+  void d2EigenvalueMax();
   ImFrame* frame(int w, int z){ return m_frames[w][z]; }
   int nwaves(){ return m_nwaves; }
   int nz(){ return m_nz; }

@@ -180,6 +180,45 @@ void FileSelector::on_select_button_clicked()
     fin.close();
     */
   }
+  else if(m_diskoveryButton.get_active()){
+    boost::filesystem::path dir = boost::filesystem::path(phil.substr(0,phil.rfind("\\")));
+    size_t wpos = phil.rfind("_w");
+    size_t spos = phil.rfind("_s");
+    size_t tpos = phil.rfind("_t");
+    std::string basename = phil.substr(0,phil.rfind("_w")+1);
+    int ispot,itime;
+    std::vector<std::string> waves;
+    if(spos != std::string::npos && tpos != std::string::npos){
+      int ns = 0;
+      int nt = 0;
+      for(boost::filesystem::directory_iterator it(dir); it != boost::filesystem::directory_iterator(); ++it){
+	 std::string ifile = it->path().string();
+	 if(ifile.find(basename) != 0 || ifile.find("thumb") != std::string::npos) continue;
+	 spos = phil.rfind("_s");
+	 sscanf(ifile.substr(spos).c_str(),"_s%d_t%d.TIF",&ispot,&itime);
+	 if(ispot > ns) ns = ispot;
+	 if(itime > nt) nt = itime;
+	 if(ispot == 1 && itime == 1){
+	   wpos = phil.rfind("_w");
+	   waves.push_back(ifile.substr(wpos+2,spos-wpos-2));
+	 }
+      }
+      for(std::vector<std::string>::iterator wit = waves.begin(); wit != waves.end(); wit++){
+	for(ispot = 1; ispot <= ns; ispot++){
+	  for(itime = 1; itime <= nt; itime++){
+	    char buffer[500];
+	    sprintf(buffer,"%sw%s_s%d_t%d.TIF",basename.c_str(),wit->c_str(),ispot,itime);
+	    std::string ifile(buffer);
+	    Gtk::TreeModel::Row row = *(m_refTreeModel->append());
+	    row[m_idColumn] = m_nextRow;
+	    m_nextRow++;
+	    row[m_fileNameColumn] = ifile;
+	    m_names.push_back(ifile);
+	  }
+	}
+      }
+    }
+  }
   else{
     Gtk::TreeModel::Row row = *(m_refTreeModel->append());
     row[m_idColumn] = m_nextRow;

@@ -169,6 +169,279 @@ Mask* ImRecord::getContourMap(int chan)
   return newMask;
 }
 
+Mask* ImRecord::segment2(int chan)
+{
+  Mask* contourMask = getContourMap(chan);
+  Mask* segmentMask = new Mask(m_imWidth,m_imHeight,0);
+
+  std::vector<Cluster*> clusters,segments;
+  Mask* subMask = contourMask->getCopy();
+  for(int x = 0; x < m_imWidth; x++){
+    for(int y = 0; y < m_imHeight; y++){
+      int val = subMask->getValue(x,y);
+      if(val < 1) continue;
+      Cluster* c = new Cluster();
+      std::vector<int> borderX;
+      std::vector<int> borderY;
+      borderX.push_back(x);
+      borderY.push_back(y);
+      subMask->setValue(x,y,0);
+      while(borderX.size() > 0){
+	uint32_t nborder = borderX.size();
+	for(uint32_t b = 0; b < nborder; b++){
+	  int bi = borderX.at(0);
+	  int bj = borderY.at(0);
+	  int left = bi-1;
+	  int right = bi+2;
+	  int top = bj-1;
+	  int bottom = bj+2;
+	  if(left < 0) left++;
+	  if(right >= m_imWidth) right--;
+	  if(top < 0) top++;
+	  if(bottom >= m_imHeight) bottom--;
+	  c->addPoint(bi,bj);
+	  for(int di = left; di < right; di++){
+	    for(int dj = top; dj < bottom; dj++){
+	      if(subMask->getValue(di,dj) < 1) continue;
+	      subMask->setValue(di,dj,0);
+	      borderX.push_back(di);
+	      borderY.push_back(dj);
+	    }
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	}
+      }
+      c->computeCenter();
+      clusters.push_back(c);
+    }
+  }
+
+  for(unsigned i = 0; i < clusters.size(); i++){
+    for(unsigned j = i+1; j < clusters.size(); j++){
+      if(clusters[j]->size() > clusters[i]->size()){
+	Cluster* tmp = clusters[i];
+	clusters[i] = clusters[j];
+	clusters[j] = tmp;
+      }
+    }
+  }
+  
+  int segmentID = 1;
+  int di[8] = {-1,-1,-1,0,0,1,1,1};
+  int dj[8] = {-1,0,1,-1,1,-1,0,1};
+  std::vector<int> lmx,lmy,lmh;
+  for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
+    if((*clit)->size() < 500){
+      //for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++) segmentMask->setValue(pt->x,pt->y,segmentID);
+      //segmentID++;
+      (*clit)->findBorder();
+      segments.push_back(*clit);
+      continue;
+    }
+    for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
+      int val = contourMask->getValue(pt->x,pt->y);
+      if(val == 0) continue;
+      bool islocalMaximum = true;
+      for(int k = 0; k < 8; k++){
+	int i2 = pt->x+di[k];
+	if(i2 < 0 || i2 >= m_imWidth) continue;
+	int j2 = pt->y+dj[k];
+	if(j2 < 0 || j2 >= m_imHeight) continue;
+	if(contourMask->getValue(i2,j2) > val){
+	  islocalMaximum = false;
+	  break;
+	}
+      }
+      if(islocalMaximum){
+	lmx.push_back(pt->x);
+	lmy.push_back(pt->y);
+	lmh.push_back(val);
+      }
+    }
+    std::cout << "Found " << lmh.size() << " local maxima in cluster of size " << (*clit)->size() << std::endl;
+    for(unsigned i = 0; i < lmh.size(); i++){
+      int max = lmh[i];
+      int imax = i;
+      for(unsigned j = i+1; j < lmh.size(); j++){
+	if(lmh[j] > max){
+	  max = lmh[j];
+	  imax = j;
+	}
+      }
+      lmh[imax] = lmh[i];
+      lmh[i] = max;
+      int temp = lmx[imax];
+      lmx[imax] = lmx[i];
+      lmx[i] = temp;
+      temp = lmy[imax];
+      lmy[imax] = lmy[i];
+      lmy[i] = temp;
+    }
+    //std::cout << "Starting with maximum at (" << lmx[0] << "," << lmy[0] << ")" << std::endl;
+    subMask->clear(0,m_imWidth,0,m_imHeight);
+    for(unsigned i = 0; i < lmh.size(); i++){
+      if(segmentMask->getValue(lmx[i],lmy[i]) > 0) continue;
+      subMask->setValue(lmx[i],lmy[i],1);
+      int size = 1;
+      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
+	if(contourMask->getValue(pt->x,pt->y) != 1) continue;
+	if(segmentMask->getValue(pt->x,pt->y) > 0) continue;
+	if(contourMask->isMinimallyConnected(lmx[i],lmy[i],pt->x,pt->y,false)){
+	  subMask->setValue(pt->x,pt->y,1);
+	  size++;
+	}
+      }
+    
+      int clusterThreshold = size/100;
+      int newSize = size;
+      std::vector<Cluster*> borderClusters;
+      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
+	int val = subMask->getValue(pt->x,pt->y);
+	if(val != 1) continue;
+	Cluster* c = new Cluster();
+	std::vector<int> borderX;
+	std::vector<int> borderY;
+	borderX.push_back(pt->x);
+	borderY.push_back(pt->y);
+	subMask->setValue(pt->x,pt->y,2);
+	while(borderX.size() > 0){
+	  uint32_t nborder = borderX.size();
+	  for(uint32_t b = 0; b < nborder; b++){
+	    int bi = borderX.at(0);
+	    int bj = borderY.at(0);
+	    int left = bi-1;
+	    int right = bi+2;
+	    int top = bj-1;
+	    int bottom = bj+2;
+	    if(left < 0) left++;
+	    if(right >= m_imWidth) right--;
+	    if(top < 0) top++;
+	    if(bottom >= m_imHeight) bottom--;
+	    c->addPoint(bi,bj);
+	    for(int di = left; di < right; di++){
+	      for(int dj = top; dj < bottom; dj++){
+		if(subMask->getValue(di,dj) != 1) continue;
+		subMask->setValue(di,dj,2);
+		borderX.push_back(di);
+		borderY.push_back(dj);
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	}
+	if(c->size() < clusterThreshold){
+	  std::vector<LocalizedObject::Point> pts = c->getPoints();
+	  for(std::vector<LocalizedObject::Point>::iterator it = pts.begin(); it != pts.end(); it++) subMask->setValue(it->x,it->y,0);
+	  newSize -= c->size();
+	  delete c;
+	}
+	else{
+	  c->computeCenter();
+	  borderClusters.push_back(c);
+	}
+      }
+
+      int offset = newSize/2;
+      for(std::vector<Cluster*>::iterator it = borderClusters.begin(); it != borderClusters.end(); it++){
+	LocalizedObject::Point p = (*it)->center();
+	int left = p.x - offset;
+	if(left < 0) left = 0;
+	int right = p.x + offset;
+	if(right > m_imWidth) right = m_imWidth;
+	int top = p.y - offset;
+	if(top < 0) top = 0;
+	int bottom = p.y + offset;
+	if(bottom > m_imHeight) bottom = m_imHeight;
+	int sum = 0;
+	for(int x = left; x < right; x++){
+	  for(int y = top; y < bottom; y++) sum += subMask->getValue(x,y);
+	}
+	if(sum < newSize/8){
+	  std::vector<LocalizedObject::Point> pts = (*it)->getPoints();
+	  for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++) subMask->setValue(jt->x,jt->y,0);
+	}
+	delete *it;
+      }
+
+      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
+	if(subMask->getValue(pt->x,pt->y) < 2) continue;
+	int distx = pt->x - lmx[i];
+	int disty = pt->y - lmy[i];
+	float dist = sqrt(distx*distx + disty*disty);
+	for(std::vector<LocalizedObject::Point>::iterator pt2 = (*clit)->begin(); pt2 != (*clit)->end(); pt2++){
+	  if(contourMask->getValue(pt2->x,pt2->y) == 0) continue;
+	  if(segmentMask->getValue(pt2->x,pt2->y) > 0) continue;
+	  if(subMask->getValue(pt2->x,pt2->y) > 0) continue;
+	  distx = pt2->x - lmx[i];
+	  disty = pt2->y - lmy[i];
+	  if(sqrt(distx*distx + disty*disty) > dist) continue;
+	  if(contourMask->isMinimallyConnected(pt2->x,pt2->y,pt->x,pt->y)) subMask->setValue(pt2->x,pt2->y,1);
+	}
+      }
+    
+      //int segmentSize = 1;
+      //segmentMask->setValue(lmx[i],lmy[i],segmentID);
+      Cluster* newSegment = new Cluster();
+      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
+	//if(contourMask->getValue(x,y) == 0) continue;
+	//if(segmentMask->getValue(x,y) > 0) continue;
+	if(subMask->getValue(pt->x,pt->y) > 0){//>= mode){
+	  newSegment->addPoint(*pt);
+	  segmentMask->setValue(pt->x,pt->y,segmentID);
+	  //segmentSize++;
+	}
+      }
+      newSegment->findBorder();
+      segments.push_back(newSegment);
+      //std::cout << "Segment " << segmentID << " has size " << segmentSize << std::endl;
+      std::cout << "Finished potential segment " << segmentID << std::endl;
+      segmentID++;
+      subMask->clear(0,m_imWidth,0,m_imHeight);
+    }
+    delete *clit;
+    lmx.clear();
+    lmy.clear();
+    lmh.clear();
+  }
+
+  bool finished = false;
+  while(!finished){
+    finished = true;
+    for(std::vector<Cluster*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
+      if(!(*sit)) continue;
+      for(std::vector<Cluster*>::iterator sit2 = segments.begin(); sit2 != segments.end(); sit2++){
+	if(!(*sit2)) continue;
+	if(sit2 == sit) continue;
+	if((*sit2)->getBorderLength(*sit) > (*sit2)->perimeter()/3){
+	  (*sit)->add(*sit2);
+	  (*sit)->findBorder();
+	  delete *sit2;
+	  *sit2 = NULL;
+	  finished = false;
+	}
+      }
+    }
+  }
+
+  segmentMask->clear(0,m_imWidth,0,m_imHeight);
+  segmentID = 1;
+  for(std::vector<Cluster*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
+    if(!(*sit)) continue;
+    for(std::vector<LocalizedObject::Point>::iterator pt = (*sit)->begin(); pt != (*sit)->end(); pt++){
+      segmentMask->setValue(pt->x,pt->y,segmentID);
+    }
+    std::cout << "Segment " << segmentID << " has size " << (*sit)->size() << std::endl;
+    segmentID++;
+    delete *sit;
+  }
+  
+  delete subMask;
+  delete contourMask;
+  return segmentMask;
+}
+
 Mask* ImRecord::segment(int chan)
 {
   Mask* contourMask = getContourMap(chan);

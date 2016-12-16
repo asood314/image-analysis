@@ -65,9 +65,56 @@ int Cluster::indexOf(LocalizedObject::Point pt)
   return i;
 }
 
+void Cluster::findBorder()
+{
+  m_border.clear();
+  int minX = 999999;
+  int minY = 999999;
+  int maxX = 0;
+  int maxY = 0;
+  for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++){
+    if(kt->x > maxX) maxX = kt->x;
+    if(kt->x < minX) minX = kt->x;
+    if(kt->y > maxY) maxY = kt->y;
+    if(kt->y < minY) minY = kt->y;
+  }
+  Mask* m = new Mask(maxX-minX+3,maxY-minY+3,0);
+  for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++) m->setValue(kt->x - minX + 1,kt->y - minY + 1,1);
+  int dx[8] = {-minX,-minX,-minX,1-minX,1-minX,2-minX,2-minX,2-minX};
+  int dy[8] = {-minY,1-minY,2-minY,-minY,2-minY,-minY,1-minY,2-minY};
+  for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++){
+    for(int i = 0; i < 8; i++){
+      if(m->getValue(kt->x+dx[i],kt->y+dy[i]) != 1){
+	m_border.push_back(*kt);
+	break;
+      }
+    }
+  }
+  delete m;
+  /*
+  for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++){
+    int sum = 0;
+    for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
+      if(abs(it->x - kt->x) < 2 && abs(it->y - kt->y) < 2) sum++;
+    }
+    if(sum < 9) m_border.push_back(*kt);
+  }
+  */
+}
+
 int Cluster::getBorderLength(Cluster* c)
 {
   int len = 0;
+  if(c->perimeter() == 0) c->findBorder();
+  for(std::vector<LocalizedObject::Point>::iterator it = m_border.begin(); it != m_border.end(); it++){
+    for(std::vector<LocalizedObject::Point>::iterator jt = c->borderBegin(); jt != c->borderEnd(); jt++){
+      if(abs(it->x - jt->x) < 2 && abs(it->y - jt->y) < 2){
+	len++;
+	break;
+      }
+    }
+  }
+  /*
   std::vector<LocalizedObject::Point> points2 = c->getPoints();
   for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
     for(std::vector<LocalizedObject::Point>::iterator it2 = points2.begin(); it2 != points2.end(); it2++){
@@ -84,6 +131,7 @@ int Cluster::getBorderLength(Cluster* c)
       }
     }
   }
+  */
   return len;
 }
 

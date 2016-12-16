@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <cmath>
 
 class Mask
 {
@@ -36,6 +37,8 @@ public:
   int sum(int x1, int x2, int y1, int y2);
   void clear(int x1, int x2, int y1, int y2);
   int max(int x1, int x2, int y1, int y2);
+  Mask* getBorders();
+  bool isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, bool allowBorders=true);
 
 };
 

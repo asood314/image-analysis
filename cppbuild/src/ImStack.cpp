@@ -60,3 +60,31 @@ void ImStack::divide(int d)
     }
   }
 }
+
+void ImStack::derivative(int w, int z)
+{
+  ImFrame* tmp = m_frames[w][z];
+  m_frames[w][z] = tmp->derivative();
+  delete tmp;
+}
+
+void ImStack::derivative()
+{
+  for(int w = 0; w < m_nwaves; w++){
+    for(int z = 0; z < m_nz; z++) derivative(w,z);
+  }
+}
+
+void ImStack::d2EigenvalueMax(int w, int z)
+{
+  ImFrame* tmp = m_frames[w][z];
+  m_frames[w][z] = tmp->d2EigenvalueMax();
+  delete tmp;
+}
+
+void ImStack::d2EigenvalueMax()
+{
+  for(int w = 0; w < m_nwaves; w++){
+    for(int z = 0; z < m_nz; z++) d2EigenvalueMax(w,z);
+  }
+}

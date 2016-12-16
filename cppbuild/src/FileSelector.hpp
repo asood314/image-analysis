@@ -4,6 +4,7 @@
 #include <gtkmm-2.4/gtkmm.h>
 #include <vector>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include "FileManager.hpp"
 #include "ImageAnalysisToolkit.hpp"
 #include "FileConverter.hpp"

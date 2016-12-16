@@ -74,6 +74,7 @@ public:
   Synapse* selectSynapseFromCollection(int index, LocalizedObject::Point pt);
   Mask* getContourMap(int chan);
   Mask* segment(int chan);
+  Mask* segment2(int chan);
   void hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail);
   Mask* getPunctaMask(int chan, bool outline=false);
   Mask* getSynapseMask(bool outline=true);

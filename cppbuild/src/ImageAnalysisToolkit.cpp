@@ -98,9 +98,13 @@ Mask* ImageAnalysisToolkit::findOutliers(ImFrame* frame)
 void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int zplane)
 {
   if(m_master == 255){
-    for(int w = 0; w < analysisStack->nwaves(); w++) findSignal(analysisStack->frame(w,zplane),rec,w);
+    for(int w = 0; w < analysisStack->nwaves(); w++){
+      //rec->setThreshold(w,findThreshold(analysisStack->frame(w,zplane)));
+      findSignal(analysisStack->frame(w,zplane),rec,w);
+    }
   }
   else{
+    //rec->setThreshold(m_master,findThreshold(analysisStack->frame(m_master,zplane)));
     findSignal(analysisStack->frame(m_master,zplane),rec,m_master);
     Mask* m = rec->getSignalMask(m_master);
     if(m_mode == OVERRIDE){
@@ -136,6 +140,7 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
     else{ //m_mode == OR
       for(int w = 0; w < analysisStack->nwaves(); w++){
 	if(w == m_master) continue;
+	//rec->setThreshold(w,findThreshold(analysisStack->frame(w,zplane)));
 	findSignal(analysisStack->frame(w,zplane),rec,w);
 	Mask* m2 = rec->getSignalMask(w);
 	m2->OR(*m);
@@ -148,7 +153,20 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
 void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
 {
   int globalThreshold = findThreshold(frame);
-  rec->setThreshold(chan,globalThreshold);
+  while(globalThreshold >= 0){
+    std::cout << "Using global threshold " << globalThreshold << std::endl;
+    rec->setThreshold(chan,globalThreshold);
+    Mask* densityMask = applyThreshold(frame,rec,chan);
+    globalThreshold = findThreshold(frame,rec->getSignalMask(chan)->inverse(),densityMask->inverse());
+    delete densityMask;
+  }
+}
+
+Mask* ImageAnalysisToolkit::applyThreshold(ImFrame* frame, ImRecord* rec, int chan)
+{
+  //int globalThreshold = findThreshold(frame);
+  //rec->setThreshold(chan,globalThreshold);
+  int globalThreshold = rec->getThreshold(chan);
   Mask* m = new Mask(frame->width(),frame->height());
   for(int i = 0; i < frame->width(); i++){
     for(int j = 0; j < frame->height(); j++){
@@ -157,12 +175,259 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
       }
     }
   }
+
+  
+  //Mask* signalStrengthMask = new Mask(frame->width(),frame->height());
+  Mask* denseRegionMask = new Mask(frame->width(),frame->height());
+  int windowSize = (int)(2.0 / rec->resolutionXY());
+  int numerator = m->sum(0,windowSize,0,windowSize);
+  double localMean1 = 0;
+  double localMean2 = 0;
+  double localMean3 = 0;
+  double localMean4 = frame->mean(0,windowSize,0,windowSize,m);
+  int den1 = 0;
+  int den2 = 0;
+  int den3 = 0;
+  int den4 = numerator;
+  Mask* outMask = findOutliers(frame);
+  outMask->multiply(*m);
+  double globalStd = frame->std(outMask);
+  delete outMask;
+  if(numerator > 0.4*windowSize*windowSize) denseRegionMask->setValue(0,0,1);
+  //if(localMean4 - globalStd > globalThreshold) signalStrengthMask->setValue(0,0,1);
+  localMean4 *= den4;//windowSize*windowSize;
+  for(int i = 0; i < frame->width(); i++){
+    int left = i - windowSize;
+    if(left < 0) left = 0;
+    int right = i + windowSize;
+    if(right > frame->width()) right = frame->width();
+    int top = 0;
+    int bottom = windowSize;
+    if(i > 0){
+      for(int k = 0; k < bottom; k++){
+	if(m->getValue(i-1,k) != 1) continue;
+	localMean3 += frame->getPixel(i-1,k);
+	localMean4 -= frame->getPixel(i-1,k);
+	den3++;
+	den4--;
+      }
+      if(left > 0){
+	for(int k = 0; k < bottom; k++) numerator -= m->getValue(left-1,k);
+	for(int k = 0; k < bottom; k++){
+	  if(m->getValue(left-1,k) != 1) continue;
+	  localMean3 -= frame->getPixel(left-1,k);
+	  den3--;
+	}
+      }
+      if(right < frame->width() - 1){
+	for(int k = 0; k < bottom; k++) numerator += m->getValue(right,k);
+	for(int k = 0; k < bottom; k++){
+	  if(m->getValue(right,k) != 1) continue;
+	  localMean4 += frame->getPixel(right,k);
+	  den4++;
+	}
+      }
+      if(numerator > 0.4*(right-left)*(bottom-top)) denseRegionMask->setValue(i,0,1);
+      //if(localMean3/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,0,1);
+      //else if(localMean4/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,0,1);
+      //if(localMean3/den3 - globalStd > globalThreshold) signalStrengthMask->setValue(i,0,1);
+      //else if(localMean4/den4 - globalStd > globalThreshold) signalStrengthMask->setValue(i,0,1);
+    }
+    
+    for(int j = 1; j < frame->height(); j++){
+      for(int k = left; k < i; k++){
+	//if(m->getValue(k,j-1) != 1) continue;
+	localMean2 += frame->getPixel(k,j-1);
+	localMean3 -= frame->getPixel(k,j-1);
+	den2++;
+	den3--;
+      }
+      for(int k = i; k < right; k++){
+	//if(m->getValue(k,j-1) != 1) continue;
+	localMean1 += frame->getPixel(k,j-1);
+	localMean4 -= frame->getPixel(k,j-1);
+	den1++;
+	den4--;
+      }
+      top = j - windowSize;
+      if(top < 0) top = 0;
+      bottom = j + windowSize-1;
+      if(bottom > frame->height()) bottom = frame->height();
+      if(top > 0){
+	for(int k = left; k < right; k++) numerator -= m->getValue(k,top-1);
+	for(int k = left; k < i; k++){
+	  //if(m->getValue(k,top-1) != 1) continue;
+	  localMean2 -= frame->getPixel(k,top-1);
+	  den2--;
+	}
+	for(int k = i; k < right; k++){
+	  //if(m->getValue(k,top-1) != 1) continue;
+	  localMean1 -= frame->getPixel(k,top-1);
+	  den1--;
+	}
+      }
+      if(bottom < frame->height()){
+	for(int k = left; k < right; k++) numerator += m->getValue(k,bottom);
+	for(int k = left; k < i; k++){
+	  //if(m->getValue(k,bottom) != 1) continue;
+	  localMean3 += frame->getPixel(k,bottom);
+	  den3++;
+	}
+	for(int k = i; k < right; k++){
+	  //if(m->getValue(k,bottom) != 1) continue;
+	  localMean4 += frame->getPixel(k,bottom);
+	  den4++;
+	}
+      }
+      if(numerator > 0.4*(right-left)*(bottom-top)) denseRegionMask->setValue(i,j,1);
+      //if(m->sum(left,i,top,j) > 0.5*(i-left)*(j-top)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(left,i,j,bottom) > 0.5*(i-left)*(bottom-j)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(i,right,j,bottom) > 0.5*(right-i)*(bottom-j)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(i,right,top,j) > 0.5*(right-i)*(j-top)) denseRegionMask->setValue(i,j,1);
+      
+      //if(localMean1/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean2/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean3/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean4/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //if(localMean1/den1 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean2/den2 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean3/den3 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean4/den4 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+    }
+    
+    i++;
+    left = i - windowSize;
+    if(left < 0) left = 0;
+    right = i + windowSize;
+    if(right > frame->width()) right = frame->width();
+    for(int k = top; k < frame->height(); k++){
+      if(m->getValue(i-1,k) != 1) continue;
+      localMean2 += frame->getPixel(i-1,k);
+      localMean1 -= frame->getPixel(i-1,k);
+      den2++;
+      den1--;
+    }
+    if(m->getValue(i-1,frame->height()-1) == 1){
+      localMean3 += frame->getPixel(i-1,frame->height()-1);
+      localMean4 -= frame->getPixel(i-1,frame->height()-1);
+      den3++;
+      den4--;
+    }
+    if(left > 0){
+      for(int k = top; k < bottom; k++) numerator -= m->getValue(i-windowSize-1,k);
+      for(int k = top; k < frame->height(); k++){
+	if(m->getValue(i-windowSize-1,k) != 1) continue;
+	localMean2 -= frame->getPixel(i-windowSize-1,k);
+	den2--;
+      }
+      if(m->getValue(i-windowSize-1,frame->height()-1) == 1){
+	localMean3 -= frame->getPixel(i-windowSize-1,frame->height()-1);
+	den3--;
+      }
+    }
+    if(right < frame->width() - 1){
+      for(int k = top; k < bottom; k++) numerator += m->getValue(i+windowSize,k);
+      for(int k = top; k < frame->height(); k++){
+	if(m->getValue(i+windowSize,k) != 1) continue;
+	localMean1 += frame->getPixel(i+windowSize,k);
+	den1++;
+      }
+      if(m->getValue(i+windowSize,frame->height()-1) == 1){
+	localMean4 += frame->getPixel(i+windowSize,frame->height()-1);
+	den4++;
+      }
+    }
+    if(numerator > 0.4*(right-left)*(bottom-top)) denseRegionMask->setValue(i,frame->height()-1,1);
+    //if(localMean1/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,frame->height()-1,1);
+    //else if(localMean2/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,frame->height()-1,1);
+    //if(localMean1/den1 - globalStd > globalThreshold) signalStrengthMask->setValue(i,frame->height()-1,1);
+    //else if(localMean2/den2 - globalStd > globalThreshold) signalStrengthMask->setValue(i,frame->height()-1,1);
+
+    for(int j = frame->height()-2; j >= 0; j--){
+      for(int k = left; k < i; k++){
+	//if(m->getValue(k,j) != 1) continue;
+	localMean2 -= frame->getPixel(k,j);
+	localMean3 += frame->getPixel(k,j);
+	den2--;
+	den3++;
+      }
+      for(int k = i; k < right; k++){
+	//if(m->getValue(k,j) != 1) continue;
+	localMean1 -= frame->getPixel(k,j);
+	localMean4 += frame->getPixel(k,j);
+	den1--;
+	den4++;
+      }
+      top = j - windowSize + 1;
+      if(top < 0) top = 0;
+      bottom = j + windowSize;
+      if(bottom >= frame->height()) bottom = frame->height();
+      if(top > 0){
+	for(int k = left; k < right; k++) numerator += m->getValue(k,top-1);
+	for(int k = left; k < i; k++){
+	  //if(m->getValue(k,top-1) != 1) continue;
+	  localMean2 += frame->getPixel(k,top-1);
+	  den2++;
+	}
+	for(int k = i; k < right; k++){
+	  //if(m->getValue(k,top-1) != 1) continue;
+	  localMean1 += frame->getPixel(k,top-1);
+	  den1++;
+	}
+      }
+      if(bottom < frame->height()){
+	for(int k = left; k < right; k++) numerator -= m->getValue(k,bottom);
+	for(int k = left; k < i; k++){
+	  //if(m->getValue(k,bottom) != 1) continue;
+	  localMean3 -= frame->getPixel(k,bottom);
+	  den3--;
+	}
+	for(int k = i; k < right; k++){
+	  //if(m->getValue(k,bottom) != 1) continue;
+	  localMean4 -= frame->getPixel(k,bottom);
+	  den4++;
+	}
+      }
+      if(numerator > 0.4*(right-left)*(bottom-top)) denseRegionMask->setValue(i,j,1);
+      //if(m->sum(left,i,top,j) > 0.5*(i-left)*(j-top)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(left,i,j,bottom) > 0.5*(i-left)*(bottom-j)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(i,right,j,bottom) > 0.5*(right-i)*(bottom-j)) denseRegionMask->setValue(i,j,1);
+      //else if(m->sum(i,right,top,j) > 0.5*(right-i)*(j-top)) denseRegionMask->setValue(i,j,1);
+      
+      //if(localMean1/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean2/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean3/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean4/(windowSize*windowSize) - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //if(localMean1/den1 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean2/den2 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean3/den3 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+      //else if(localMean4/den4 - globalStd > globalThreshold) signalStrengthMask->setValue(i,j,1);
+    }
+  }
+  //denseRegionMask->OR(*signalStrengthMask);
+
+  
+  bool unpruned = true;
+  while(unpruned){
+    unpruned = false;
+    for(int i = 1; i < frame->width()-1; i++){
+      for(int j = 1; j < frame->height()-1; j++){
+	if(m->getValue(i,j) < 1) continue;
+	int sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	if(sum < 2+2*denseRegionMask->getValue(i,j)){
+	  m->setValue(i,j,0);
+	  unpruned = true;
+	}
+      }
+    }
+  }
+  
   bool unfilled = true;
   while(unfilled){
     unfilled = false;
     for(int i = 1; i < frame->width()-1; i++){
       for(int j = 1; j < frame->height()-1; j++){
-	if(m->getValue(i,j) > 0) continue;
+	if(m->getValue(i,j) > 0 || denseRegionMask->getValue(i,j) > 0) continue;
 	int sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
 	if(sum > 4){
 	  m->setValue(i,j,1);
@@ -171,7 +436,8 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
       }
     }
   }
-  bool unpruned = true;
+  
+  unpruned = true;
   while(unpruned){
     unpruned = false;
     for(int i = 1; i < frame->width()-1; i++){
@@ -189,6 +455,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
   if(configChan >= m_noiseRemovalThreshold.size()) configChan = 0;
   double radius = m_minPunctaRadius.at(configChan);
   uint32_t sizeThreshold = (uint32_t)(m_noiseRemovalThreshold.at(configChan)*3.14159*radius*radius/(rec->resolutionXY()*rec->resolutionXY()));
+  //std::cout << "sizeThreshold = " << sizeThreshold << std::endl;
   std::vector<int> borderX;
   std::vector<int> borderY;
   std::vector<int> clusterX;
@@ -235,19 +502,23 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
 	  m->setValue(clusterX.at(k),clusterY.at(k),0);
 	}
       }
+      clusterX.clear();
+      clusterY.clear();
     }
   }
   rec->setSignalMask(chan,m);
   delete used;
+  return denseRegionMask;
 }
 
 int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 {
-  //Mask* outMask = findOutliers(frame);
+  Mask* outMask = findOutliers(frame);
+  ImFrame* dFrame = frame->derivative();
   Mask* m = new Mask(frame->width(),frame->height());
-  double lowerLimit = frame->mode();//outMask);
+  double lowerLimit = frame->mode(outMask);
   double mode = lowerLimit;
-  double best = frame->mean();//outMask);
+  double best = frame->mean(outMask);
   double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
   int nsteps = 10;
   double step = (upperLimit - lowerLimit) / nsteps;
@@ -259,6 +530,8 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
   double fom = 0;
   int maxClusters = 0;
   bool finished = false;
+  int64_t penalty = (int64_t)(dFrame->median());
+  std::cout << "Penalty = " << penalty << std::endl;
   while(!finished){
     finished = true;
     for(int istep = 0; istep < nsteps+1; istep++){
@@ -280,20 +553,25 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  for(int j = 1; j < frame->height()-1; j++){
 	    if(m->getValue(i,j) < 1) continue;
 	    int sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
-	    if(sum < 3){
+	    if(sum < 4){
 	      m->setValue(i,j,0);
 	      unpruned = true;
 	    }
 	  }
 	}
       }
+      int64_t avgDerivative = 0;
+      int64_t totalBorderSize = 0;
       int64_t avgSigSize = 0;
       int64_t avgSigSize2 = 0;
       int nSigClusters = 0;
       std::vector<int> borderX;
       std::vector<int> borderY;
       Mask* subMask = m->getCopy();
-      //subMask->multiply(*outMask);
+      subMask->multiply(*outMask);
+      Mask* borderMask = m->getBorders();
+      borderMask->multiply(*outMask);
+      int64_t borderSizeThreshold = (int64_t)(3.14159/(0.11*0.11));
       for(int i = 0; i < frame->width(); i++){
 	for(int j = 0; j < frame->height(); j++){
 	  if(subMask->getValue(i,j) != 1) continue;
@@ -301,6 +579,8 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	  borderY.push_back(j);
 	  subMask->setValue(i,j,0);
 	  int64_t size = 1;
+	  int64_t borderDerivative = 0;
+	  int64_t borderSize = 0;
 	  while(borderX.size() > 0){
 	    int bi = borderX.at(0);
 	    int bj = borderY.at(0);
@@ -312,6 +592,12 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	    if(right >= frame->width()) right--;
 	    if(top < 0) top++;
 	    if(bottom >= frame->height()) bottom--;
+	    
+	    if(borderMask->getValue(bi,bj) > 0){
+	      borderDerivative += dFrame->getPixel(bi,bj) - penalty;
+	      borderSize++;
+	    }
+	    
 	    for(int di = left; di < right; di++){
 	      for(int dj = top; dj < bottom; dj++){
 		int val = m->getValue(di,dj);
@@ -326,6 +612,12 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	    borderX.erase(borderX.begin());
 	    borderY.erase(borderY.begin());
 	  }
+	  
+	  if(size > borderSizeThreshold){
+	    avgDerivative += borderDerivative*borderSize;
+	    totalBorderSize += borderSize;
+	  }
+	  
 	  avgSigSize += size;
 	  avgSigSize2 += size*size;
 	  nSigClusters++;
@@ -381,6 +673,12 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
       //if(((double)avgSigSize)/(frame->height()*frame->width()) < 0.01) break;
       if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
       else ifom = 0;
+      ifom *= avgDerivative;
+      //if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+      //else ifom = 0;
+      //if(nSigClusters > 0) ifom = ifom/nSigClusters;
+      //else ifom = 0;
+      if(totalBorderSize > 0) ifom = ifom/totalBorderSize;
       /*
       if(nSigClusters >= maxClusters){
 	fom = ifom;
@@ -395,8 +693,11 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 	finished = false;
       }
       delete subMask;
+      delete borderMask;
       //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
+      std::cout << globalThreshold  << ", " << avgDerivative << ", " << totalBorderSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters <<  ":\t" << ifom << std::endl;
     }
+    finished = false;
     if(step < 1.01) break;
     if(best < 0) break;
     if(best == upperLimit){
@@ -420,6 +721,228 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
     }
   }
   delete m;
+  delete outMask;
+  delete dFrame;
+  //nia::nout << "Best threshold: " << best << "\n";
+  return (int)best;
+}
+
+int ImageAnalysisToolkit::findThreshold(ImFrame* frame, Mask* sigMask, Mask* outMask)
+{
+  ImFrame* dFrame = frame->derivative();
+  Mask* m = new Mask(frame->width(),frame->height());
+  double lowerLimit = frame->mode(outMask);
+  double mode = lowerLimit;
+  double best = frame->mean(outMask);
+  double upperLimit = 2*best;//best + 6*ndim.std(w,z,t,p);
+  int nsteps = 10;
+  double step = (upperLimit - lowerLimit) / nsteps;
+  if(step < 1.0){
+    step = 1.0;
+    nsteps = (int)(upperLimit - lowerLimit);
+  }
+  //std::cout << lowerLimit << ", " << upperLimit << ", " << nsteps << ", " << step << std::endl;
+  double fom = 0;
+  int maxClusters = 0;
+  bool finished = false;
+  int64_t penalty = (int64_t)(dFrame->median() * 2);
+  std::cout << "Penalty = " << penalty << std::endl;
+  while(!finished){
+    finished = true;
+    for(int istep = 0; istep < nsteps+1; istep++){
+      double globalThreshold = lowerLimit + istep*step;
+      //std::cout << globalThreshold << std::endl;
+      for(int i = 0; i < frame->width(); i++){
+	for(int j = 0; j < frame->height(); j++){
+	  int value = frame->getPixel(i,j);
+	  if(value > globalThreshold){
+	    m->setValue(i,j,1);
+	  }
+	  else m->setValue(i,j,0);
+	}
+      }
+      bool unpruned = true;
+      while(unpruned){
+	unpruned = false;
+	for(int i = 1; i < frame->width()-1; i++){
+	  for(int j = 1; j < frame->height()-1; j++){
+	    if(m->getValue(i,j) < 1) continue;
+	    int sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	    if(sum < 4){
+	      m->setValue(i,j,0);
+	      unpruned = true;
+	    }
+	  }
+	}
+      }
+      int64_t avgDerivative = 0;
+      int64_t totalBorderSize = 0;
+      int64_t avgSigSize = 0;
+      int64_t avgSigSize2 = 0;
+      int nSigClusters = 0;
+      std::vector<int> borderX;
+      std::vector<int> borderY;
+      Mask* subMask = m->getCopy();
+      subMask->multiply(*outMask);
+      Mask* borderMask = m->getBorders();
+      borderMask->multiply(*outMask);
+      borderMask->multiply(*sigMask);
+      int64_t borderSizeThreshold = (int64_t)(3.14159/(0.11*0.11));
+      for(int i = 0; i < frame->width(); i++){
+	for(int j = 0; j < frame->height(); j++){
+	  if(subMask->getValue(i,j) != 1) continue;
+	  bool bordersPrev = false;
+	  borderX.push_back(i);
+	  borderY.push_back(j);
+	  subMask->setValue(i,j,0);
+	  int64_t size = 1;
+	  int64_t borderDerivative = 0;
+	  int64_t borderSize = 0;
+	  while(borderX.size() > 0){
+	    int bi = borderX.at(0);
+	    int bj = borderY.at(0);
+	    int left = bi-1;
+	    int right = bi+2;
+	    int top = bj-1;
+	    int bottom = bj+2;
+	    if(left < 0) left++;
+	    if(right >= frame->width()) right--;
+	    if(top < 0) top++;
+	    if(bottom >= frame->height()) bottom--;
+	    
+	    if(borderMask->getValue(bi,bj) > 0){
+	      borderDerivative += dFrame->getPixel(bi,bj) - penalty;
+	      borderSize++;
+	    }
+	    
+	    for(int di = left; di < right; di++){
+	      for(int dj = top; dj < bottom; dj++){
+		if(sigMask->getValue(di,dj) != 1) bordersPrev = true;
+		int val = m->getValue(di,dj);
+		if(val > 0 && subMask->getValue(di,dj) == 1){
+		  subMask->setValue(di,dj,0);
+		  borderX.push_back(di);
+		  borderY.push_back(dj);
+		  size++;
+		}
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	  
+	  if(bordersPrev){//size > borderSizeThreshold){
+	    avgDerivative += borderDerivative*borderSize;
+	    totalBorderSize += borderSize;
+	  }
+	  
+	  avgSigSize += size;
+	  avgSigSize2 += size*size;
+	  nSigClusters++;
+	}
+      }
+
+      int64_t avgSize = 0;
+      int64_t avgSize2 = 0;
+      int nBkgClusters = 0;
+      subMask->copy(*m);
+      for(int i = 0; i < frame->width(); i++){
+	for(int j = 0; j < frame->height(); j++){
+	  if(subMask->getValue(i,j) != 0) continue;
+	  borderX.push_back(i);
+	  borderY.push_back(j);
+	  subMask->setValue(i,j,1);
+	  int64_t size = 1;
+	  while(borderX.size() > 0){
+	    int bi = borderX.at(0);
+	    int bj = borderY.at(0);
+	    int left = bi-1;
+	    int right = bi+2;
+	    int top = bj-1;
+	    int bottom = bj+2;
+	    if(left < 0) left++;
+	    if(right >= frame->width()) right--;
+	    if(top < 0) top++;
+	    if(bottom >= frame->height()) bottom--;
+	    for(int di = left; di < right; di++){
+	      for(int dj = top; dj < bottom; dj++){
+		int val = m->getValue(di,dj);
+		if(val < 1 && subMask->getValue(di,dj) == 0){
+		  subMask->setValue(di,dj,1);
+		  borderX.push_back(di);
+		  borderY.push_back(dj);
+		  size++;
+		}
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	  avgSize += size;
+	  avgSize2 += size*size;
+	  nBkgClusters++;
+	}
+      }
+
+      
+      //double ifom = ((double)avgSigSize2)/avgSigSize * avgSize2/avgSize;
+      //if(nSigClusters > 0) ifom = ifom/nSigClusters;
+      double ifom = ((double)avgSigSize2)*avgSize/avgSigSize;
+      //if(((double)avgSigSize)/(frame->height()*frame->width()) < 0.01) break;
+      if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+      else ifom = 0;
+      ifom = avgDerivative;
+      //if(nBkgClusters > 0) ifom = ifom/nBkgClusters;
+      //else ifom = 0;
+      //if(nSigClusters > 0) ifom = ifom/nSigClusters;
+      //else ifom = 0;
+      if(totalBorderSize > 0) ifom = ifom/totalBorderSize;
+      /*
+      if(nSigClusters >= maxClusters){
+	fom = ifom;
+	maxClusters = nSigClusters;
+	best = globalThreshold;
+	finished = false;
+      }
+      */
+      if(ifom > fom){
+	fom = ifom;
+	best = globalThreshold;
+	finished = false;
+      }
+      delete subMask;
+      delete borderMask;
+      //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
+      std::cout << globalThreshold  << ", " << avgDerivative << ", " << totalBorderSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters <<  ":\t" << ifom << std::endl;
+    }
+    finished = false;
+    if(step < 1.01) break;
+    if(best < 0) break;
+    if(best == upperLimit){
+      lowerLimit = best - step;
+      upperLimit = best + 9*step;
+      fom *= 0.999;
+    }
+    else if(best == lowerLimit){
+      lowerLimit = best - 9*step;
+      upperLimit = best + step;
+      fom *= 0.999;
+    }
+    else{
+      lowerLimit = best - step;
+      upperLimit = best + step;
+      step = (upperLimit - lowerLimit) / nsteps;
+      if(step < 1.0){
+	step = 1.0;
+	nsteps = (int)(upperLimit - lowerLimit);
+      }
+    }
+  }
+  delete m;
+  delete sigMask;
+  delete outMask;
+  delete dFrame;
+  if(fom <= 0) return -1;
   //nia::nout << "Best threshold: " << best << "\n";
   return (int)best;
 }
@@ -429,6 +952,11 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, int chan)
   findSaturatedPuncta(frame,rec,chan);
   
   Mask* m = rec->getSignalMask(chan);
+  bool delFlag = false;
+  if(!m){
+    m = new Mask(frame->width(),frame->height(),1);
+    delFlag = true;
+  }
   std::vector<LocalizedObject::Point> localMaxima;
   std::vector<LocalizedObject::Point> upperLeft;
   std::vector<LocalizedObject::Point> lowerRight;
@@ -670,15 +1198,21 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, int chan)
   }
   delete cMask;
   delete used;
+  if(delFlag) delete m;
 
   resolveOverlaps(frame,rec,chan);
   nia::nout << "Found " << rec->nPuncta(chan) << " puncta in channel " << chan << " after " << count << " iterations." << "\n";
-}
+ }
 
 void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan)
 {
   //nia::nout << "Find saturated puncta" << "\n";
   Mask* m = rec->getSignalMask(chan);
+  bool delFlag = false;
+  if(!m){
+    m = new Mask(frame->width(),frame->height(),1);
+    delFlag = true;
+  }
   Mask* used = m->getCopy();
   Mask* cMask = new Mask(frame->width(),frame->height());
   std::vector<int> borderSatX;
@@ -867,6 +1401,7 @@ void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, in
   }
   delete used;
   delete cMask;
+  if(delFlag) delete m;
 }
 
 void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, int chan)

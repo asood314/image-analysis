@@ -10,6 +10,7 @@ NiaViewer::NiaViewer() :
   m_width(0),m_height(0),m_zoom(1.0),
   m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
   m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
+  m_autoscaleButton("Auto Scale"),
   m_scaleHideButton("Hide"),
   m_alignment(Gtk::ALIGN_CENTER,Gtk::ALIGN_CENTER,0.0,0.0),
   m_prevButton(0)
@@ -62,6 +63,7 @@ NiaViewer::NiaViewer() :
   m_blueMaxEntry.set_width_chars(5);
   m_blueMaxEntry.set_text(boost::lexical_cast<std::string>((int)m_blueMax));
   m_blueMaxEntry.signal_activate().connect(sigc::mem_fun(*this, &NiaViewer::scale));
+  m_autoscaleButton.signal_clicked().connect(sigc::mem_fun(*this, &NiaViewer::autoscale));
   m_scaleHideButton.signal_clicked().connect(sigc::mem_fun(*this, &NiaViewer::hideScaleBox));
   m_vbox1.pack_start(m_grayMinLabel,Gtk::PACK_SHRINK);
   m_vbox1.pack_start(m_grayMinEntry,Gtk::PACK_SHRINK);
@@ -89,6 +91,7 @@ NiaViewer::NiaViewer() :
   m_vbox8.pack_start(m_blueMaxEntry,Gtk::PACK_SHRINK);
   m_scaleBox.pack_start(m_vbox8,Gtk::PACK_SHRINK,15);
   m_scaleBox.pack_start(m_vsep2,Gtk::PACK_SHRINK,30);
+  m_scaleBox.pack_start(m_autoscaleButton,Gtk::PACK_SHRINK,15);
   m_scaleBox.pack_start(m_scaleHideButton,Gtk::PACK_SHRINK,15);
   //m_mainBox.pack_start(m_scaleBox,Gtk::PACK_SHRINK);
   pack_start(m_scaleBox,Gtk::PACK_SHRINK);
@@ -362,6 +365,15 @@ void NiaViewer::setMode(NiaViewer::ImageMode mode)
 void NiaViewer::setWavelength(int w)
 {
   m_mode = GRAY;
+  m_colors[0].r = 0xff;
+  m_colors[0].g = 0x00;
+  m_colors[0].b = 0x00;
+  m_colors[1].r = 0x00;
+  m_colors[1].g = 0xff;
+  m_colors[1].b = 0x00;
+  m_colors[2].r = 0x00;
+  m_colors[2].g = 0x00;
+  m_colors[2].b = 0xff;
   m_view_w = w;
   updateImage();
 }
@@ -434,6 +446,34 @@ void NiaViewer::updateImage()
   m_eventBox.show();
 }
 
+void NiaViewer::showDerivative()
+{
+  if(!m_data) return;
+  m_data->fourLocation(m_view_p,m_view_t)->derivative();
+  autoscale();
+  updateImage();
+}
+
+void NiaViewer::showDerivative2()
+{
+  if(!m_data) return;
+  m_data->fourLocation(m_view_p,m_view_t)->d2EigenvalueMax();
+  autoscale();
+  updateImage();
+}
+
+void NiaViewer::showStats()
+{
+  if(!m_data) return;
+  ImFrame* frame = m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
+  int min = frame->min();
+  if(m_masks.size() > 0 && m_masks[0] != NULL){
+    Mask* m = m_masks[0];
+    std::cout << "mode: " << frame->mode(min,m) << "\nmedian: " << frame->median(min,m) << "\nmean: " << frame->mean(m) << "\nstd: " << frame->std(m) << std::endl;
+  }
+  std::cout << "mode: " << frame->mode(min) << "\nmedian: " << frame->median(min) << "\nmean: " << frame->mean() << "\nstd: " << frame->std() << std::endl;
+}
+
 void NiaViewer::displayMask(Mask* m)
 {
   if(!m_data) return;
@@ -471,7 +511,7 @@ void NiaViewer::showContourMap()
   ImRecord* rec = currentRecord();
   if(!rec) return;
   //displayMask(rec->getContourMap(m_view_w));
-  displayMask(rec->segment(m_view_w));
+  displayMask(rec->segment2(m_view_w));
 }
 
 void NiaViewer::zoomIn()
@@ -958,4 +998,18 @@ void NiaViewer::autoscaleRGB()
   m_greenMaxEntry.set_text(boost::lexical_cast<std::string>(m_greenMax));
   m_blueMinEntry.set_text(boost::lexical_cast<std::string>(m_blueMin));
   m_blueMaxEntry.set_text(boost::lexical_cast<std::string>(m_blueMax));
+}
+
+void NiaViewer::saveTimeSeries(std::string basename)
+{
+  if(!m_data) return;
+  for(int t = 0; t < m_data->nt(); t++){
+    std::string filename = basename;
+    filename.append("_t");
+    filename.append(boost::lexical_cast<std::string>(t));
+    filename.append(".png");
+    m_view_t = t;
+    updateImage();
+    m_pixbuf->save(filename,"png");
+  }
 }
