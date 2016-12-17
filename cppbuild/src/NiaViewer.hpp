@@ -40,7 +40,7 @@ protected:
   std::vector<Mask*> m_masks;
   static const unsigned m_ncolors = 3;
   Color m_colors[m_ncolors];
-  bool m_pixelSelector,m_punctaSelector,m_synapseSelector,m_regionSelector,m_axisSelector;
+  bool m_pixelSelector,m_segmentSelector,m_punctaSelector,m_synapseSelector,m_regionSelector,m_axisSelector;
   std::vector<LocalizedObject::Point> m_prevClicks;
   int m_prevButton;
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
@@ -122,6 +122,15 @@ public:
   void showScaleBox(){ m_scaleBox.show(); }
   void setPixelSelector(){
     m_pixelSelector = true;
+    m_segmentSelector = false;
+    m_punctaSelector = false;
+    m_synapseSelector = false;
+    m_regionSelector = false;
+    m_axisSelector = false;
+  }
+  void setSegmentSelector(){
+    m_pixelSelector = false;
+    m_segmentSelector = true;
     m_punctaSelector = false;
     m_synapseSelector = false;
     m_regionSelector = false;
@@ -129,6 +138,7 @@ public:
   }
   void setPunctaSelector(){
     m_pixelSelector = false;
+    m_segmentSelector = false;
     m_punctaSelector = true;
     m_synapseSelector = false;
     m_regionSelector = false;
@@ -136,6 +146,7 @@ public:
   }
   void setSynapseSelector(){
     m_pixelSelector = false;
+    m_segmentSelector = false;
     m_punctaSelector = false;
     m_synapseSelector = true;
     m_regionSelector = false;
@@ -143,6 +154,7 @@ public:
   }
   void setRegionSelector(){
     m_pixelSelector = false;
+    m_segmentSelector = false;
     m_punctaSelector = false;
     m_synapseSelector = false;
     m_regionSelector = true;
@@ -150,6 +162,7 @@ public:
   }
   void setAxisSelector(){
     m_pixelSelector = false;
+    m_segmentSelector = false;
     m_punctaSelector = false;
     m_synapseSelector = false;
     m_regionSelector = false;

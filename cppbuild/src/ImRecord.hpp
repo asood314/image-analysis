@@ -5,6 +5,7 @@
 #include "Region.hpp"
 #include "Mask.hpp"
 #include "NiaUtils.hpp"
+#include "Segment.hpp"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -25,6 +26,7 @@ protected:
   std::vector< std::vector<Cluster*> > m_puncta;
   std::vector<SynapseCollection*> m_synapseCollections;
   std::vector<Region*> m_regions;
+  std::vector<Segment*> m_segments;
 
 public:
   ImRecord(){}
@@ -68,6 +70,7 @@ public:
   SynapseCollection* getSynapseCollection(int index){ return m_synapseCollections.at(index); }
   int nSynapseCollections(){ return m_synapseCollections.size(); }
   std::vector<SynapseCollection*> synapseCollections(){ return m_synapseCollections; }
+  Segment* selectSegment(LocalizedObject::Point pt);
   Cluster* selectPunctum(LocalizedObject::Point pt);
   Cluster* selectPunctum(int chan, LocalizedObject::Point pt);
   Synapse* selectSynapse(LocalizedObject::Point pt);

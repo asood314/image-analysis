@@ -97,6 +97,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("bpd","Batch Print Tables"),sigc::mem_fun(*this, &NiaCore::on_batch_print_density));
   m_refActionGroup->add(Gtk::Action::create("toolMenu","Tools"));
   m_refActionGroup->add(Gtk::Action::create("pixSel","Pixel Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPixelSelector));
+  m_refActionGroup->add(Gtk::Action::create("segSel","Segment Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSegmentSelector));
   m_refActionGroup->add(Gtk::Action::create("punSel","Puncta Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setPunctaSelector));
   m_refActionGroup->add(Gtk::Action::create("synSel","Synapse Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setSynapseSelector));
   m_refActionGroup->add(Gtk::Action::create("regSel","Region Selector"),sigc::mem_fun(m_viewer, &NiaViewer::setRegionSelector));
@@ -188,6 +189,7 @@ void NiaCore::init()
     "  </menu>"
     "  <menu action='toolMenu'>"
     "   <menuitem action='pixSel'/>"
+    "   <menuitem action='segSel'/>"
     "   <menuitem action='punSel'/>"
     "   <menuitem action='synSel'/>"
     "   <menuitem action='regSel'/>"

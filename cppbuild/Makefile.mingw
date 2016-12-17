@@ -11,6 +11,7 @@ all:
 	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
@@ -36,6 +37,7 @@ debug:
 	x86_64-w64-mingw32-g++ -g src/Synapse.cpp -o obj/Synapse.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ -g src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include $(CFLAGS)
 	x86_64-w64-mingw32-g++ -g src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
@@ -69,6 +71,7 @@ back:
 	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 	x86_64-w64-mingw32-g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include
 	x86_64-w64-mingw32-g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11

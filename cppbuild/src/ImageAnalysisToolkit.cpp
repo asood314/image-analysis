@@ -451,6 +451,22 @@ Mask* ImageAnalysisToolkit::applyThreshold(ImFrame* frame, ImRecord* rec, int ch
       }
     }
   }
+
+  unfilled = true;
+  while(unfilled){
+    unfilled = false;
+    for(int i = 1; i < frame->width()-1; i++){
+      for(int j = 1; j < frame->height()-1; j++){
+	if(m->getValue(i,j) > 0) continue;
+	int sum = m->getValue(i-1,j-1) + m->getValue(i,j-1) + m->getValue(i+1,j-1) + m->getValue(i-1,j) + m->getValue(i+1,j) + m->getValue(i-1,j+1) + m->getValue(i,j+1) + m->getValue(i+1,j+1);
+	if(sum > 5){
+	  m->setValue(i,j,1);
+	  unfilled = true;
+	}
+      }
+    }
+  }
+  
   int configChan = chan;
   if(configChan >= m_noiseRemovalThreshold.size()) configChan = 0;
   double radius = m_minPunctaRadius.at(configChan);

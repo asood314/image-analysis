@@ -26,6 +26,7 @@ NiaViewer::NiaViewer() :
   m_colors[2].g = 0x00;
   m_colors[2].b = 0xff;
   m_pixelSelector = true;
+  m_segmentSelector = false;
   m_punctaSelector = false;
   m_synapseSelector = false;
   m_regionSelector = false;
@@ -130,6 +131,22 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
     if(m_pixelSelector){
       std::cout << "Location (" << thisClick.x << "," << thisClick.y << ") has intensity " << currentFrame()->getPixel(thisClick.x,thisClick.y) << std::endl;
       return true;
+    }
+    else if(m_segmentSelector){
+      ImRecord* rec = currentRecord();
+      if(!rec){
+	std::cout << "Couldn't find image record" << std::endl;
+	return false;
+      }
+      Segment* s = NULL;
+      s = rec->selectSegment(thisClick);
+      if(s){
+	toggleMask(s->getMask(m_width,m_height,false));
+	std::cout << "Center: (" << s->cluster()->center().x << "," << s->cluster()->center().y << "), Size: " << s->cluster()->size() << "\nCircularity: " << s->circularity() << ", Eigen-direction 1: " << s->eigenDirection1() << ", Eigen-direction 2: " << s->eigenDirection2() << std::endl;
+	return true;
+      }
+      std::cout << "Couldn't find any segments" << std::endl;
+      return false;
     }
     else if(m_punctaSelector){
       ImRecord* rec = currentRecord();
