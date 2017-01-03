@@ -7,6 +7,7 @@ all:
 	g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
 	g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	g++ src/Region.cpp -o obj/Region.o -c -std=c++11
+	g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11
 	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -I/opt/local/include/
@@ -32,6 +33,7 @@ debug:
 	g++ -g src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
 	g++ -g src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11
+	g++ -g src/Segment.cpp -o obj/Segment.o -c -std=c++11
 	g++ -g src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/opt/local/include/
 	g++ -g src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/opt/local/include/
 	g++ -g src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -I/opt/local/include/
@@ -69,6 +71,7 @@ back:
 	g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
 	g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	g++ src/Region.cpp -o obj/Region.o -c -std=c++11
+	g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11
 	g++ src/ImRecord.cpp -o obj/ImRecord.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImFrame.cpp -o obj/ImFrame.o -c -std=c++11 -I/opt/local/include/
 	g++ src/ImStack.cpp -o obj/ImStack.o -c -std=c++11 -I/opt/local/include/

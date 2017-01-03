@@ -71,6 +71,7 @@ Segment* ImRecord::selectSegment(LocalizedObject::Point pt)
   double minDist = 999999.9;
   Segment* closest = NULL;
   for(std::vector<Segment*>::iterator it = m_segments.begin(); it != m_segments.end(); it++){
+    if((*it)->cluster()->contains(pt)) return *it;
     double dist = (*it)->cluster()->distanceTo(pt);
     if(dist < minDist){
       minDist = dist;
@@ -410,12 +411,13 @@ Mask* ImRecord::segment2(int chan)
 	if(subMask->getValue(pt->x,pt->y) > 0){//>= mode){
 	  newSegmentCluster->addPoint(*pt);
 	  segmentMask->setValue(pt->x,pt->y,segmentID);
+	  contourMask->setValue(pt->x,pt->y,0);
 	  //segmentSize++;
 	}
       }
       //newSegment->findBorder();
       Segment* newSegment = new Segment(newSegmentCluster);
-      newSegment->findOrientation();
+      //newSegment->findOrientation();
       segments.push_back(newSegment);
       //std::cout << "Segment " << segmentID << " has size " << segmentSize << std::endl;
       std::cout << "Finished potential segment " << segmentID << std::endl;
@@ -428,7 +430,7 @@ Mask* ImRecord::segment2(int chan)
     lmh.clear();
   }
 
-  bool finished = true;
+  bool finished = false;
   while(!finished){
     finished = true;
     for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
@@ -436,7 +438,8 @@ Mask* ImRecord::segment2(int chan)
       for(std::vector<Segment*>::iterator sit2 = segments.begin(); sit2 != segments.end(); sit2++){
 	if(!(*sit2)) continue;
 	if(sit2 == sit) continue;
-	if((*sit2)->cluster()->getBorderLength((*sit)->cluster()) > (*sit2)->cluster()->perimeter()/3){
+	if((*sit2)->cluster()->size() > 500) continue;
+	if((*sit2)->cluster()->getBorderLength((*sit)->cluster()) > 0){//(*sit2)->cluster()->perimeter()/3){
 	  (*sit)->cluster()->add((*sit2)->cluster());
 	  (*sit)->cluster()->findBorder();
 	  delete *sit2;
@@ -451,6 +454,8 @@ Mask* ImRecord::segment2(int chan)
   segmentID = 1;
   for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
     if(!(*sit)) continue;
+    (*sit)->cluster()->computeCenter();
+    (*sit)->findOrientation();
     for(std::vector<LocalizedObject::Point>::iterator pt = (*sit)->cluster()->begin(); pt != (*sit)->cluster()->end(); pt++){
       segmentMask->setValue(pt->x,pt->y,segmentID);
     }
