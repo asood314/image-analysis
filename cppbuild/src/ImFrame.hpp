@@ -36,7 +36,9 @@ public:
   int width(){ return m_width; }
   int height(){ return m_height; }
   ImFrame* derivative();
+  ImFrame* derivativeDir();
   ImFrame* d2EigenvalueMax();
+  ImFrame* d2EigenvectorMax();
 
   int min(int x1, int x2, int y1, int y2);
   double mean(int x1, int x2, int y1, int y2);

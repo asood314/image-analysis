@@ -255,7 +255,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_divideEntry.set_text("1");
   m_postChanEntry.set_max_length(3);
   m_postChanEntry.set_width_chars(5);
-  m_postChanEntry.set_text("0");
+  m_postChanEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->postChan()));
   m_writeTablesBox.set_active(false);
   m_hbox12.pack_start(m_threadLabel, Gtk::PACK_SHRINK);
   m_hbox12.pack_start(m_threadEntry, Gtk::PACK_SHRINK);
@@ -286,6 +286,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
       m_lwEntry[i]->hide();
       m_peakEntry[i]->hide();
       m_floorEntry[i]->hide();
+      m_bkgEntry[i]->hide();
     }
   }
 }

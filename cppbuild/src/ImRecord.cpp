@@ -431,6 +431,7 @@ Mask* ImRecord::segment2(int chan)
   }
 
   bool finished = false;
+  int minSegmentSize = (int)(0.2 / (m_resolutionXY*m_resolutionXY));
   while(!finished){
     finished = true;
     for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
@@ -438,7 +439,7 @@ Mask* ImRecord::segment2(int chan)
       for(std::vector<Segment*>::iterator sit2 = segments.begin(); sit2 != segments.end(); sit2++){
 	if(!(*sit2)) continue;
 	if(sit2 == sit) continue;
-	if((*sit2)->cluster()->size() > 500) continue;
+	if((*sit2)->cluster()->size() > minSegmentSize) continue;
 	if((*sit2)->cluster()->getBorderLength((*sit)->cluster()) > 0){//(*sit2)->cluster()->perimeter()/3){
 	  (*sit)->cluster()->add((*sit2)->cluster());
 	  (*sit)->cluster()->findBorder();
@@ -912,6 +913,13 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
   }
   r->dendriteArea *= m_resolutionXY*m_resolutionXY;
   r->dendriteLength = r->getLength() * m_resolutionXY;
+  r->nSynapses.clear();
+  r->avgSynapseSize.clear();
+  r->avgOverlap.clear();
+  r->nPuncta.clear();
+  r->avgPunctaSize.clear();
+  r->avgPeakIntensity.clear();
+  r->avgIntegratedIntensity.clear();
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
     r->nSynapses.push_back(0);
     r->avgSynapseSize.push_back(0.0);

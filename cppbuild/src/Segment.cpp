@@ -21,7 +21,7 @@ Segment::Segment(Cluster* c)
 
 Segment::~Segment()
 {
-  delete m_cluster;
+  if(m_cluster) delete m_cluster;
 }
 
 void Segment::findOrientation()

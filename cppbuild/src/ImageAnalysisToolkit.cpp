@@ -91,7 +91,7 @@ Mask* ImageAnalysisToolkit::findOutliers(ImFrame* frame)
     }
     std2 = frame->std(m);
   }
-  std::cout << frame->median(m) << std::endl << std2 << std::endl;
+  //std::cout << frame->median(m) << std::endl << std2 << std::endl;
   return m;
 }
 
@@ -153,8 +153,14 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
 void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
 {
   int globalThreshold = findThreshold(frame);
+  /*
+  if(chan > 0) globalThreshold = 1;
+  rec->setThreshold(chan,globalThreshold);
+  Mask* densityMask = applyThreshold(frame,rec,chan);
+  delete densityMask;
+  */
   while(globalThreshold >= 0){
-    std::cout << "Using global threshold " << globalThreshold << std::endl;
+    //std::cout << "Using global threshold " << globalThreshold << std::endl;
     rec->setThreshold(chan,globalThreshold);
     Mask* densityMask = applyThreshold(frame,rec,chan);
     globalThreshold = findThreshold(frame,rec->getSignalMask(chan)->inverse(),densityMask->inverse());
@@ -547,7 +553,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
   int maxClusters = 0;
   bool finished = false;
   int64_t penalty = (int64_t)(dFrame->median());
-  std::cout << "Penalty = " << penalty << std::endl;
+  //std::cout << "Penalty = " << penalty << std::endl;
   while(!finished){
     finished = true;
     for(int istep = 0; istep < nsteps+1; istep++){
@@ -711,7 +717,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
       delete subMask;
       delete borderMask;
       //std::cout << globalThreshold << ", " << avgSigSize2 << ", " << avgSigSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters << ":\t" << ifom << std::endl;
-      std::cout << globalThreshold  << ", " << avgDerivative << ", " << totalBorderSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters <<  ":\t" << ifom << std::endl;
+      //std::cout << globalThreshold  << ", " << avgDerivative << ", " << totalBorderSize << ", " << nSigClusters << ", " << avgSize << ", " << nBkgClusters <<  ":\t" << ifom << std::endl;
     }
     finished = false;
     if(step < 1.01) break;

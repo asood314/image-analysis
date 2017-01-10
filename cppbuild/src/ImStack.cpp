@@ -75,6 +75,20 @@ void ImStack::derivative()
   }
 }
 
+void ImStack::derivativeDir(int w, int z)
+{
+  ImFrame* tmp = m_frames[w][z];
+  m_frames[w][z] = tmp->derivativeDir();
+  delete tmp;
+}
+
+void ImStack::derivativeDir()
+{
+  for(int w = 0; w < m_nwaves; w++){
+    for(int z = 0; z < m_nz; z++) derivativeDir(w,z);
+  }
+}
+
 void ImStack::d2EigenvalueMax(int w, int z)
 {
   ImFrame* tmp = m_frames[w][z];
@@ -86,5 +100,19 @@ void ImStack::d2EigenvalueMax()
 {
   for(int w = 0; w < m_nwaves; w++){
     for(int z = 0; z < m_nz; z++) d2EigenvalueMax(w,z);
+  }
+}
+
+void ImStack::d2EigenvectorMax(int w, int z)
+{
+  ImFrame* tmp = m_frames[w][z];
+  m_frames[w][z] = tmp->d2EigenvectorMax();
+  delete tmp;
+}
+
+void ImStack::d2EigenvectorMax()
+{
+  for(int w = 0; w < m_nwaves; w++){
+    for(int z = 0; z < m_nz; z++) d2EigenvectorMax(w,z);
   }
 }

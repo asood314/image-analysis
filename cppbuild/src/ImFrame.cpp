@@ -31,7 +31,7 @@ std::vector<ImFrame*> ImFrame::load(const char* fname)
   fin.read(buf,4);
   if(NiaUtils::convertToShort(buf[2],buf[3]) != 42){
     if(NiaUtils::convertToShort(buf[3],buf[2]) != 42){
-      std::cout << "ERROR: Can't find right byte order\n";
+      std::cout << "ERROR: Can't find right byte order" << std::endl;
       delete[] buf;
       return retval;
     }
@@ -645,6 +645,21 @@ ImFrame* ImFrame::derivative()
   return retVal;
 }
 
+ImFrame* ImFrame::derivativeDir()
+{
+  ImFrame* retVal = new ImFrame(m_width,m_height);
+  float dx = m_pixels[1][0] - m_pixels[0][0];
+  float dy = m_pixels[0][1] - m_pixels[0][0];
+  for(int i = 1; i < m_width-1; i++){
+    for(int j = 1; j < m_height-1; j++){
+      dx = ((float)(m_pixels[i+1][j] - m_pixels[i-1][j]))/2.0;
+      dy = ((float)(m_pixels[i][j+1] - m_pixels[i][j-1]))/2.0;
+      retVal->setPixel(i,j,(int)(1000*atan(dy/dx)));
+    }
+  }
+  return retVal;
+}
+
 ImFrame* ImFrame::d2EigenvalueMax()
 {
   ImFrame* retVal = new ImFrame(m_width,m_height);
@@ -658,6 +673,25 @@ ImFrame* ImFrame::d2EigenvalueMax()
       diff = fxx - fyy;
       if(sum < 0) retVal->setPixel(i,j,(int)((sum - sqrt(diff*diff + 4*fxy*fxy))/2.0));
       else retVal->setPixel(i,j,(int)((sum + sqrt(diff*diff + 4*fxy*fxy))/2.0));
+    }
+  }
+  return retVal;
+}
+
+ImFrame* ImFrame::d2EigenvectorMax()
+{
+  ImFrame* retVal = new ImFrame(m_width,m_height);
+  float fxx,fyy,fxy,sum,diff,eigenval;
+  for(int i = 2; i < m_width-2; i++){
+    for(int j = 2; j < m_height-2; j++){
+      fxx = ((float)(m_pixels[i+2][j] + m_pixels[i-2][j] - 2*m_pixels[i][j]))/4.0;
+      fyy = ((float)(m_pixels[i][j+2] + m_pixels[i][j-2] - 2*m_pixels[i][j]))/4.0;
+      fxy = ((float)(m_pixels[i+1][j+1] - m_pixels[i+1][j-1] - m_pixels[i-1][j+1] + m_pixels[i-1][j-1]))/4.0;
+      sum = fxx + fyy;
+      diff = fxx - fyy;
+      if(sum < 0) eigenval = (sum - sqrt(diff*diff + 4*fxy*fxy)) / 2.0;
+      else eigenval = (sum + sqrt(diff*diff + 4*fxy*fxy)) / 2.0;
+      retVal->setPixel(i,j,(int)(1000*atan((eigenval - fxx)/fxy)));
     }
   }
   return retVal;

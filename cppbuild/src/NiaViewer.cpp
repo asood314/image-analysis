@@ -466,7 +466,7 @@ void NiaViewer::updateImage()
 void NiaViewer::showDerivative()
 {
   if(!m_data) return;
-  m_data->fourLocation(m_view_p,m_view_t)->derivative();
+  m_data->fourLocation(m_view_p,m_view_t)->derivativeDir();
   autoscale();
   updateImage();
 }
@@ -474,7 +474,7 @@ void NiaViewer::showDerivative()
 void NiaViewer::showDerivative2()
 {
   if(!m_data) return;
-  m_data->fourLocation(m_view_p,m_view_t)->d2EigenvalueMax();
+  m_data->fourLocation(m_view_p,m_view_t)->d2EigenvectorMax();
   autoscale();
   updateImage();
 }
@@ -527,8 +527,156 @@ void NiaViewer::showContourMap()
 {
   ImRecord* rec = currentRecord();
   if(!rec) return;
+  
+  Mask* m = rec->getContourMap(m_view_w);
+  Mask* used = new Mask(m->width(),m->height());
+  ImFrame* f = m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
+  ImFrame* f2 = new ImFrame(f->width(),f->height());
+  std::vector<int> xvec,yvec;
+  for(int i = 0; i < f->width(); i++){
+    for(int j = 0; j < f->height(); j++){
+      if(m->getValue(i,j) != 1){
+	f->setPixel(i,j,0);
+	continue;
+      }
+      /*
+      int left = i-40;
+      if(left < 0) left = 0;
+      int right = i+40;
+      if(right > f->width()) right = f->width();
+      int top = j-40;
+      if(top < 0) top = 0;
+      int bottom = j+40;
+      if(bottom > f->height()) bottom = f->height();
+      */
+      int cx = 0;
+      int cy = 0;
+      int n = 0;
+      std::vector<int> borderX;
+      std::vector<int> borderY;
+      borderX.push_back(i);
+      borderY.push_back(j);
+      used->setValue(i,j,1);
+      while(borderX.size() > 0 && n < 100){
+	uint32_t nborder = borderX.size();
+	for(uint32_t b = 0; b < nborder; b++){
+	  int bi = borderX.at(0);
+	  int bj = borderY.at(0);
+	  int left = bi-1;
+	  int right = bi+2;
+	  int top = bj-1;
+	  int bottom = bj+2;
+	  if(left < 0) left++;
+	  if(right >= f->width()) right--;
+	  if(top < 0) top++;
+	  if(bottom >= f->height()) bottom--;
+	  cx += bi;
+	  cy += bj;
+	  n++;
+	  xvec.push_back(bi);
+	  yvec.push_back(bj);
+	  for(int di = left; di < right; di++){
+	    for(int dj = top; dj < bottom; dj++){
+	      if(m->getValue(di,dj) != 1 || used->getValue(di,dj) > 0) continue;
+	      borderX.push_back(di);
+	      borderY.push_back(dj);
+	      used->setValue(di,dj,1);
+	    }
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	}
+      }
+      for(unsigned index = 0; index < borderX.size(); index++) used->setValue(borderX[index],borderY[index],0);
+      /*
+      for(int i2 = left; i2 < right; i2++){
+	for(int j2 = top; j2 < bottom; j2++){
+	  if(m->getValue(i2,j2) != 1) continue;
+	  cx += i2;
+	  cy += j2;
+	  xvec.push_back(i2);
+	  yvec.push_back(j2);
+	  n++;
+	}
+      }
+      */
+      if(n < 50){
+	f->setPixel(i,j,0);
+	xvec.clear();
+	yvec.clear();
+	continue;
+      }
+      cx /= n;
+      cy /= n;
+      double vxx = 0.0;
+      double vyy = 0.0;
+      double vxy = 0.0;
+      for(unsigned index = 0; index < n; index++){
+	int xdiff = xvec[index] - cx;
+	int ydiff = yvec[index] - cy;
+	vxx += xdiff*xdiff;
+	vyy += ydiff*ydiff;
+	vxy += xdiff*ydiff;
+	used->setValue(xvec[index],yvec[index],0);
+      }
+      double det = sqrt((vxx - vyy)*(vxx-vyy) + 4*vxy*vxy);
+      double eigenval = (vxx + vyy + det) / 2.0;
+      double eigenvec = atan((eigenval - vxx) / vxy);
+      double eigenval2 = (vxx + vyy - det) / 2.0;
+      //f->setPixel(i,j,(int)(1000*(eigenvec+1.5708)));
+      f->setPixel(i,j,(int)(1000*eigenval2/eigenval));
+      xvec.clear();
+      yvec.clear();
+    }
+  }
+  /*
+  for(int i = 0; i < f->width(); i++){
+    for(int j = 0; j < f->height(); j++){
+      if(m->getValue(i,j) != 1){
+	f->setPixel(i,j,0);
+	continue;
+      }
+      int left = i-80;
+      if(left < 0) left = 0;
+      int right = i+80;
+      if(right > f->width()) right = f->width();
+      int top = j-80;
+      if(top < 0) top = 0;
+      int bottom = j+80;
+      if(bottom > f->height()) bottom = f->height();
+      float avg = 0;
+      int val = f->getPixel(i,j);
+      int n = 0;
+      for(int i2 = left; i2 < right; i2++){
+	for(int j2 = top; j2 < bottom; j2++){
+	  if(m->getValue(i2,j2) != 1) continue;
+	  avg += atan(tan((f->getPixel(i2,j2) - val)/1000.0));
+	  xvec.push_back(f->getPixel(i2,j2));
+	  n++;
+	}
+      }
+      if(n < 10){
+	f->setPixel(i,j,0);
+	xvec.clear();
+	continue;
+      }
+      avg = avg/n + val/1000.0;
+      double vxx = 0.0;
+      for(unsigned index = 0; index < n; index++){
+	int xdiff = xvec[index]/1000.0 - avg;
+	vxx += xdiff*xdiff;
+      }
+      f2->setPixel(i,j,(int)(1000*sqrt(vxx/(n-1))));
+      xvec.clear();
+    }
+  }
+  delete f;
+  m_data->fourLocation(m_view_p,m_view_t)->insert(f2,m_view_w,m_view_z);
+  */
+  displayMask(m);
+  
   //displayMask(rec->getContourMap(m_view_w));
-  displayMask(rec->segment2(m_view_w));
+  //displayMask(rec->segment2(m_view_w));
 }
 
 void NiaViewer::zoomIn()
