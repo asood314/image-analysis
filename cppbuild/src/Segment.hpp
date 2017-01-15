@@ -18,7 +18,7 @@ public:
   
 protected:
   Cluster* m_cluster;
-  double m_circularity,m_eigenDir1,m_eigenDir2;
+  double m_circularity,m_eigenVector1,m_eigenVector2;
   SegmentType m_type;
   Segment* m_parent;
   std::vector<Segment*> m_children;
@@ -29,10 +29,11 @@ public:
   virtual ~Segment();
   void findOrientation();
   void setCluster(Cluster* c);
+  void merge(Segment* s);
   Cluster* cluster(){ return m_cluster; }
   double circularity(){ return m_circularity; }
-  double eigenDirection1(){ return m_eigenDir1; }
-  double eigenDirection2(){ return m_eigenDir2; }
+  double eigenVector1(){ return m_eigenVector1; }
+  double eigenVector2(){ return m_eigenVector2; }
   void setType(SegmentType t){ m_type = t; }
   SegmentType type(){ return m_type; }
   void setParent(Segment* p){ m_parent = p; }
@@ -42,6 +43,7 @@ public:
   std::vector<Segment*>::iterator firstChild(){ return m_children.begin(); }
   std::vector<Segment*>::iterator lastChild(){ return m_children.end(); }
   Mask* getMask(int width, int height, bool outline=false){ return m_cluster->getMask(width,height,outline); }
+  int size(){ if(m_cluster) return m_cluster->size(); }
   
 };
 

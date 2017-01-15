@@ -50,7 +50,7 @@ public:
   void findSignal(ImFrame* frame, ImRecord* rec, int chan);
   Mask* applyThreshold(ImFrame* frame, ImRecord* rec, int chan);
   int findThreshold(ImFrame* frame);
-  int findThreshold(ImFrame* frame, Mask* sigMask, Mask* outMask);
+  int findThreshold(ImFrame* frame, Mask* sigMask, Mask* outMask, int prev);
   void findPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void resolveOverlaps(ImFrame* frame, ImRecord* rec, int chan);

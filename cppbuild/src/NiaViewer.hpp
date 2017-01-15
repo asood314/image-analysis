@@ -38,7 +38,7 @@ protected:
   Gtk::Image m_displayImage;
   Glib::RefPtr<Gdk::Pixbuf> m_pixbuf;
   std::vector<Mask*> m_masks;
-  static const unsigned m_ncolors = 3;
+  static const unsigned m_ncolors = 6;
   Color m_colors[m_ncolors];
   bool m_pixelSelector,m_segmentSelector,m_punctaSelector,m_synapseSelector,m_regionSelector,m_axisSelector;
   std::vector<LocalizedObject::Point> m_prevClicks;

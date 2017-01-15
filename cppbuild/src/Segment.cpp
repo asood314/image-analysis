@@ -4,8 +4,8 @@ Segment::Segment()
 {
   m_cluster = NULL;
   m_circularity = -1;
-  m_eigenDir1 = -1;
-  m_eigenDir2 = -1;
+  m_eigenVector1 = -1;
+  m_eigenVector2 = -1;
   m_parent = NULL;
 }
 
@@ -13,8 +13,8 @@ Segment::Segment(Cluster* c)
 {
   m_cluster = c;
   m_circularity = -1;
-  m_eigenDir1 = -1;
-  m_eigenDir2 = -1;
+  m_eigenVector1 = -1;
+  m_eigenVector2 = -1;
   //findOrientation();
   m_parent = NULL;
 }
@@ -41,12 +41,20 @@ void Segment::findOrientation()
   double eigenValue1 = (vxx + vyy + det) / 2.0;
   double eigenValue2 = (vxx + vyy - det) / 2.0;
   m_circularity = eigenValue2 / eigenValue1;
-  m_eigenDir1 = atan((eigenValue1 - vxx) / vxy);
-  m_eigenDir2 = atan((eigenValue2 - vxx) / vxy);
+  m_eigenVector1 = atan((eigenValue1 - vxx) / vxy);
+  m_eigenVector2 = atan((eigenValue2 - vxx) / vxy);
 }
 
 void Segment::setCluster(Cluster* c)
 {
   if(m_cluster) delete m_cluster;
   m_cluster = c;
+}
+
+void Segment::merge(Segment* s)
+{
+  m_cluster->add(s->cluster());
+  m_cluster->computeCenter();
+  m_cluster->findBorder();
+  findOrientation();
 }

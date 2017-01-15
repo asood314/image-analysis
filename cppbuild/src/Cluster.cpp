@@ -139,6 +139,7 @@ void Cluster::add(Cluster* c)
 {
   std::vector<LocalizedObject::Point> points2 = c->getPoints();
   for(std::vector<LocalizedObject::Point>::iterator it = points2.begin(); it != points2.end(); it++) m_points.push_back(*it);
+  //for(std::vector<LocalizedObject::Point>::iterator it = c->borderBegin(); it != c->borderEnd(); it++) m_border.push_back(*it);
   if(c->peak() > m_peak) m_peak = c->peak();
   m_total += c->integratedIntensity();
 }

@@ -25,6 +25,15 @@ NiaViewer::NiaViewer() :
   m_colors[2].r = 0x00;
   m_colors[2].g = 0x00;
   m_colors[2].b = 0xff;
+  m_colors[3].r = 0xff;
+  m_colors[3].g = 0xff;
+  m_colors[3].b = 0x00;
+  m_colors[4].r = 0xff;
+  m_colors[4].g = 0x00;
+  m_colors[4].b = 0xff;
+  m_colors[5].r = 0x00;
+  m_colors[5].g = 0xff;
+  m_colors[5].b = 0xff;
   m_pixelSelector = true;
   m_segmentSelector = false;
   m_punctaSelector = false;
@@ -142,7 +151,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
       s = rec->selectSegment(thisClick);
       if(s){
 	toggleMask(s->getMask(m_width,m_height,false));
-	std::cout << "Center: (" << s->cluster()->center().x << "," << s->cluster()->center().y << "), Size: " << s->cluster()->size() << "\nCircularity: " << s->circularity() << ", Eigen-direction 1: " << s->eigenDirection1() << ", Eigen-direction 2: " << s->eigenDirection2() << std::endl;
+	std::cout << "Center: (" << s->cluster()->center().x << "," << s->cluster()->center().y << "), Size: " << s->cluster()->size() << "\nCircularity: " << s->circularity() << ", Eigenvector 1: " << s->eigenVector1() << ", Eigenvector 2: " << s->eigenVector2() << std::endl;
 	return true;
       }
       std::cout << "Couldn't find any segments" << std::endl;
@@ -363,6 +372,15 @@ void NiaViewer::setMode(NiaViewer::ImageMode mode)
     m_colors[2].r = 0x00;
     m_colors[2].g = 0x00;
     m_colors[2].b = 0xff;
+    m_colors[3].r = 0xff;
+    m_colors[3].g = 0xff;
+    m_colors[3].b = 0x00;
+    m_colors[4].r = 0xff;
+    m_colors[4].g = 0x00;
+    m_colors[4].b = 0xff;
+    m_colors[5].r = 0x00;
+    m_colors[5].g = 0xff;
+    m_colors[5].b = 0xff;
   }
   else if(mode == RGB){
     m_colors[0].r = 0xff;
@@ -374,6 +392,15 @@ void NiaViewer::setMode(NiaViewer::ImageMode mode)
     m_colors[2].r = 0x00;
     m_colors[2].g = 0xff;
     m_colors[2].b = 0xff;
+    m_colors[3].r = 0xff;
+    m_colors[3].g = 0x80;
+    m_colors[3].b = 0x00;
+    m_colors[4].r = 0x00;
+    m_colors[4].g = 0xff;
+    m_colors[4].b = 0x80;
+    m_colors[5].r = 0x80;
+    m_colors[5].g = 0x00;
+    m_colors[5].b = 0xff;
   }
   autoscale();
   updateImage();
@@ -391,6 +418,15 @@ void NiaViewer::setWavelength(int w)
   m_colors[2].r = 0x00;
   m_colors[2].g = 0x00;
   m_colors[2].b = 0xff;
+  m_colors[3].r = 0xff;
+  m_colors[3].g = 0xff;
+  m_colors[3].b = 0x00;
+  m_colors[4].r = 0xff;
+  m_colors[4].g = 0x00;
+  m_colors[4].b = 0xff;
+  m_colors[5].r = 0x00;
+  m_colors[5].g = 0xff;
+  m_colors[5].b = 0xff;
   m_view_w = w;
   updateImage();
 }
@@ -507,10 +543,13 @@ void NiaViewer::displayMask(Mask* m)
       if(val > m_grayMax) scaled_p = 255;
       else if(val < m_grayMin) scaled_p = 0;
       else scaled_p = (uint8_t)(sf * (val - m_grayMin));
-      //buf[index] = scaled_p;
-      //buf[index+((val%6)/2)] = scaled_p;
-      //buf[index+2] = scaled_p;
-      buf[index+(val%3)] = scaled_p;
+      if(val > 0){
+	Color col = m_colors[val%m_ncolors];
+	buf[index] = col.r;
+	buf[index+1] = col.g;
+	buf[index+2] = col.b;
+      }
+      //buf[index+(val%3)] = scaled_p;
       index += 3;
     }
   }
@@ -527,37 +566,62 @@ void NiaViewer::showContourMap()
 {
   ImRecord* rec = currentRecord();
   if(!rec) return;
-  
+
+  /*
   Mask* m = rec->getContourMap(m_view_w);
   Mask* used = new Mask(m->width(),m->height());
   ImFrame* f = m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
-  ImFrame* f2 = new ImFrame(f->width(),f->height());
-  std::vector<int> xvec,yvec;
-  for(int i = 0; i < f->width(); i++){
-    for(int j = 0; j < f->height(); j++){
+  //ImFrame* f2 = new ImFrame(f->width(),f->height());
+  std::vector<int> xvec,yvec,xvec2,yvec2;
+  for(int i = 1; i < f->width()-1; i++){
+    for(int j = 1; j < f->height()-1; j++){
       if(m->getValue(i,j) != 1){
-	f->setPixel(i,j,0);
+	f->setPixel(i,j,-3);
 	continue;
       }
-      /*
-      int left = i-40;
-      if(left < 0) left = 0;
-      int right = i+40;
-      if(right > f->width()) right = f->width();
-      int top = j-40;
-      if(top < 0) top = 0;
-      int bottom = j+40;
-      if(bottom > f->height()) bottom = f->height();
-      */
       int cx = 0;
       int cy = 0;
       int n = 0;
-      std::vector<int> borderX;
-      std::vector<int> borderY;
-      borderX.push_back(i);
-      borderY.push_back(j);
+      int cx2 = 0;
+      int cy2 = 0;
+      int n2 = 0;
+      std::vector<int> borderX,borderX2,tmpX;
+      std::vector<int> borderY,borderY2,tmpY;
+      borderX.push_back(0);
+      borderY.push_back(0);
+      borderX2.push_back(0);
+      borderY2.push_back(0);
+      for(int i2 = i-1; i2 < i+2; i2++){
+	for(int j2 = j-1; j2 < j+2; j2++){
+	  if(i2 == i && j2 == j) continue;
+	  if(m->getValue(i2,j2) != 1) continue;
+	  tmpX.push_back(i2);
+	  tmpY.push_back(j2);
+	}
+      }
+      if(tmpX.size() < 2){
+	f->setPixel(i,j,-2);
+	continue;
+      }
+      int maxDist = 0;
+      for(unsigned k = 0; k < tmpX.size(); k++){
+	for(unsigned l = k+1; l < tmpX.size(); l++){
+	  int dist = (tmpX[k] - tmpX[l])*(tmpX[k] - tmpX[l]) + (tmpY[k] - tmpY[l])*(tmpY[k] - tmpY[l]);
+	  if(dist > maxDist){
+	    maxDist = dist;
+	    borderX[0] = tmpX[k];
+	    borderY[0] = tmpY[k];
+	    borderX2[0] = tmpX[l];
+	    borderY2[0] = tmpY[l];
+	  }
+	}
+      }
+      //borderX.push_back(i);
+      //borderY.push_back(j);
       used->setValue(i,j,1);
-      while(borderX.size() > 0 && n < 100){
+      used->setValue(borderX[0],borderY[0],1);
+      used->setValue(borderX2[0],borderY2[0],1);
+      while(borderX.size() > 0 && borderX2.size() > 0 && (n < 100 || n2 < 100)){
 	uint32_t nborder = borderX.size();
 	for(uint32_t b = 0; b < nborder; b++){
 	  int bi = borderX.at(0);
@@ -586,24 +650,47 @@ void NiaViewer::showContourMap()
 	  borderX.erase(borderX.begin());
 	  borderY.erase(borderY.begin());
 	}
-      }
-      for(unsigned index = 0; index < borderX.size(); index++) used->setValue(borderX[index],borderY[index],0);
-      /*
-      for(int i2 = left; i2 < right; i2++){
-	for(int j2 = top; j2 < bottom; j2++){
-	  if(m->getValue(i2,j2) != 1) continue;
-	  cx += i2;
-	  cy += j2;
-	  xvec.push_back(i2);
-	  yvec.push_back(j2);
-	  n++;
+	nborder = borderX2.size();
+	for(uint32_t b = 0; b < nborder; b++){
+	  int bi = borderX2.at(0);
+	  int bj = borderY2.at(0);
+	  int left = bi-1;
+	  int right = bi+2;
+	  int top = bj-1;
+	  int bottom = bj+2;
+	  if(left < 0) left++;
+	  if(right >= f->width()) right--;
+	  if(top < 0) top++;
+	  if(bottom >= f->height()) bottom--;
+	  cx2 += bi;
+	  cy2 += bj;
+	  n2++;
+	  xvec2.push_back(bi);
+	  yvec2.push_back(bj);
+	  for(int di = left; di < right; di++){
+	    for(int dj = top; dj < bottom; dj++){
+	      if(m->getValue(di,dj) != 1 || used->getValue(di,dj) > 0) continue;
+	      borderX2.push_back(di);
+	      borderY2.push_back(dj);
+	      used->setValue(di,dj,1);
+	    }
+	  }
+	  borderX2.erase(borderX2.begin());
+	  borderY2.erase(borderY2.begin());
 	}
       }
-      */
-      if(n < 50){
-	f->setPixel(i,j,0);
+      for(unsigned index = 0; index < borderX.size(); index++) used->setValue(borderX[index],borderY[index],0);
+      for(unsigned index = 0; index < borderX2.size(); index++) used->setValue(borderX2[index],borderY2[index],0);
+
+      if(n < 50 || n2 < 50){
+	f->setPixel(i,j,-1);
+	used->setValue(i,j,0);
+	for(unsigned index = 0; index < n; index++) used->setValue(xvec[index],yvec[index],0);
+	for(unsigned index = 0; index < n2; index++) used->setValue(xvec2[index],yvec2[index],0);
 	xvec.clear();
 	yvec.clear();
+	xvec2.clear();
+	yvec2.clear();
 	continue;
       }
       cx /= n;
@@ -622,13 +709,37 @@ void NiaViewer::showContourMap()
       double det = sqrt((vxx - vyy)*(vxx-vyy) + 4*vxy*vxy);
       double eigenval = (vxx + vyy + det) / 2.0;
       double eigenvec = atan((eigenval - vxx) / vxy);
-      double eigenval2 = (vxx + vyy - det) / 2.0;
+      //double eigenval2 = (vxx + vyy - det) / 2.0;
+      cx2 /= n2;
+      cy2 /= n2;
+      vxx = 0.0;
+      vyy = 0.0;
+      vxy = 0.0;
+      for(unsigned index = 0; index < n2; index++){
+	int xdiff = xvec2[index] - cx2;
+	int ydiff = yvec2[index] - cy2;
+	vxx += xdiff*xdiff;
+	vyy += ydiff*ydiff;
+	vxy += xdiff*ydiff;
+	used->setValue(xvec2[index],yvec2[index],0);
+      }
+      det = sqrt((vxx - vyy)*(vxx-vyy) + 4*vxy*vxy);
+      double eigenval2 = (vxx + vyy + det) / 2.0;
+      double eigenvec2 = atan((eigenval - vxx) / vxy);
       //f->setPixel(i,j,(int)(1000*(eigenvec+1.5708)));
-      f->setPixel(i,j,(int)(1000*eigenval2/eigenval));
+      //f->setPixel(i,j,(int)(1000*eigenval2/eigenval));
+      double angle = fabs(eigenvec - eigenvec2);
+      if(angle > 1.5708) angle = 3.1416 - angle;
+      f->setPixel(i,j,(int)(10000*angle));
       xvec.clear();
       yvec.clear();
+      xvec2.clear();
+      yvec2.clear();
+      used->setValue(i,j,0);
+      if(i == 119 && j == 102) std::cout << eigenvec << "\n" << eigenvec2 << std::endl;
     }
   }
+  */
   /*
   for(int i = 0; i < f->width(); i++){
     for(int j = 0; j < f->height(); j++){
@@ -673,10 +784,10 @@ void NiaViewer::showContourMap()
   delete f;
   m_data->fourLocation(m_view_p,m_view_t)->insert(f2,m_view_w,m_view_z);
   */
-  displayMask(m);
+  //displayMask(m);
   
   //displayMask(rec->getContourMap(m_view_w));
-  //displayMask(rec->segment2(m_view_w));
+  displayMask(rec->segment3(m_view_w));
 }
 
 void NiaViewer::zoomIn()
