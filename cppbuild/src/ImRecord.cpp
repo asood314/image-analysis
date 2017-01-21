@@ -535,7 +535,7 @@ Mask* ImRecord::segment3(int chan)
       finished = true;
       int maxBorder = maxBorder = perimeter / 5;
       int totalBorder = 0;
-      std::vector<Segment*>::iterator minSeg = segments.end();
+      std::vector<Segment*>::iterator maxSeg = segments.end();
       for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
 	if(!(*sjt)) continue;
 	if(sjt == sit) continue;
@@ -547,16 +547,18 @@ Mask* ImRecord::segment3(int chan)
 	totalBorder += border;
 	if(border > maxBorder){
 	  maxBorder = border;
-	  minSeg  = sjt;
+	  maxSeg  = sjt;
 	}
       }
-      if(minSeg != segments.end() && totalBorder > perimeter/2){
-	(*sit)->merge(*minSeg);
-	size1 += (*minSeg)->size();
-	perimeter = (*sit)->cluster()->perimeter();
-	finished = false;
-	delete *minSeg;
-	*minSeg = NULL;
+      if(maxSeg != segments.end() && totalBorder > perimeter/2){
+	if(size1 > (*maxSeg)->size() / 5 || totalBorder > 2*perimeter/3){
+	  (*sit)->merge(*maxSeg);
+	  size1 += (*maxSeg)->size();
+	  perimeter = (*sit)->cluster()->perimeter();
+	  finished = false;
+	  delete *maxSeg;
+	  *maxSeg = NULL;
+	}
       }
     }
   }
@@ -586,7 +588,7 @@ Mask* ImRecord::segment3(int chan)
       double vec1 = (*sit)->eigenVector1();
       LocalizedObject::Point cent1 = (*sit)->cluster()->center();
       int perimeter = (*sit)->cluster()->perimeter();
-      double minAngle = 1.6;
+      double minAngle = 0.5;
       int totalBorder = 0;
       double minCirc = 0.0;
       std::vector<Segment*>::iterator minSeg = segments.end();

@@ -43,7 +43,7 @@ public:
   std::vector<Segment*>::iterator firstChild(){ return m_children.begin(); }
   std::vector<Segment*>::iterator lastChild(){ return m_children.end(); }
   Mask* getMask(int width, int height, bool outline=false){ return m_cluster->getMask(width,height,outline); }
-  int size(){ if(m_cluster) return m_cluster->size(); }
+  int size(){ return m_cluster->size(); }
   
 };
 
