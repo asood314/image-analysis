@@ -91,15 +91,6 @@ void Cluster::findBorder()
     }
   }
   delete m;
-  /*
-  for(std::vector<LocalizedObject::Point>::iterator kt = m_points.begin(); kt != m_points.end(); kt++){
-    int sum = 0;
-    for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
-      if(abs(it->x - kt->x) < 2 && abs(it->y - kt->y) < 2) sum++;
-    }
-    if(sum < 9) m_border.push_back(*kt);
-  }
-  */
 }
 
 int Cluster::getBorderLength(Cluster* c)
@@ -114,25 +105,22 @@ int Cluster::getBorderLength(Cluster* c)
       }
     }
   }
-  /*
-  std::vector<LocalizedObject::Point> points2 = c->getPoints();
-  for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){
-    for(std::vector<LocalizedObject::Point>::iterator it2 = points2.begin(); it2 != points2.end(); it2++){
-      int xdiff = 0;
-      int ydiff = 0;
-      if(it2->x > it->x) xdiff = it2->x - it->x;
-      else xdiff = it->x - it2->x;
-      if(xdiff > 1) continue;
-      if(it2->y > it->y) ydiff = it2->y - it->y;
-      else ydiff = it->y - it2->y;
-      if(ydiff < 2){
-	len++;
+  return len;
+}
+
+Cluster* Cluster::findBorderWith(Cluster* c)
+{
+  Cluster* retVal = new Cluster();
+  if(c->perimeter() == 0) c->findBorder();
+  for(std::vector<LocalizedObject::Point>::iterator it = m_border.begin(); it != m_border.end(); it++){
+    for(std::vector<LocalizedObject::Point>::iterator jt = c->borderBegin(); jt != c->borderEnd(); jt++){
+      if(abs(it->x - jt->x) < 2 && abs(it->y - jt->y) < 2){
+	retVal->addPoint(*it);
 	break;
       }
     }
   }
-  */
-  return len;
+  return retVal;
 }
 
 void Cluster::add(Cluster* c)
