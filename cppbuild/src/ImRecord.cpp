@@ -551,7 +551,7 @@ Mask* ImRecord::segment3(int chan)
 	}
       }
       if(maxSeg != segments.end() && totalBorder > perimeter/2){
-	if(size1 > (*maxSeg)->size() / 5 || totalBorder > 2*perimeter/3){
+	if(size1 > (*maxSeg)->size() / 3 || (*maxSeg)->circularity() > 0.1 || totalBorder > 2*perimeter/3){
 	  (*sit)->merge(*maxSeg);
 	  size1 += (*maxSeg)->size();
 	  perimeter = (*sit)->cluster()->perimeter();
@@ -584,13 +584,16 @@ Mask* ImRecord::segment3(int chan)
       if(!(*sit)) continue;
       int size1 = (*sit)->size();
       double circ1 = (*sit)->circularity();
-      if((*sit)->circularity() > 0.2) continue;
+      //if((*sit)->circularity() > 0.2) continue;
       LocalizedObject::Point cent1 = (*sit)->cluster()->center();
       int perimeter = (*sit)->cluster()->perimeter();
-      double minAngle = 0.5236;
+      double minAngle = 1.6;
       int totalBorder = 0;
       double minCirc = 0.0;
       std::vector<Segment*>::iterator minSeg = segments.end();
+      std::vector<Cluster*> borderClusters;
+      Cluster* minBC;
+      std::vector<int> clusterSizes;
       for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
 	if(!(*sjt)) continue;
 	if(sjt == sit) continue;
@@ -601,8 +604,15 @@ Mask* ImRecord::segment3(int chan)
 	Cluster* borderCluster = (*sit)->cluster()->findBorderWith((*sjt)->cluster());
 	int border = borderCluster->size();
 	totalBorder += border;
+	if(border > 0){
+	  borderClusters.push_back(borderCluster);
+	  clusterSizes.push_back(size2);
+	}
+	else{
+	  delete borderCluster;
+	  continue;
+	}
 	if(size2 > size1 && (*sjt)->circularity() > circ1) continue;
-	if(border < 1) continue;
 	borderCluster->computeCenter();
 	LocalizedObject::Point borderCenter = borderCluster->center();
 	double vec1 = (*sit)->eigenVector1();
@@ -623,16 +633,30 @@ Mask* ImRecord::segment3(int chan)
 	  minAngle = angle;
 	  minSeg  = sjt;
 	  minCirc = (*sjt)->circularity();
+	  minBC = borderCluster;
 	}
       }
-      if(totalBorder < perimeter / 3 && minAngle < 1.6*exp((circ1 + minCirc - 2)/2.0)){
-	if(minSeg != segments.end()){
+      if(totalBorder < perimeter / 3 && minSeg != segments.end() && minAngle < 0.5236 + 0.7854*exp((circ1 + minCirc - 2)/2.0)){
+	bool uniqueBorder = true;
+	for(unsigned i = 0; i < borderClusters.size(); i++){
+	  if(borderClusters[i] == minBC) continue;
+	  if(clusterSizes[i] < 1000) continue;
+	  for(std::vector<LocalizedObject::Point>::iterator pit = minBC->begin(); pit != minBC->end(); pit++){
+	    if(borderClusters[i]->contains(*pit)){
+	      uniqueBorder = false;
+	      break;
+	    }
+	  }
+	  if(!uniqueBorder) break;
+	}
+	if(uniqueBorder){
 	  (*sit)->merge(*minSeg);
 	  delete *minSeg;
 	  *minSeg = NULL;
 	  nChanges++;
 	}
       }
+      for(std::vector<Cluster*>::iterator clit = borderClusters.begin(); clit != borderClusters.end(); clit++) delete *clit;
     }
   }
   std::cout << "Done merging 5" << std::endl;
