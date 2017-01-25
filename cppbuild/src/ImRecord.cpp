@@ -478,7 +478,7 @@ Mask* ImRecord::segment3(int chan)
   }
   std::cout << "Done merging 2" << std::endl;
   
-  nChanges = 1;
+  nChanges = 0;
   while(nChanges > 0){
     for(int i = segments.size(); i >= 0; i--){
       if(!segments[i]) segments.erase(segments.begin()+i);
@@ -524,46 +524,60 @@ Mask* ImRecord::segment3(int chan)
   }
   std::cout << "Done merging 3" << std::endl;
 
-  for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
-    if(!(*sit)) continue;
-    int size1 = (*sit)->size();
-    //if(size1 > 4000) continue;
-    LocalizedObject::Point cent1 = (*sit)->cluster()->center();
-    int perimeter = (*sit)->cluster()->perimeter();
-    finished = false;
-    while(!finished){
-      finished = true;
-      int maxBorder = maxBorder = perimeter / 5;
-      int totalBorder = 0;
-      std::vector<Segment*>::iterator maxSeg = segments.end();
-      for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
-	if(!(*sjt)) continue;
-	if(sjt == sit) continue;
-	int size2 = (*sjt)->size();
-	LocalizedObject::Point cent2 = (*sjt)->cluster()->center();
-	float dist = sqrt((cent1.x - cent2.x)*(cent1.x - cent2.x) + (cent1.y - cent2.y)*(cent1.y - cent2.y));
-	if(dist > (size1+size2)/2) continue;
-	int border = (*sit)->cluster()->getBorderLength((*sjt)->cluster());
-	totalBorder += border;
-	if(border > maxBorder){
-	  maxBorder = border;
-	  maxSeg  = sjt;
+  int last = segments.size()-1;
+  for(int i = 0; i < last/2.0; i++){
+    Segment* tmp = segments[i];
+    segments[i] = segments[last-i];
+    segments[last-i] = tmp;
+  }
+  sizeLimit = 2;
+  for(int i = 0; i < 2; i++){
+    for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
+      if(!(*sit)) continue;
+      int size1 = (*sit)->size();
+      //if(size1 > 4000) continue;
+      LocalizedObject::Point cent1 = (*sit)->cluster()->center();
+      int perimeter = (*sit)->cluster()->perimeter();
+      finished = false;
+      while(!finished){
+	finished = true;
+	int maxBorder = perimeter / 8;
+	int totalBorder = 0;
+	int maxSize = 0;
+	std::vector<Segment*>::iterator maxSeg = segments.end();
+	for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
+	  if(!(*sjt)) continue;
+	  if(sjt == sit) continue;
+	  int size2 = (*sjt)->size();
+	  LocalizedObject::Point cent2 = (*sjt)->cluster()->center();
+	  float dist = sqrt((cent1.x - cent2.x)*(cent1.x - cent2.x) + (cent1.y - cent2.y)*(cent1.y - cent2.y));
+	  if(dist > (size1+size2)/2) continue;
+	  int border = (*sit)->cluster()->getBorderLength((*sjt)->cluster());
+	  totalBorder += border;
+	  //if(size2 > size1*sizeLimit || size1 > size2*sizeLimit) continue;
+	  if(border > maxBorder){
+	    maxBorder = border;
+	    maxSeg  = sjt;
+	    maxSize = size2;
+	  }
 	}
-      }
-      if(maxSeg != segments.end() && totalBorder > perimeter/2){
-	if(size1 > (*maxSeg)->size() / 3 || (*maxSeg)->circularity() > 0.1 || totalBorder > 2*perimeter/3){
-	  (*sit)->merge(*maxSeg);
-	  size1 += (*maxSeg)->size();
-	  perimeter = (*sit)->cluster()->perimeter();
-	  finished = false;
-	  delete *maxSeg;
-	  *maxSeg = NULL;
+	if(maxSeg != segments.end() && totalBorder > perimeter/2){
+	  //if(size1 > (*maxSeg)->size() / 3 || (*maxSeg)->circularity() > 0.1 || totalBorder > 2*perimeter/3){
+	  if(maxSize < size1*sizeLimit && size1 < maxSize*sizeLimit){
+	    (*sit)->merge(*maxSeg);
+	    size1 += maxSize;
+	    perimeter = (*sit)->cluster()->perimeter();
+	    finished = false;
+	    delete *maxSeg;
+	    *maxSeg = NULL;
+	  }
 	}
       }
     }
+    sizeLimit = 10000;
   }
   std::cout << "Done merging 4" << std::endl;
-
+  
   nChanges = 1;
   while(nChanges > 0){
     for(int i = segments.size(); i >= 0; i--){
