@@ -188,6 +188,7 @@ Mask* ImRecord::segment3(int chan)
 {
   Mask* contourMask = getContourMap(chan);
   Mask* segmentMask = new Mask(m_imWidth,m_imHeight,0);
+  Mask* borderMask = new Mask(m_imWidth,m_imHeight,0);
   Mask* used = new Mask(m_imWidth,m_imHeight);
   std::vector< std::vector<double> > vecs;
   vecs.assign(m_imWidth,std::vector<double>(m_imHeight,0.0));
@@ -296,7 +297,7 @@ Mask* ImRecord::segment3(int chan)
 	  if(top < 0) top++;
 	  if(bottom > m_imHeight) bottom--;
 	  segmentMask->setValue(bi,bj,segmentID);
-	  c->addPoint(bi,bj);
+	  //c->addPoint(bi,bj);
 	  for(int di = left; di < right; di++){
 	    for(int dj = top; dj < bottom; dj++){
 	      if(vecs[di][dj] < -900 || used->getValue(di,dj) > 0) continue;
@@ -324,7 +325,10 @@ Mask* ImRecord::segment3(int chan)
     finished = true;
     for(int i = 0; i < m_imWidth; i++){
       for(int j = 0; j < m_imHeight; j++){
-	if(contourMask->getValue(i,j) < 1 || segmentMask->getValue(i,j) > 0) continue;
+	if(contourMask->getValue(i,j) < 1) continue;
+	int val = segmentMask->getValue(i,j);
+	int n[8] = {0,0,0,0,0,0,0,0};
+	int id[8] = {0,0,0,0,0,0,0,0};
 	for(int k = 0; k < 8; k++){
 	  int i2 = i+di[k];
 	  int j2 = j+dj[k];
@@ -332,21 +336,55 @@ Mask* ImRecord::segment3(int chan)
 	  if(j2 < 0 || j2 >= m_imHeight) continue;
 	  int segVal = segmentMask->getValue(i2,j2);
 	  if(segVal > 0){
-	    segmentMask->setValue(i,j,segVal);
-	    clusters[segVal-1]->addPoint(i,j);
-	    finished = false;
-	    break;
+	    for(int l = 0; l < 8; l++){
+	      if(id[l] == 0){
+		id[l] = segVal;
+		n[l]++;
+		break;
+	      }
+	      else if(id[l] == segVal){
+		n[l]++;
+		break;
+	      }
+	    }
 	  }
+	}
+	int maxN = 0;
+	int maxID = 0;
+	for(int k = 0; k < 8; k++){
+	  if(n[k] > maxN){
+	    maxN = n[k];
+	    maxID = id[k];
+	  }
+	}
+	if(maxID > 0){
+	  if(maxID != val){
+	    segmentMask->setValue(i,j,maxID);
+	    finished = false;
+	  }
+	  if(maxN < 8) borderMask->setValue(i,j,1);
+	  else borderMask->setValue(i,j,0);
 	}
       }
     }
   }
+  for(int i = 0; i < m_imWidth; i++){
+    for(int j = 0; j < m_imHeight; j++){
+      int val = segmentMask->getValue(i,j);
+      if(val < 1) continue;
+      clusters[val-1]->addPoint(i,j,(borderMask->getValue(i,j) > 0));
+    }
+  }
   std::cout << "Done adding peaks" << std::endl;
   for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
-    (*clit)->computeCenter();
-    (*clit)->findBorder();
+    if((*clit)->size() == 0){
+      delete *clit;
+      *clit = NULL;
+    }
+    else (*clit)->computeCenter();
+    //(*clit)->findBorder();
   }
-  
+  std::cout << "Done finding centers" << std::endl;
   for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
     if(!(*clit)) continue;
     int size1 = (*clit)->size();
@@ -395,7 +433,7 @@ Mask* ImRecord::segment3(int chan)
     segmentID++;
   }
 
-  int sizeLimit = 4000;
+  int sizeLimit = 1000;
   int nChanges = 1;
   while(sizeLimit < 100000){
     if(nChanges > 0){
@@ -561,6 +599,7 @@ Mask* ImRecord::segment3(int chan)
 	    maxSize = size2;
 	  }
 	}
+	//if(cent1.x == 648 && cent1.y == 173) std::cout << "(" << cent1.x << "," << cent1.y << "):\t" << totalBorder << ",\t" << perimeter << ",\t" << maxBorder << std::endl;
 	if(maxSeg != segments.end() && totalBorder > perimeter/2){
 	  //if(size1 > (*maxSeg)->size() / 3 || (*maxSeg)->circularity() > 0.1 || totalBorder > 2*perimeter/3){
 	  if(maxSize < size1*sizeLimit && size1 < maxSize*sizeLimit){
@@ -577,100 +616,104 @@ Mask* ImRecord::segment3(int chan)
     sizeLimit = 10000;
   }
   std::cout << "Done merging 4" << std::endl;
-  
-  nChanges = 1;
-  while(nChanges > 0){
-    for(int i = segments.size(); i >= 0; i--){
-      if(!segments[i]) segments.erase(segments.begin()+i);
-    }
-    for(unsigned i = 0; i < segments.size(); i++){
-      for(unsigned j = i+1; j < segments.size(); j++){
-	if(segments[i]->size() > segments[j]->size()){
-	  Segment* tmp = segments[i];
-	  segments[i] = segments[j];
-	  segments[j] = tmp;
-	}
+
+  for(double circularityLimit = 0.1; circularityLimit < 0.4; circularityLimit += 0.05){
+    nChanges = 1;
+    while(nChanges > 0){
+      for(int i = segments.size(); i >= 0; i--){
+	if(!segments[i]) segments.erase(segments.begin()+i);
       }
-    }
-    
-    nChanges = 0;
-    for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
-      if(!(*sit)) continue;
-      int size1 = (*sit)->size();
-      double circ1 = (*sit)->circularity();
-      //if((*sit)->circularity() > 0.2) continue;
-      LocalizedObject::Point cent1 = (*sit)->cluster()->center();
-      int perimeter = (*sit)->cluster()->perimeter();
-      double minAngle = 1.6;
-      int totalBorder = 0;
-      double minCirc = 0.0;
-      std::vector<Segment*>::iterator minSeg = segments.end();
-      std::vector<Cluster*> borderClusters;
-      Cluster* minBC;
-      std::vector<int> clusterSizes;
-      for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
-	if(!(*sjt)) continue;
-	if(sjt == sit) continue;
-	int size2 = (*sjt)->size();
-	LocalizedObject::Point cent2 = (*sjt)->cluster()->center();
-	float dist = sqrt((cent1.x - cent2.x)*(cent1.x - cent2.x) + (cent1.y - cent2.y)*(cent1.y - cent2.y));
-	if(dist > (size1+size2)/2) continue;
-	Cluster* borderCluster = (*sit)->cluster()->findBorderWith((*sjt)->cluster());
-	int border = borderCluster->size();
-	totalBorder += border;
-	if(border > 0){
-	  borderClusters.push_back(borderCluster);
-	  clusterSizes.push_back(size2);
-	}
-	else{
-	  delete borderCluster;
-	  continue;
-	}
-	if(size2 > size1 && (*sjt)->circularity() > circ1) continue;
-	borderCluster->computeCenter();
-	LocalizedObject::Point borderCenter = borderCluster->center();
-	double vec1 = (*sit)->eigenVector1();
-	double diffy = borderCenter.y - cent1.y;
-	double diffx = borderCenter.x - cent1.x;
-	double len = sqrt(diffx*diffx + diffy*diffy);
-	double angle = acos(diffx*cos(vec1)/len + diffy*sin(vec1)/len);
-	if(fabs(angle) > 1.570796327) vec1 += 3.141592654;
-	double vec2 = (*sjt)->eigenVector1();
-	diffy = cent2.y - borderCenter.y;
-	diffx = cent2.x - borderCenter.x;
-	len = sqrt(diffx*diffx + diffy*diffy);
-	angle = acos(diffx*cos(vec2)/len + diffy*sin(vec2)/len);
-	if(fabs(angle) > 1.570796327) vec2 += 3.141592654;
-	angle = fabs(vec2 - vec1);
-	if(angle > 3.141592654) angle = 6.283185307 - angle;
-	if(angle < minAngle){
-	  minAngle = angle;
-	  minSeg  = sjt;
-	  minCirc = (*sjt)->circularity();
-	  minBC = borderCluster;
-	}
-      }
-      if(totalBorder < perimeter / 3 && minSeg != segments.end() && minAngle < 0.5236 + 0.7854*exp((circ1 + minCirc - 2)/2.0)){
-	bool uniqueBorder = true;
-	for(unsigned i = 0; i < borderClusters.size(); i++){
-	  if(borderClusters[i] == minBC) continue;
-	  if(clusterSizes[i] < 1000) continue;
-	  for(std::vector<LocalizedObject::Point>::iterator pit = minBC->begin(); pit != minBC->end(); pit++){
-	    if(borderClusters[i]->contains(*pit)){
-	      uniqueBorder = false;
-	      break;
-	    }
+      for(unsigned i = 0; i < segments.size(); i++){
+	for(unsigned j = i+1; j < segments.size(); j++){
+	  if(segments[i]->size() > segments[j]->size()){
+	    Segment* tmp = segments[i];
+	    segments[i] = segments[j];
+	    segments[j] = tmp;
 	  }
-	  if(!uniqueBorder) break;
-	}
-	if(uniqueBorder){
-	  (*sit)->merge(*minSeg);
-	  delete *minSeg;
-	  *minSeg = NULL;
-	  nChanges++;
 	}
       }
-      for(std::vector<Cluster*>::iterator clit = borderClusters.begin(); clit != borderClusters.end(); clit++) delete *clit;
+      
+      nChanges = 0;
+      for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
+	if(!(*sit)) continue;
+	int size1 = (*sit)->size();
+	double circ1 = (*sit)->circularity();
+	if((*sit)->circularity() > circularityLimit) continue;
+	LocalizedObject::Point cent1 = (*sit)->cluster()->center();
+	int perimeter = (*sit)->cluster()->perimeter();
+	double minAngle = 1.6;
+	int totalBorder = 0;
+	double minCirc = 0.0;
+	std::vector<Segment*>::iterator minSeg = segments.end();
+	std::vector<Cluster*> borderClusters;
+	Cluster* minBC;
+	std::vector<int> clusterSizes;
+	for(std::vector<Segment*>::iterator sjt = segments.begin(); sjt != segments.end(); sjt++){
+	  if(!(*sjt)) continue;
+	  if(sjt == sit) continue;
+	  int size2 = (*sjt)->size();
+	  LocalizedObject::Point cent2 = (*sjt)->cluster()->center();
+	  float dist = sqrt((cent1.x - cent2.x)*(cent1.x - cent2.x) + (cent1.y - cent2.y)*(cent1.y - cent2.y));
+	  if(dist > (size1+size2)/2) continue;
+	  Cluster* borderCluster = (*sit)->cluster()->findBorderWith((*sjt)->cluster());
+	  int border = borderCluster->size();
+	  totalBorder += border;
+	  if(border > 0){
+	    borderClusters.push_back(borderCluster);
+	    clusterSizes.push_back(size2);
+	  }
+	  else{
+	    delete borderCluster;
+	    continue;
+	  }
+	  //if(size2 > size1 && (*sjt)->circularity() > circ1) continue;
+	  if((*sjt)->circularity() - circ1 > 0.1 && size2 > size1) continue;
+	  if((*sjt)->circularity() - circ1 < -0.1 && size1 > size2) continue;
+	  borderCluster->computeCenter();
+	  LocalizedObject::Point borderCenter = borderCluster->center();
+	  double vec1 = (*sit)->eigenVector1();
+	  double diffy = borderCenter.y - cent1.y;
+	  double diffx = borderCenter.x - cent1.x;
+	  double len = sqrt(diffx*diffx + diffy*diffy);
+	  double angle = acos(diffx*cos(vec1)/len + diffy*sin(vec1)/len);
+	  if(fabs(angle) > 1.570796327) vec1 += 3.141592654;
+	  double vec2 = (*sjt)->eigenVector1();
+	  diffy = cent2.y - borderCenter.y;
+	  diffx = cent2.x - borderCenter.x;
+	  len = sqrt(diffx*diffx + diffy*diffy);
+	  angle = acos(diffx*cos(vec2)/len + diffy*sin(vec2)/len);
+	  if(fabs(angle) > 1.570796327) vec2 += 3.141592654;
+	  angle = fabs(vec2 - vec1);
+	  if(angle > 3.141592654) angle = 6.283185307 - angle;
+	  if(angle < minAngle){
+	    minAngle = angle;
+	    minSeg  = sjt;
+	    minCirc = (*sjt)->circularity();
+	    minBC = borderCluster;
+	  }
+	}
+	if(totalBorder < perimeter / 3 && minSeg != segments.end() && minAngle < 0.5236 + 0.7854*exp((circ1 + minCirc - 2)/2.0)){
+	  bool uniqueBorder = true;
+	  for(unsigned i = 0; i < borderClusters.size(); i++){
+	    if(borderClusters[i] == minBC) continue;
+	    if(clusterSizes[i] < 1000) continue;
+	    for(std::vector<LocalizedObject::Point>::iterator pit = minBC->begin(); pit != minBC->end(); pit++){
+	      if(borderClusters[i]->contains(*pit)){
+		uniqueBorder = false;
+		break;
+	      }
+	    }
+	    if(!uniqueBorder) break;
+	  }
+	  if(uniqueBorder){
+	    (*sit)->merge(*minSeg);
+	    delete *minSeg;
+	    *minSeg = NULL;
+	    nChanges++;
+	  }
+	}
+	for(std::vector<Cluster*>::iterator clit = borderClusters.begin(); clit != borderClusters.end(); clit++) delete *clit;
+      }
     }
   }
   std::cout << "Done merging 5" << std::endl;

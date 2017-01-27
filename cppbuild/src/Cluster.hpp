@@ -24,6 +24,7 @@ public:
   void addPoint(LocalizedObject::Point pt){ m_points.push_back(pt); }
   void addPoint(int x, int y, int i);
   void addPoint(LocalizedObject::Point pt, int i);
+  void addPoint(int x, int y, bool isBorder);
   LocalizedObject::Point getPoint(int index){ return m_points.at(index); }
   void setPoint(int index, LocalizedObject::Point pt){ m_points.at(index) = pt; }
   void removePoint(int index){ m_points.erase(m_points.begin()+index); }

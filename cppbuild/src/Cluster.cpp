@@ -45,6 +45,15 @@ void Cluster::addPoint(LocalizedObject::Point pt, int i)
   m_total += i;
 }
 
+void Cluster::addPoint(int x, int y, bool isBorder)
+{
+  LocalizedObject::Point pt;
+  pt.x = x;
+  pt.y = y;
+  m_points.push_back(pt);
+  if(isBorder) m_border.push_back(pt);
+}
+
 void Cluster::removePoint(LocalizedObject::Point pt)
 {
   for(std::vector<LocalizedObject::Point>::iterator it = m_points.begin(); it != m_points.end(); it++){

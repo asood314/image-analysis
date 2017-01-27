@@ -160,7 +160,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
   delete densityMask;
   */
   while(globalThreshold >= 0){
-    //std::cout << "Using global threshold " << globalThreshold << std::endl;
+    std::cout << "Using global threshold " << globalThreshold << std::endl;
     rec->setThreshold(chan,globalThreshold);
     Mask* densityMask = applyThreshold(frame,rec,chan);
     globalThreshold = findThreshold(frame,rec->getSignalMask(chan)->inverse(),densityMask->inverse(),globalThreshold);
