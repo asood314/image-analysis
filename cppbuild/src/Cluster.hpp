@@ -40,6 +40,7 @@ public:
   int perimeter(){ return m_border.size(); }
   int getBorderLength(Cluster* c);
   Cluster* findBorderWith(Cluster* c);
+  std::vector<LocalizedObject::Point> findClosestPoints(Cluster* c);
   void add(Cluster* c);
   double peakToPeakDistance2(Cluster* c);
   Mask* getMask(int width, int height, bool outline=false);

@@ -39,6 +39,7 @@ public:
   int max(int x1, int x2, int y1, int y2);
   Mask* getBorders();
   bool isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, bool allowBorders=true);
+  bool isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, int id1, int id2);
 
 };
 

@@ -132,6 +132,42 @@ Cluster* Cluster::findBorderWith(Cluster* c)
   return retVal;
 }
 
+std::vector<LocalizedObject::Point> Cluster::findClosestPoints(Cluster* c)
+{
+  std::vector<LocalizedObject::Point> retVal;
+  retVal.push_back(m_center);
+  retVal.push_back(c->center());
+  double minDist = sqrt((m_center.x - retVal[1].x)*(m_center.x - retVal[1].x) + (m_center.y - retVal[1].y)*(m_center.y - retVal[1].y));
+  if(c->perimeter() == 0) c->findBorder();
+  LocalizedObject::Point borderCenter;
+  borderCenter.x = 0;
+  borderCenter.y = 0;
+  int nborder = 0;
+  for(std::vector<LocalizedObject::Point>::iterator it = m_border.begin(); it != m_border.end(); it++){
+    for(std::vector<LocalizedObject::Point>::iterator jt = c->borderBegin(); jt != c->borderEnd(); jt++){
+      double dist = sqrt((it->x - jt->x)*(it->x - jt->x) + (it->y - jt->y)*(it->y - jt->y));
+      if(dist < minDist){
+	minDist = dist + 0.01;
+	retVal[0] = *it;
+	retVal[1] = *jt;
+	if(dist < 1.4){
+	  borderCenter.x += it->x;
+	  borderCenter.y += it->y;
+	  nborder++;
+	  break;
+	}
+      }
+    }
+  }
+  if(nborder > 0){
+    borderCenter.x = borderCenter.x / nborder;
+    borderCenter.y = borderCenter.y / nborder;
+    retVal[0] = borderCenter;
+    retVal[1] = borderCenter;
+  }
+  return retVal;
+}
+
 void Cluster::add(Cluster* c)
 {
   std::vector<LocalizedObject::Point> points2 = c->getPoints();

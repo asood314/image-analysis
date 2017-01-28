@@ -226,3 +226,35 @@ bool Mask::isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, bool allowBo
   return true;
   */
 }
+
+bool Mask::isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, int id1, int id2)
+{
+  if(x1 == x2 && y1 == y2) return true;
+  double slope = ((double)(y2) - y1) / (x2 - x1);
+  if(x1 == x2) slope = 99999999.9;
+  if(fabs(slope) > 1){
+    double step = (y2 - y1)/fabs(y2 - y1);
+    int nsteps = (int)((y2 - y1)/step);
+    double y = y1;
+    double x = x1;
+    for(int j = 0; j < nsteps; j++){
+      int val = m_mask[(int)x][(int)y];
+      if(val > 0 && val != id1 && val != id2) return false;
+      y += step;
+      x += step/slope;
+    }
+  }
+  else{
+    double step = (x2 - x1)/fabs(x2 - x1);
+    int nsteps = (int)((x2 - x1)/step);
+    double x = x1;
+    double y = y1;
+    for(int j = 0; j < nsteps; j++){
+      int val = m_mask[(int)x][(int)y];
+      if(val > 0 && val != id1 && val != id2) return false;
+      x += step;
+      y += step*slope;
+    }
+  }
+  return true;
+}
