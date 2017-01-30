@@ -30,6 +30,8 @@ public:
   void findOrientation();
   void setCluster(Cluster* c);
   void merge(Segment* s);
+  void write(char* buf, std::ofstream& fout);
+  void read(char* buf, std::ifstream& fin);
   Cluster* cluster(){ return m_cluster; }
   double circularity(){ return m_circularity; }
   double eigenVector1(){ return m_eigenVector1; }

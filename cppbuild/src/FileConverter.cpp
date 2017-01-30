@@ -80,6 +80,7 @@ FileManager::input_file FileConverter::readV01(FileManager* fm, ImageAnalysisToo
   FileManager::input_file infile;
   char buf[500];
   fin.read(buf,7);
+  int version = NiaUtils::convertToInt(buf[3],buf[4],buf[5],buf[6]);
   fin.read(buf,4);
   int len = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
   fin.read(buf,len);
@@ -112,7 +113,7 @@ FileManager::input_file FileConverter::readV01(FileManager* fm, ImageAnalysisToo
     if((int)buf[0] < 1) nrecs *= infile.nz;
     for(int i = 0; i < nrecs; i++){
       ImRecord* rec = new ImRecord();
-      rec->read(fin,1);
+      rec->read(fin,version);
       recs->push_back(rec);
     }
     infile.resolutionXY = recs->at(prevSize)->resolutionXY();
@@ -129,7 +130,7 @@ void FileConverter::writeV01(FileManager* fm, ImageAnalysisToolkit* kit, std::ve
   buf[0] = 'V';
   buf[1] = 'V';
   buf[2] = 'V';
-  NiaUtils::writeIntToBuffer(buf,3,1);
+  NiaUtils::writeIntToBuffer(buf,3,nia::niaVersion);
   fout.write(buf,7);
   fm->saveInputFiles(fout,seriesID);
   kit->write(fout);
@@ -137,7 +138,7 @@ void FileConverter::writeV01(FileManager* fm, ImageAnalysisToolkit* kit, std::ve
   else buf[0] = 1;
   fout.write(buf,1);
   for(std::vector<ImRecord*>::iterator rit = recs->begin(); rit != recs->end(); rit++){
-    (*rit)->write(fout,1);
+    (*rit)->write(fout,nia::niaVersion);
   }
   fout.close();
 }
