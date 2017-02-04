@@ -629,7 +629,7 @@ Mask* ImRecord::segment3(int chan)
     for(std::vector<LocalizedObject::Point>::iterator pit = c->begin(); pit != c->end(); pit++) segmentMask->setValue(pit->x,pit->y,segmentID);
     segmentID++;
   }
-  for(double circularityLimit = 0.1; circularityLimit < 0.45; circularityLimit += 0.05){
+  for(double circularityLimit = 10.1; circularityLimit < 0.45; circularityLimit += 0.05){
     nChanges = 1;
     while(nChanges > 0){
       for(int i = segments.size(); i >= 0; i--){
