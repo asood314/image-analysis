@@ -967,6 +967,13 @@ void NiaViewer::shareRegionsT()
   }
 }
 
+void NiaViewer::convertRegions()
+{
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  rec->convertRegionsToSegments(0);
+}
+
 Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)
 {
   unsigned nmasks = m_masks.size();

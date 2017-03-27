@@ -28,6 +28,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
   m_refActionGroup->add(Gtk::Action::create("unscale","Fix Myka's Images"),sigc::mem_fun(m_viewer, &NiaViewer::unscale));
   m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
+  m_refActionGroup->add(Gtk::Action::create("loadStorm","Load Storm Data"),sigc::mem_fun(*this, &NiaCore::on_load_storm_data_clicked));
   m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
   m_refActionGroup->add(Gtk::Action::create("screenshot","Save Screenshot"),sigc::mem_fun(*this, &NiaCore::on_save_screenshot));
   m_refActionGroup->add(Gtk::Action::create("timeseries","Save Time Series"),sigc::mem_fun(*this, &NiaCore::on_save_timeseries));
@@ -105,6 +106,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("regShare","Share Regions"));
   m_refActionGroup->add(Gtk::Action::create("regShareZ","Across Z-planes"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegionsZ));
   m_refActionGroup->add(Gtk::Action::create("regShareT","Across Timepoints"),sigc::mem_fun(m_viewer, &NiaViewer::shareRegionsT));
+  m_refActionGroup->add(Gtk::Action::create("regConvert","Convert Regions To Segments"),sigc::mem_fun(m_viewer, &NiaViewer::convertRegions));
 
   m_refUIManager = Gtk::UIManager::create();
   m_refUIManager->insert_action_group(m_refActionGroup);
@@ -117,6 +119,7 @@ void NiaCore::init()
     "   <menuitem action='load'/>"
     "   <menuitem action='unscale'/>"
     "   <menuitem action='loadMMR'/>"
+    "   <menuitem action='loadStorm'/>"
     "   <menuitem action='save'/>"
     "   <menuitem action='screenshot'/>"
     "   <menuitem action='timeseries'/>"
@@ -198,6 +201,7 @@ void NiaCore::init()
     "    <menuitem action='regShareZ'/>"
     "    <menuitem action='regShareT'/>"
     "   </menu>"
+    "   <menuitem action='regConvert'/>"
     "  </menu>"
     " </menubar>"
     "</ui>";
@@ -451,6 +455,27 @@ void NiaCore::on_find_outliers_clicked()
   Mask* m = m_iat.findOutliers(frame);
   m_viewer.toggleMask(m->inverse());
   delete m;
+}
+
+void NiaCore::on_load_storm_data_clicked()
+{
+  ImRecord* rec = m_viewer.currentRecord();
+  if(!rec) continue;
+
+  Gtk::FileFilter filt;
+  filt.set_name("CSV files");
+  filt.add_pattern("*.csv");
+
+  Gtk::FileChooserDialog fcd("Select input file",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Run",Gtk::RESPONSE_OK);
+  fcd.add_filter(filt);
+  result = fcd.run();
+  if(result == Gtk::RESPONSE_OK){
+    StormData* sd = new StormData(fcd.get_filename());
+    rec->setStormClusters(m_viewer.viewW(),StormCluster::cluster(sd));
+  }
 }
 
 void NiaCore::on_find_signal_clicked(bool doAll)

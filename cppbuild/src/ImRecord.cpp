@@ -12,6 +12,7 @@ ImRecord::ImRecord(int nchan, int w, int h)
     m_signalMasks.push_back(NULL);
     m_utilityMasks.push_back(NULL);
     m_puncta.push_back(std::vector<Cluster*>());
+    m_stormClusters.push_back(std::vector<StormCluster*>());
   }
 }
 
@@ -182,6 +183,36 @@ Mask* ImRecord::getContourMap(int chan)
   }
   delete oldMask;
   return newMask;
+}
+
+void ImRecord::convertRegionsToSegments(int chan)
+{
+  std::vector<Cluster*> clusters;
+  Mask* m = m_signalMasks[chan];
+  if(!m) return;
+  for(int i = 0; i < nRegions(); i++) clusters.push_back(new Cluster());
+  for(int i = 0; i < m_imWidth; i++){
+    for(int j = 0; j < m_imHeight; j++){
+      if(m->getValue(i,j) == 0) continue;
+      for(int r = 0; r < nRegions(); r++){
+	if(m_regions[r]->contains(i,j)){
+	  clusters[r]->addPoint(i,j);
+	  break;
+	}
+      }
+    }
+  }
+  for(std::vector<Segment*>::iterator sit = m_segments.begin(); sit != m_segments.end(); sit++){
+    if(*sit) delete *sit;
+  }
+  m_segments.clear();
+  for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
+    (*clit)->computeCenter();
+    (*clit)->findBorder();
+    Segment* s = new Segment(*clit);
+    s->findOrientation();
+    m_segments.push_back(s);
+  }
 }
 
 Mask* ImRecord::segment3(int chan)

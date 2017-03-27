@@ -34,6 +34,7 @@ protected:
   void on_start_batch_jobs();
   void on_configure_clicked();
   void on_find_outliers_clicked();
+  void on_load_storm_data_clicked();
   void on_find_signal_clicked(bool doAll);
   void on_apply_threshold_clicked();
   void on_find_puncta_clicked(bool doAll);

@@ -85,6 +85,7 @@ public:
   ImRecord* getRecord(int pos, int t, int z);
   void shareRegionsZ();
   void shareRegionsT();
+  void convertRegions();
   std::vector<ImRecord*> records(){ return m_records; }
   int getNW(){
     if(m_data) return m_data->fourLocation(m_view_p,m_view_t)->nwaves();

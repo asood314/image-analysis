@@ -6,6 +6,7 @@
 #include "Mask.hpp"
 #include "NiaUtils.hpp"
 #include "Segment.hpp"
+#include "StormCluster.hpp"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -27,6 +28,7 @@ protected:
   std::vector<SynapseCollection*> m_synapseCollections;
   std::vector<Region*> m_regions;
   std::vector<Segment*> m_segments;
+  std::vector< std::vector<StormCluster*> > m_stormClusters;
 
 public:
   ImRecord(){}
@@ -79,6 +81,7 @@ public:
   Mask* segment(int chan);
   Mask* segment2(int chan);
   Mask* segment3(int chan);
+  void convertRegionsToSegments(int chan);
   void hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail);
   Mask* getPunctaMask(int chan, bool outline=false);
   Mask* getSynapseMask(bool outline=true);
@@ -96,6 +99,9 @@ public:
   //void unpack(char* buf, uint64_t offset, Mask* m, int index);
   void loadMetaMorphRegions(std::string filename);
   void loadMetaMorphTraces(std::string filename, int chan, bool overwrite);
+  void setStormClusters(int chan, std::vector<StormCluster*> clusters){ m_stormClusters[chan] = clusters; }
+  int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
+  StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }
   
 };
 
