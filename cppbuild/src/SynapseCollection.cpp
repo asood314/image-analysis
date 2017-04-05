@@ -117,6 +117,27 @@ bool SynapseCollection::computeColocalization(Synapse* s)
   return false;
 }
 
+bool SynapseCollection::checkColocalization(StormCluster::StormSynapse& s)
+{
+  if(m_requireAllColocalized){
+    for(int i = 0; i < s.clusters.size(); i++){
+      for(int j = i+1; j < s.clusters.size(); j++){
+	if(!(s.clusters[i]->colocalWith(s.clusters[j]))) return false;
+      }
+    }
+    return true;
+  }
+  for(std::vector< std::vector<int> >::iterator it = m_requiredColocalizations.begin(); it != m_requiredColocalizations.end(); it++){
+    for(int i = 0; i < it->size(); i++){
+      for(int j = i+1; j < it->size(); j++){
+	if(!(s.clusters[it->at(i)]->colocalWith(s.clusters[it->at(j)]))) return false;
+
+      }
+    }
+  }
+  return true;
+}
+
 void SynapseCollection::write(char* buf, std::ofstream& fout)
 {
   int64_t offset = 0;

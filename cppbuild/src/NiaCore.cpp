@@ -61,8 +61,10 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
+  m_refActionGroup->add(Gtk::Action::create("stormMask","Storm Mask"),Gtk::AccelKey("<control>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleStormMask));
   m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
+  m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),sigc::mem_fun(m_viewer, &NiaViewer::displayStormImage));
   m_refActionGroup->add(Gtk::Action::create("derivative","Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative));
   m_refActionGroup->add(Gtk::Action::create("derivative2","2nd Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative2));
   m_refActionGroup->add(Gtk::Action::create("stats","Image Statistics"),sigc::mem_fun(m_viewer, &NiaViewer::showStats));
@@ -83,6 +85,7 @@ void NiaCore::init()
   //m_refActionGroup->add(Gtk::Action::create("nextZ","Next Z-slice"),Gtk::AccelKey(GDK_KEY_Up,Gdk::SHIFT_MASK),sigc::mem_fun(m_viewer, &NiaViewer::nextZ));
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
+  m_refActionGroup->add(Gtk::Action::create("alignStorm","Align Storm Data"),sigc::mem_fun(m_viewer, &NiaViewer::alignStormData));
   m_refActionGroup->add(Gtk::Action::create("findout","Find Outliers"),sigc::mem_fun(*this, &NiaCore::on_find_outliers_clicked));
   m_refActionGroup->add(Gtk::Action::create("findsigMenu","Find Signal"));
   m_refActionGroup->add(Gtk::Action::create("findsigOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),false));
@@ -154,9 +157,11 @@ void NiaCore::init()
     "    <menuitem action='puncMask'/>"
     "    <menuitem action='synMask'/>"
     "    <menuitem action='regMask'/>"
+    "    <menuitem action='stormMask'/>"
     "    <menuitem action='conMap'/>"
     "    <menuitem action='clearMask'/>"
     "   </menu>"
+    "   <menuitem action='viewStorm'/>"
     "   <menuitem action='derivative'/>"
     "   <menuitem action='derivative2'/>"
     "   <menuitem action='zoomin'/>"
@@ -174,6 +179,7 @@ void NiaCore::init()
     "  </menu>"
     "  <menu action='analyzeMenu'>"
     "   <menuitem action='config'/>"
+    "   <menuitem action='alignStorm'/>"
     "   <menuitem action='findout'/>"
     "   <menu action='findsigMenu'>"
     "    <menuitem action='findsigOne'/>"
@@ -459,8 +465,16 @@ void NiaCore::on_find_outliers_clicked()
 
 void NiaCore::on_load_storm_data_clicked()
 {
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
   ImRecord* rec = m_viewer.currentRecord();
-  if(!rec) continue;
+  if(!rec){
+    rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
+    rec->setResolutionXY(m_viewer.data()->resolutionXY());
+    std::vector<std::string> chanNames = m_iat.getChannelNames();
+    for(int i = 0; i < chanNames.size(); i++) rec->setChannelName(i,chanNames[i]);
+    m_viewer.setCurrentRecord(rec);
+  }
 
   Gtk::FileFilter filt;
   filt.set_name("CSV files");
@@ -469,12 +483,13 @@ void NiaCore::on_load_storm_data_clicked()
   Gtk::FileChooserDialog fcd("Select input file",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fcd.set_transient_for(*this);
   fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
-  fcd.add_button("Run",Gtk::RESPONSE_OK);
+  fcd.add_button("OK",Gtk::RESPONSE_OK);
   fcd.add_filter(filt);
-  result = fcd.run();
+  int result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     StormData* sd = new StormData(fcd.get_filename());
     rec->setStormClusters(m_viewer.viewW(),StormCluster::cluster(sd));
+    delete sd;
   }
 }
 
@@ -555,6 +570,7 @@ void NiaCore::on_find_synapses_clicked()
   std::vector<SynapseCollection*> syncol = m_iat.synapseDefinitions();
   for(std::vector<SynapseCollection*>::iterator it = syncol.begin(); it != syncol.end(); it++) rec->addSynapseCollection((*it)->emptyCopy());
   m_iat.findSynapses(rec);
+  m_iat.findStormSynapses(rec);
   std::cout << nia::nout.buffer() << std::endl;
   nia::nout.clear();
 }

@@ -55,6 +55,7 @@ public:
   void findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void resolveOverlaps(ImFrame* frame, ImRecord* rec, int chan);
   void findSynapses(ImRecord* rec);
+  void findStormSynapses(ImRecord* rec);
   void write(std::ofstream& fout);
   void read(std::ifstream& fin);
   int getBitDepth();

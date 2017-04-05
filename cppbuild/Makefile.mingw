@@ -9,6 +9,8 @@ all:
 	x86_64-w64-mingw32-g++ src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/Cluster.cpp -o obj/Cluster.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ src/StormData.cpp -o obj/StormData.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ src/StormCluster.cpp -o obj/StormCluster.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
@@ -35,6 +37,8 @@ debug:
 	x86_64-w64-mingw32-g++ -g src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/Cluster.cpp -o obj/Cluster.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/Synapse.cpp -o obj/Synapse.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ -g src/StormData.cpp -o obj/StormData.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ -g src/StormCluster.cpp -o obj/StormCluster.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/Region.cpp -o obj/Region.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ -g src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
@@ -69,6 +73,8 @@ back:
 	x86_64-w64-mingw32-g++ src/LocalizedObject.cpp -o obj/LocalizedObject.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/Cluster.cpp -o obj/Cluster.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/Synapse.cpp -o obj/Synapse.o -c -std=c++11
+	x86_64-w64-mingw32-g++ src/StormData.cpp -o obj/StormData.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
+	x86_64-w64-mingw32-g++ src/StormCluster.cpp -o obj/StormCluster.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0
 	x86_64-w64-mingw32-g++ src/SynapseCollection.cpp -o obj/SynapseCollection.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/Region.cpp -o obj/Region.o -c -std=c++11
 	x86_64-w64-mingw32-g++ src/Segment.cpp -o obj/Segment.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0

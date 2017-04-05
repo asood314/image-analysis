@@ -884,6 +884,14 @@ void NiaViewer::toggleRegionMask()
   if(m_records.at(index)) toggleMask(m_records.at(index)->getRegionMask(true));
 }
 
+void NiaViewer::toggleStormMask()
+{
+  if(!m_data) return;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getStormClusterLocations(m_view_w));
+}
+
 void NiaViewer::clearMasks()
 {
   for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
@@ -923,6 +931,61 @@ void NiaViewer::setCurrentRecord(ImRecord* rec)
   int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
   if(m_records[index]) delete m_records[index];
   m_records[index] = rec;
+}
+
+void NiaViewer::alignStormData()
+{
+  if(!m_data) return;
+  ImFrame* frame = currentFrame();
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  Mask* m = rec->getStormClusterMask(m_view_w);
+  int maxI = 0;
+  int minShiftX = -frame->width();
+  int maxShiftX = frame->width();
+  int minShiftY = -frame->height();
+  int maxShiftY = frame->height();
+  int stepX = (maxShiftX - minShiftX) / 10;
+  int stepY = (maxShiftY - minShiftY) / 10;
+  int bestX = 0;
+  int bestY = 0;
+  bool finished = 0;
+  while(maxShiftX - minShiftX > 2 && maxShiftY - minShiftY > 2){
+    for(int shiftX = minShiftX; shiftX < maxShiftX; shiftX += stepX){
+      for(int shiftY = minShiftY; shiftY < maxShiftY; shiftY += stepY){
+	int I = 0;
+	int bx = -shiftX;
+	if(bx < 0) bx = 0;
+	int ex = frame->width();
+	if(shiftX > 0) ex -= shiftX;
+	int by = -shiftY;
+	if(by < 0) by = 0;
+	int ey = frame->height();
+	if(shiftY > 0) ey -= shiftY;
+	for(int i = bx; i < ex; i++){
+	  for(int j = by; j < ey; j++){
+	    if(m->getValue(i,j) == 0) continue;
+	    I += frame->getPixel(i+shiftX,j+shiftY);
+	  }
+	}
+	if(I > maxI){
+	  maxI = I;
+	  bestX = shiftX;
+	  bestY = shiftY;
+	}
+      }
+    }
+    minShiftX = bestX - stepX;
+    maxShiftX = bestX + stepX;
+    minShiftY = bestY - stepY;
+    maxShiftY = bestY + stepY;
+    stepX = (maxShiftX - minShiftX) / 10;
+    if(stepX < 1) stepX = 1;
+    stepY = (maxShiftY - minShiftY) / 10;
+    if(stepY < 1) stepY = 1;
+  }
+  rec->shiftStormData(bestX,bestY);
+  delete m;
 }
 
 void NiaViewer::shareRegionsZ()
@@ -1295,4 +1358,56 @@ void NiaViewer::saveTimeSeries(std::string basename)
     updateImage();
     m_pixbuf->save(filename,"png");
   }
+}
+
+void NiaViewer::displayStormImage()
+{
+  uint8_t* buf = m_pixbuf->get_pixels();
+  if(m_mode == GRAY){
+    m_pixbuf = createPixbufStorm(m_view_w);
+    if(buf) delete[] buf;
+  }
+  else if(m_mode == RGB){
+    //m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t));
+    if(buf) delete[] buf;
+  }
+  //Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
+  //m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(m_pixbuf);
+  m_eventBox.hide();
+  m_eventBox.set_size_request(m_width*5,m_height*5);
+  m_eventBox.show();
+}
+
+Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
+{
+  ImRecord* rec = currentRecord();
+  int nClusters = rec->nStormClusters(chan);
+  double resolution = 1000.0 * rec->resolutionXY() / 5.0;
+  int w = 5*m_width;
+  int h = 5*m_height;
+  uint8_t* buf = new uint8_t[w*h*3];
+  //double sf = 255.0 / (m_grayMax - m_grayMin);
+  for(int i = 0; i < w*h*3; i++){
+      buf[i] = 0;
+  }
+  for(int i = 0; i < nClusters; i++){
+    StormCluster* sc = rec->stormCluster(chan,i);
+    for(int j = 0; j < sc->nMolecules(); j++){
+      StormData::Blink b = sc->molecule(j);
+      int x = (int)(b.x / resolution);
+      if(x >= w) continue;
+      int y = (int)(b.y / resolution);
+      if(y >= h) continue;
+      int index = 3*w*y + 3*x;
+      unsigned colorIndex = i % m_ncolors;
+      buf[index] = m_colors[colorIndex].r;
+      buf[index+1] = m_colors[colorIndex].g;
+      buf[index+2] = m_colors[colorIndex].b;
+    }
+  }
+      
+  Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, w, h, w*3);
+  //delete[] buf;
+  return retval;
 }

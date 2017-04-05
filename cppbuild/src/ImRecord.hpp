@@ -102,6 +102,9 @@ public:
   void setStormClusters(int chan, std::vector<StormCluster*> clusters){ m_stormClusters[chan] = clusters; }
   int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
   StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }
+  void shiftStormData(int shiftX_pix, int shiftY_pix);
+  Mask* getStormClusterMask(int chan);
+  Mask* getStormClusterLocations(int chan);
   
 };
 

@@ -17,7 +17,7 @@ protected:
 
 public:
   double dendriteArea,dendriteLength;
-  std::vector<int> nSynapses,nPuncta;
+  std::vector<int> nSynapses,nStormSynapses,nPuncta;
   std::vector<double> avgSynapseSize,avgPunctaSize,avgPeakIntensity,avgIntegratedIntensity;
   std::vector< std::vector<double> > avgOverlap;
   Region(){}

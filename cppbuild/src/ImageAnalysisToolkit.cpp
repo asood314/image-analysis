@@ -1675,6 +1675,69 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
   }
 }
 
+void ImageAnalysisToolkit::findStormSynapses(ImRecord* rec)
+{
+  for(int icol = 0; icol < rec->nSynapseCollections(); icol++){
+    int nSynapses = 0;
+    SynapseCollection* sc = rec->getSynapseCollection(icol);
+    sc->clearStormSynapses();
+    std::vector<int> chan = sc->channels();
+    int nchans = sc->nChannels();
+    int* np = new int[nchans];
+    int* pi = new int[nchans];
+    int nCombos = 1;
+    for(int i = 0; i < nchans; i++){
+      np[i] = rec->nStormClusters(chan[i]);
+      nCombos *= np[i];
+      pi[i] = 0;
+    }
+    if(nCombos == 0){
+      delete[] np;
+      delete[] pi;
+      continue;
+      nia::nout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << "\n";
+    }
+    StormCluster::StormSynapse s;
+    double resolution = 1000.0 * rec->resolutionXY();
+    for(int i = 0; i < np[0]; i++){
+      bool synapseFound = false;
+      while(pi[nchans-1] < np[nchans-1] && !synapseFound){
+	s.clusters.clear();
+	s.centerX = 0;
+	s.centerY = 0;
+	s.clusters.push_back(rec->stormCluster(chan[0],i));
+	s.centerX += (int)(s.clusters[0]->centerX() / resolution);
+	s.centerY += (int)(s.clusters[0]->centerY() / resolution);
+	for(int j = 1; j < nchans; j++){
+	  s.clusters.push_back(rec->stormCluster(chan[j],pi[j]));
+	  s.centerX += (int)(s.clusters[j]->centerX() / resolution);
+	  s.centerY += (int)(s.clusters[j]->centerY() / resolution);
+	}
+	if(sc->checkColocalization(s)){
+	  s.centerX = s.centerX / nchans;
+	  s.centerY = s.centerY / nchans;
+	  sc->addStormSynapse(s);
+	  synapseFound = true;
+	  nSynapses++;
+	}
+	else{
+	  pi[1]++;
+	  for(int j = 1; j < nchans-1; j++){
+	    if(pi[j] >= np[j]){
+	      pi[j] = 0;
+	      pi[j+1]++;
+	    }
+	  }
+	}
+      }
+      for(int j = 1; j < nchans; j++) pi[j] = 0;
+    }
+    delete[] np;
+    delete[] pi;
+    nia::nout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << "\n";
+  }
+}
+
 void ImageAnalysisToolkit::write(std::ofstream& fout)
 {
   char* buf = new char[2000];

@@ -5,6 +5,7 @@
 #include <fstream>
 #include "NiaUtils.hpp"
 #include "Synapse.hpp"
+#include "StormCluster.hpp"
 
 class SynapseCollection
 {
@@ -17,6 +18,7 @@ protected:
   double m_distanceThreshold;
   bool m_useOverlap;
   std::vector<Synapse*> m_synapses;
+  std::vector<StormCluster::StormSynapse> m_stormSynapses;
   std::string m_description;
 
 public:
@@ -30,6 +32,10 @@ public:
   void clearSynapses();
   uint32_t nSynapses(){ return m_synapses.size(); }
   std::vector<Synapse*> synapses(){ return m_synapses; }
+  void addStormSynapse(StormCluster::StormSynapse s){ m_stormSynapses.push_back(s); }
+  StormCluster::StormSynapse getStormSynapse(int index){ return m_stormSynapses[index]; }
+  void clearStormSynapses(){ m_stormSynapses.clear(); }
+  int nStormSynapses(){ return m_stormSynapses.size(); }
   void setRequireAll(bool tf){ m_requireAllColocalized = tf; }
   bool allRequired(){ return m_requireAllColocalized; }
   void addRequiredColocalization(std::vector<int> chans);
@@ -50,6 +56,7 @@ public:
   void setDescription(std::string msg){ m_description = msg; }
   std::string description(){ return m_description; }
   bool computeColocalization(Synapse* s);
+  bool checkColocalization(StormCluster::StormSynapse& s);
   void write(char* buf, std::ofstream& fout);
   void read(char* buf, std::ifstream& fin, std::vector< std::vector<Cluster*> >* punks);
 

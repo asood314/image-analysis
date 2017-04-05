@@ -45,6 +45,7 @@ protected:
   int m_prevButton;
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImStack* stack);
+  Glib::RefPtr<Gdk::Pixbuf> createPixbufStorm(int chan);
   void autoscaleGray();
   void autoscaleRGB();
   void updateImage();
@@ -79,10 +80,12 @@ public:
   void togglePunctaMask();
   void toggleSynapseMask();
   void toggleRegionMask();
+  void toggleStormMask();
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
   void setCurrentRecord(ImRecord* rec);
   ImRecord* getRecord(int pos, int t, int z);
+  void alignStormData();
   void shareRegionsZ();
   void shareRegionsT();
   void convertRegions();
@@ -174,6 +177,7 @@ public:
   void saveTimeSeries(std::string basename);
   void unscale(){ if(m_data) m_data->divide(16); }
   int grayMin(){ return m_grayMin; }
+  void displayStormImage();
 
 };
 

@@ -1590,6 +1590,7 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
   r->dendriteArea *= m_resolutionXY*m_resolutionXY;
   r->dendriteLength = r->getLength() * m_resolutionXY;
   r->nSynapses.clear();
+  r->nStormSynapses.clear();
   r->avgSynapseSize.clear();
   r->avgOverlap.clear();
   r->nPuncta.clear();
@@ -1598,9 +1599,11 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
   r->avgIntegratedIntensity.clear();
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
     r->nSynapses.push_back(0);
+    r->nStormSynapses.push_back(0);
     r->avgSynapseSize.push_back(0.0);
     r->avgOverlap.push_back(std::vector<double>());
     std::vector<int>::iterator nsyn = r->nSynapses.end()-1;
+    std::vector<int>::iterator nsynStorm = r->nStormSynapses.end()-1;
     std::vector<double>::iterator avgS = r->avgSynapseSize.end()-1;
     std::vector< std::vector<double> >::iterator avgO = r->avgOverlap.end()-1;
     int nreq = (*it)->nRequirements();
@@ -1618,6 +1621,12 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
     }
     (*avgS) *= m_resolutionXY*m_resolutionXY/(*nsyn);
     for(std::vector<double>::iterator jt = avgO->begin(); jt != avgO->end(); jt++) (*jt) *= m_resolutionXY*m_resolutionXY/(*nsyn);
+    n = (*it)->nStormSynapses();
+    for(int i = 0; i < n; i++){
+      StormCluster::StormSynapse s = (*it)->getStormSynapse(i);
+      if(!(r->contains(s.centerX,s.centerY))) continue;
+      (*nsynStorm)++;
+    }
   }
   for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
     r->nPuncta.push_back(0);
@@ -1711,6 +1720,16 @@ void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
 	fout << "\"\n";
       }
     }
+    fout << "-,";
+    for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,-\n";
+    fout << "\"Storm synapses\",";
+    sum = 0;
+    for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
+      fout << "" << (*rit)->nStormSynapses.at(icol) << ",";
+      sum += (*rit)->nStormSynapses.at(icol);
+    }
+    fout << "" << (sum/nROI) << ",\"" << (*scit)->description() << "\"\n";
     fout << "-,";
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
     fout << "-,-\n";
@@ -1981,4 +2000,78 @@ void ImRecord::loadMetaMorphRegions(std::string filename)
 
 void ImRecord::loadMetaMorphTraces(std::string filename, int chan, bool overwrite)
 {
+}
+
+void ImRecord::shiftStormData(int shiftX_pix, int shiftY_pix)
+{
+  double shiftX = shiftX_pix * 1000.0 * m_resolutionXY;
+  double shiftY = shiftY_pix * 1000.0 * m_resolutionXY;
+  for(int chan = 0; chan < m_nchannels; chan++){
+    for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
+      (*clit)->shiftXY(shiftX,shiftY);
+    }
+  }
+}
+
+Mask* ImRecord::getStormClusterMask(int chan)
+{
+  Mask* m = new Mask(m_imWidth,m_imHeight,0);
+  double step = m_resolutionXY / 2.0;
+  for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
+    int c_x = (int)((*clit)->centerX() / (1000.0 * m_resolutionXY));
+    int c_y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
+    if(c_x >= m_imWidth || c_y >= m_imHeight) continue;
+    m->setValue(c_x,c_y,1);
+    double threshold = 0.05 * (*clit)->intensity();
+    int window = (int)(1.0 / m_resolutionXY);
+    int bx = c_x - window;
+    if(bx < 0) bx = 0;
+    int ex = c_x + window;
+    if(ex >= m_imWidth) ex = m_imWidth;
+    int by = c_y - window;
+    if(by < 0) by = 0;
+    int ey = c_y + window;
+    if(ey >= m_imHeight) ey = m_imHeight;
+    for(int i = bx; i < ex; i++){
+      for(int j = by; j < ey; j++){
+	double intensity = 0.0;
+	double px = (i+0.5) * m_resolutionXY * 1000.0;
+	double py = (j+0.5) * m_resolutionXY * 1000.0;
+	for(int k = 0; k < (*clit)->nMolecules(); k++){
+	  double diffx = px - (*clit)->x(k);
+	  double diffy = py - (*clit)->y(k);
+	  double dist = sqrt(diffx*diffx + diffy*diffy);
+	  double width = (*clit)->sigma1(k);
+	  intensity += (*clit)->intensity(k) *  (m_resolutionXY / (6.2831853*dist)) * (exp(-(dist-step)*(dist-step)/(2*width*width)) - exp(-(dist+step)*(dist-step)/(2*width*width)));
+	  if(intensity > threshold){
+	    m->setValue(i,j,1);
+	    break;
+	  }
+	}
+      }
+    }
+  }
+  return m;
+}
+
+Mask* ImRecord::getStormClusterLocations(int chan)
+{
+  Mask* m = new Mask(m_imWidth,m_imHeight,0);
+  for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
+    int c_x = (int)((*clit)->centerX() / (1000.0 * m_resolutionXY));
+    int c_y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
+    if(c_x >= m_imWidth || c_y >= m_imHeight) continue;
+    int window = 5;
+    int bx = c_x - window;
+    if(bx < 0) bx = 0;
+    int ex = c_x + window;
+    if(ex >= m_imWidth) ex = m_imWidth;
+    int by = c_y - window;
+    if(by < 0) by = 0;
+    int ey = c_y + window;
+    if(ey >= m_imHeight) ey = m_imHeight;
+    for(int i = bx; i < ex; i++) m->setValue(i,c_y,1);
+    for(int i = by; i < ey; i++) m->setValue(c_x,i,1);
+  }
+  return m;
 }
