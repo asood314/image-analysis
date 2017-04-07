@@ -1912,6 +1912,7 @@ void ImRecord::read(std::ifstream& fin, int version)
       clusters.push_back(c);
     }
     m_puncta.push_back(clusters);
+    m_stormClusters.push_back(std::vector<StormCluster*>());
   }
 
   fin.read(buf,1);
@@ -2002,6 +2003,14 @@ void ImRecord::loadMetaMorphTraces(std::string filename, int chan, bool overwrit
 {
 }
 
+void ImRecord::setStormClusters(int chan, std::vector<StormCluster*> clusters)
+{
+  for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
+    if(*clit) delete *clit;
+  }
+  m_stormClusters[chan] = clusters;
+}
+
 void ImRecord::shiftStormData(int shiftX_pix, int shiftY_pix)
 {
   double shiftX = shiftX_pix * 1000.0 * m_resolutionXY;
@@ -2074,4 +2083,73 @@ Mask* ImRecord::getStormClusterLocations(int chan)
     for(int i = by; i < ey; i++) m->setValue(c_x,i,1);
   }
   return m;
+}
+
+bool ImRecord::selectStormCluster(double x, double y)
+{
+  double minDist = 999999.9;
+  StormCluster* closest = NULL;
+  for(std::vector< std::vector<StormCluster*> >::iterator chit = m_stormClusters.begin(); chit != m_stormClusters.end(); chit++){
+    for(std::vector<StormCluster*>::iterator clit = chit->begin(); clit != chit->end(); clit++){
+      double xdiff = (*clit)->centerX() - x;
+      double ydiff = (*clit)->centerY() - y;
+      double dist = sqrt(xdiff*xdiff + ydiff*ydiff);
+      if(dist < minDist){
+	minDist = dist;
+	closest = *clit;
+      }
+    }
+  }
+  if(closest){
+    closest->toggleSelected();
+    return true;
+  }
+  return false;
+}
+
+bool ImRecord::selectStormCluster(int chan, double x, double y)
+{
+  double minDist = 999999.9;
+  StormCluster* closest = NULL;
+  std::vector<StormCluster*> clusters = m_stormClusters[chan];
+  for(std::vector<StormCluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
+    double xdiff = (*clit)->centerX() - x;
+    double ydiff = (*clit)->centerY() - y;
+    double dist = sqrt(xdiff*xdiff + ydiff*ydiff);
+    if(dist < minDist){
+      minDist = dist;
+      closest = *clit;
+    }
+  }
+  if(closest){
+    closest->toggleSelected();
+    return true;
+  }
+  return false;
+}
+
+bool ImRecord::selectStormSynapse(double x, double y)
+{
+  double minDist = 999999.9;
+  StormCluster::StormSynapse closest;
+  closest.centerX = -1;
+  for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
+    int n = (*it)->nStormSynapses();
+    for(int i = 0; i < n; i++){
+      StormCluster::StormSynapse s = (*it)->getStormSynapse(i);
+      double xdiff = s.centerX - x;
+      double ydiff = s.centerY - y;
+      double dist = sqrt(xdiff*xdiff + ydiff*ydiff);
+      if(dist < minDist){
+	minDist = dist;
+	closest = s;
+      }
+    }
+  }
+  if(closest.centerX > 0){
+    for(std::vector<StormCluster*>::iterator clit = closest.clusters.begin(); clit != closest.clusters.end(); clit++)
+      (*clit)->toggleSelected();
+    return true;
+  }
+  return false;
 }

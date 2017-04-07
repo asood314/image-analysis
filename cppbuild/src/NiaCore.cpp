@@ -64,7 +64,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("stormMask","Storm Mask"),Gtk::AccelKey("<control>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleStormMask));
   m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
-  m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),sigc::mem_fun(m_viewer, &NiaViewer::displayStormImage));
+  m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),sigc::mem_fun(m_viewer, &NiaViewer::toggleImageType));
   m_refActionGroup->add(Gtk::Action::create("derivative","Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative));
   m_refActionGroup->add(Gtk::Action::create("derivative2","2nd Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative2));
   m_refActionGroup->add(Gtk::Action::create("stats","Image Statistics"),sigc::mem_fun(m_viewer, &NiaViewer::showStats));

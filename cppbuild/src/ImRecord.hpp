@@ -99,12 +99,15 @@ public:
   //void unpack(char* buf, uint64_t offset, Mask* m, int index);
   void loadMetaMorphRegions(std::string filename);
   void loadMetaMorphTraces(std::string filename, int chan, bool overwrite);
-  void setStormClusters(int chan, std::vector<StormCluster*> clusters){ m_stormClusters[chan] = clusters; }
+  void setStormClusters(int chan, std::vector<StormCluster*> clusters);
   int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
   StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }
   void shiftStormData(int shiftX_pix, int shiftY_pix);
   Mask* getStormClusterMask(int chan);
   Mask* getStormClusterLocations(int chan);
+  bool selectStormCluster(double x, double y);
+  bool selectStormCluster(int chan, double x, double y);
+  bool selectStormSynapse(double x, double y);
   
 };
 

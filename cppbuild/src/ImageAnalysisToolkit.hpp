@@ -110,6 +110,10 @@ public:
     delete m_synapseDefinitions.at(index);
     m_synapseDefinitions.erase(m_synapseDefinitions.begin()+index);
   }
+  void clearSynapseDefinitions(){
+    for(std::vector<SynapseCollection*>::iterator scit = m_synapseDefinitions.begin(); scit != m_synapseDefinitions.end(); scit++) delete *scit;
+    m_synapseDefinitions.clear();
+  }
 };
 
 #endif

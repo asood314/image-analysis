@@ -15,6 +15,7 @@ public:
 protected:
   std::vector<StormData::Blink> m_molecules;
   double m_centerX,m_centerY,m_centerZ,m_intensity;
+  bool m_selected;
 
 public:
   StormCluster();
@@ -25,6 +26,8 @@ public:
   double distanceTo(StormCluster* c);
   bool colocalWith(StormCluster* c);
   void shiftXY(double shiftX, double shiftY);
+  void toggleSelected(){ m_selected = !m_selected; }
+  bool isSelected(){ return m_selected; }
   int nMolecules(){ return m_molecules.size(); }
   StormData::Blink molecule(int i){ return m_molecules[i]; }
   double centerX(){ return m_centerX; }

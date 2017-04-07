@@ -117,6 +117,11 @@ FileManager::input_file FileConverter::readV01(FileManager* fm, ImageAnalysisToo
       recs->push_back(rec);
     }
     infile.resolutionXY = recs->at(prevSize)->resolutionXY();
+    if(recs->at(prevSize)){
+      kit->clearSynapseDefinitions();
+      for(int i = 0; i < recs->at(prevSize)->nSynapseCollections(); i++)
+	kit->addSynapseDefinition(recs->at(prevSize)->getSynapseCollection(i)->emptyCopy());
+    }
   }
   //fm->addInputFile(infile);
   fin.close();

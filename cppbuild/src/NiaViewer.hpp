@@ -12,6 +12,7 @@ class NiaViewer : public Gtk::VBox
 
 public:
   enum ImageMode{ GRAY=0,RGB };
+  enum ImageType{ CONFOCAL=0,STORM };
 
   typedef struct mask_color{
     uint8_t r,g,b;
@@ -26,6 +27,7 @@ protected:
   int m_red,m_green,m_blue;
   int m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
   ImageMode m_mode;
+  ImageType m_imageType;
   Gtk::EventBox m_eventBox;
   Gtk::Label m_grayMinLabel,m_grayMaxLabel,m_redMinLabel,m_redMaxLabel,m_greenMinLabel,m_greenMaxLabel,m_blueMinLabel,m_blueMaxLabel;
   Gtk::Entry m_grayMinEntry,m_grayMaxEntry,m_redMinEntry,m_redMaxEntry,m_greenMinEntry,m_greenMaxEntry,m_blueMinEntry,m_blueMaxEntry;
@@ -46,9 +48,11 @@ protected:
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImFrame* frame);
   Glib::RefPtr<Gdk::Pixbuf> createPixbuf(ImStack* stack);
   Glib::RefPtr<Gdk::Pixbuf> createPixbufStorm(int chan);
+  Glib::RefPtr<Gdk::Pixbuf> createPixbufStorm();
   void autoscaleGray();
   void autoscaleRGB();
   void updateImage();
+  void displayStormImage();
   bool on_button_press(GdkEventButton* evt);
   void scale();
   
@@ -57,6 +61,7 @@ public:
   virtual ~NiaViewer();
   void autoscale();
   void setMode(ImageMode mode);
+  void toggleImageType();
   void setWavelength(int w);
   void prevZ();
   void nextZ();
@@ -177,7 +182,6 @@ public:
   void saveTimeSeries(std::string basename);
   void unscale(){ if(m_data) m_data->divide(16); }
   int grayMin(){ return m_grayMin; }
-  void displayStormImage();
 
 };
 

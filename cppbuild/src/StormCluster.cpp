@@ -6,6 +6,7 @@ StormCluster::StormCluster()
   m_centerY = 0.0;
   m_centerZ = 0.0;
   m_intensity = 0.0;
+  m_selected = false;
 }
 
 std::vector<StormCluster*> StormCluster::cluster(StormData* blinks)

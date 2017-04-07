@@ -6,7 +6,7 @@ NiaViewer::NiaViewer() :
   m_red(255), m_green(255), m_blue(255),
   m_grayMin(0), m_grayMax(65535),
   m_redMin(0), m_redMax(65535), m_greenMin(0), m_greenMax(65535), m_blueMin(0), m_blueMax(65535),
-  m_mode(GRAY),
+  m_mode(GRAY), m_imageType(CONFOCAL),
   m_width(0),m_height(0),m_zoom(1.0),
   m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
   m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
@@ -163,28 +163,48 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	std::cout << "Couldn't find image record" << std::endl;
 	return false;
       }
-      Cluster* c = NULL;
-      if(m_mode == GRAY) c = rec->selectPunctum(m_view_w,thisClick);
-      else if(m_mode == RGB) c = rec->selectPunctum(thisClick);
-      if(c){
-	toggleMask(c->getMask(m_width,m_height,false));
-	std::cout << "Center: (" << c->center().x << "," << c->center().y << "), Size: " << c->size() << "\nPeak Intensity: " << c->peak() << ", Integrated Intensity: " << c->integratedIntensity() << std::endl;
-	return true;
+      if(m_imageType == CONFOCAL){
+	Cluster* c = NULL;
+	if(m_mode == GRAY) c = rec->selectPunctum(m_view_w,thisClick);
+	else if(m_mode == RGB) c = rec->selectPunctum(thisClick);
+	if(c){
+	  toggleMask(c->getMask(m_width,m_height,false));
+	  std::cout << "Center: (" << c->center().x << "," << c->center().y << "), Size: " << c->size() << "\nPeak Intensity: " << c->peak() << ", Integrated Intensity: " << c->integratedIntensity() << std::endl;
+	  return true;
+	}
+	std::cout << "Couldn't find any puncta" << std::endl;
+	return false;
       }
-      std::cout << "Couldn't find any puncta" << std::endl;
-      return false;
+      else if(m_imageType == STORM){
+	bool retVal = false;
+	if(m_mode == GRAY)
+	  retVal = rec->selectStormCluster(m_view_w,thisClick.x*200*rec->resolutionXY(),thisClick.y*200*rec->resolutionXY());
+	else if(m_mode == RGB)
+	  retVal =  rec->selectStormCluster(thisClick.x*200*rec->resolutionXY(),thisClick.y*200*rec->resolutionXY());
+	if(retVal) updateImage();
+	return retVal;
+      }
     }
     else if(m_synapseSelector){
       ImRecord* rec = currentRecord();
       if(!rec) return false;
-      Synapse* s = NULL;
-      s = rec->selectSynapse(thisClick);
-      if(s){
-	toggleMask(s->getMask(m_width,m_height,false));
-	//std::cout << "Center: (" << c->center().x << "," << c->center().y << "), Size: " << c->size() << "\nPeak Intensity: " << c->peak() << ", Integrated Intensity: " << c->integratedIntensity() << std::endl;
-	return true;
+      if(m_imageType == CONFOCAL){
+	Synapse* s = NULL;
+	s = rec->selectSynapse(thisClick);
+	if(s){
+	  toggleMask(s->getMask(m_width,m_height,false));
+	  //std::cout << "Center: (" << c->center().x << "," << c->center().y << "), Size: " << c->size() << "\nPeak Intensity: " << c->peak() << ", Integrated Intensity: " << c->integratedIntensity() << std::endl;
+	  return true;
+	}
+	return false;
       }
-      return false;
+      else if(m_imageType == STORM){
+	if(rec->selectStormSynapse(thisClick.x/5.0,thisClick.y/5.0)){
+	  updateImage();
+	  return true;
+	}
+	return false;
+      }
     }
     else if(m_regionSelector){
       if(evt->button == 1){
@@ -359,6 +379,13 @@ void NiaViewer::autoscale()
   updateImage();
 }
 
+void NiaViewer::toggleImageType()
+{
+  if(m_imageType == CONFOCAL) m_imageType = STORM;
+  else m_imageType = CONFOCAL;
+  updateImage();
+}
+
 void NiaViewer::setMode(NiaViewer::ImageMode mode)
 {
   m_mode = mode;
@@ -482,6 +509,11 @@ void NiaViewer::nextTimepoint()
 void NiaViewer::updateImage()
 {
   if(!m_data) return;
+  if(m_imageType == STORM){
+    m_zoom = 1.0;
+    displayStormImage();
+    return;
+  }
   uint8_t* buf = m_pixbuf->get_pixels();
   if(m_mode == GRAY){
     m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z));
@@ -1368,14 +1400,16 @@ void NiaViewer::displayStormImage()
     if(buf) delete[] buf;
   }
   else if(m_mode == RGB){
-    //m_pixbuf = createPixbuf(m_data->fourLocation(m_view_p,m_view_t));
+    m_pixbuf = createPixbufStorm();
     if(buf) delete[] buf;
   }
-  //Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,m_width*m_zoom,m_height*m_zoom);
-  //m_pixbuf->scale(pb,0,0,m_width*m_zoom,m_height*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
-  m_displayImage.set(m_pixbuf);
+  int w = m_width*5;
+  int h = m_height*5;
+  Glib::RefPtr<Gdk::Pixbuf> pb = Gdk::Pixbuf::create(Gdk::COLORSPACE_RGB,false,8,w*m_zoom,h*m_zoom);
+  m_pixbuf->scale(pb,0,0,w*m_zoom,h*m_zoom,0,0,m_zoom,m_zoom,Gdk::INTERP_TILES);
+  m_displayImage.set(pb);
   m_eventBox.hide();
-  m_eventBox.set_size_request(m_width*5,m_height*5);
+  m_eventBox.set_size_request(w*m_zoom,h*m_zoom);
   m_eventBox.show();
 }
 
@@ -1393,21 +1427,132 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
   }
   for(int i = 0; i < nClusters; i++){
     StormCluster* sc = rec->stormCluster(chan,i);
-    for(int j = 0; j < sc->nMolecules(); j++){
-      StormData::Blink b = sc->molecule(j);
-      int x = (int)(b.x / resolution);
-      if(x >= w) continue;
-      int y = (int)(b.y / resolution);
-      if(y >= h) continue;
-      int index = 3*w*y + 3*x;
-      unsigned colorIndex = i % m_ncolors;
-      buf[index] = m_colors[colorIndex].r;
-      buf[index+1] = m_colors[colorIndex].g;
-      buf[index+2] = m_colors[colorIndex].b;
+    if(sc->isSelected()){
+      for(int j = 0; j < sc->nMolecules(); j++){
+	StormData::Blink b = sc->molecule(j);
+	int x = (int)(b.x / resolution);
+	if(x >= w) continue;
+	int y = (int)(b.y / resolution);
+	if(y >= h) continue;
+	int index = 3*w*y + 3*x;
+	unsigned colorIndex = i % m_ncolors;
+	buf[index] = m_colors[colorIndex].r;
+	buf[index+1] = m_colors[colorIndex].g;
+	buf[index+2] = m_colors[colorIndex].b;
+      }
+    }
+    else{
+      for(int j = 0; j < sc->nMolecules(); j++){
+	StormData::Blink b = sc->molecule(j);
+	int x = (int)(b.x / resolution);
+	if(x >= w) continue;
+	int y = (int)(b.y / resolution);
+	if(y >= h) continue;
+	int index = 3*w*y + 3*x;
+	buf[index] = 255;
+	buf[index+1] = 255;
+	buf[index+2] = 255;
+      }
     }
   }
       
   Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, w, h, w*3);
-  //delete[] buf;
+  return retval;
+}
+
+Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
+{
+  ImRecord* rec = currentRecord();
+  double resolution = 1000.0 * rec->resolutionXY() / 5.0;
+  int w = 5*m_width;
+  int h = 5*m_height;
+  uint8_t* buf = new uint8_t[w*h*3];
+  //double sf = 255.0 / (m_grayMax - m_grayMin);
+  for(int i = 0; i < w*h*3; i++){
+      buf[i] = 0;
+  }
+  if(m_red >= 0){
+    int nClusters = rec->nStormClusters(m_red);
+    uint8_t rval = 255;
+    uint8_t gval,bval;
+    for(int i = 0; i < nClusters; i++){
+      StormCluster* sc = rec->stormCluster(m_red,i);
+      if(sc->isSelected()){
+	gval = 255;
+	bval = 255;
+      }
+      else{
+	gval = 0;
+	bval = 0;
+      }
+      for(int j = 0; j < sc->nMolecules(); j++){
+	StormData::Blink b = sc->molecule(j);
+	int x = (int)(b.x / resolution);
+	if(x >= w) continue;
+	int y = (int)(b.y / resolution);
+	if(y >= h) continue;
+	int index = 3*w*y + 3*x;
+	buf[index] = buf[index] | rval;
+	buf[index+1] = buf[index+1] | gval;
+	buf[index+2] = buf[index+2] | bval;
+      }
+    }
+  }
+  if(m_green >= 0){
+    int nClusters = rec->nStormClusters(m_green);
+    uint8_t gval = 255;
+    uint8_t rval,bval;
+    for(int i = 0; i < nClusters; i++){
+      StormCluster* sc = rec->stormCluster(m_green,i);
+      if(sc->isSelected()){
+	rval = 255;
+	bval = 255;
+      }
+      else{
+	rval = 0;
+	bval = 0;
+      }
+      for(int j = 0; j < sc->nMolecules(); j++){
+	StormData::Blink b = sc->molecule(j);
+	int x = (int)(b.x / resolution);
+	if(x >= w) continue;
+	int y = (int)(b.y / resolution);
+	if(y >= h) continue;
+	int index = 3*w*y + 3*x;
+	buf[index] = buf[index] | rval;
+	buf[index+1] = buf[index+1] | gval;
+	buf[index+2] = buf[index+2] | bval;
+      }
+    }
+  }
+  if(m_blue >= 0){
+    int nClusters = rec->nStormClusters(m_blue);
+    uint8_t bval = 255;
+    uint8_t gval,rval;
+    for(int i = 0; i < nClusters; i++){
+      StormCluster* sc = rec->stormCluster(m_blue,i);
+      if(sc->isSelected()){
+	gval = 255;
+	rval = 255;
+      }
+      else{
+	gval = 0;
+	rval = 0;
+      }
+      for(int j = 0; j < sc->nMolecules(); j++){
+	StormData::Blink b = sc->molecule(j);
+	int x = (int)(b.x / resolution);
+	if(x >= w) continue;
+	int y = (int)(b.y / resolution);
+	if(y >= h) continue;
+	int index = 3*w*y + 3*x;
+	buf[index] = buf[index] | rval;
+	buf[index+1] = buf[index+1] | gval;
+	buf[index+2] = buf[index+2] | bval;
+      }
+    }
+  }
+      
+  Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, w, h, w*3);
   return retval;
 }
