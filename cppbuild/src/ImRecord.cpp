@@ -1837,6 +1837,13 @@ void ImRecord::write(std::ofstream& fout, int version)
     fout.write(buf,4);
     for(std::vector<Segment*>::iterator sit = m_segments.begin(); sit != m_segments.end(); sit++) (*sit)->write(buf,fout);
   }
+
+  for(int i = 0; i < m_nchannels; i++){
+    NiaUtils::writeIntToBuffer(buf,0,m_stormClusters[i].size());
+    fout.write(buf,4);
+    for(std::vector<StormCluster*>::iterator scit = m_stormClusters[i].begin(); scit != m_stormClusters[i].end(); scit++) (*scit)->write(buf,fout);
+  }
+
   delete[] buf;
 }
 
@@ -1912,7 +1919,7 @@ void ImRecord::read(std::ifstream& fin, int version)
       clusters.push_back(c);
     }
     m_puncta.push_back(clusters);
-    m_stormClusters.push_back(std::vector<StormCluster*>());
+    if(version < 4) m_stormClusters.push_back(std::vector<StormCluster*>());
   }
 
   fin.read(buf,1);
@@ -1939,6 +1946,20 @@ void ImRecord::read(std::ifstream& fin, int version)
       Segment* s = new Segment();
       s->read(buf,fin);
       m_segments.push_back(s);
+    }
+  }
+
+  if(version > 3){
+    for(int i = 0; i < m_nchannels; i++){
+      std::vector<StormCluster*> clusters;
+      fin.read(buf,4);
+      int nclusters = NiaUtils::convertToInt(buf[0],buf[1],buf[2],buf[3]);
+      for(int i = 0; i < nclusters; i++){
+	StormCluster* s = new StormCluster();
+	s->read(buf,fin,version);
+	clusters.push_back(s);
+      }
+      m_stormClusters.push_back(clusters);
     }
   }
 
@@ -2022,6 +2043,20 @@ void ImRecord::shiftStormData(int shiftX_pix, int shiftY_pix)
   }
 }
 
+std::vector<LocalizedObject::Point> ImRecord::getStormClusterCenters(int chan)
+{
+  Mask* m = new Mask(m_imWidth,m_imHeight,0);
+  double step = m_resolutionXY / 2.0;
+  std::vector<LocalizedObject::Point> retVal;
+  LocalizedObject::Point pt;
+  for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
+    pt.x = (int)((*clit)->centerX() / (1000.0 * m_resolutionXY));
+    pt.y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
+    retVal.push_back(pt);
+  }
+  return retVal;
+}
+
 Mask* ImRecord::getStormClusterMask(int chan)
 {
   Mask* m = new Mask(m_imWidth,m_imHeight,0);
@@ -2029,6 +2064,7 @@ Mask* ImRecord::getStormClusterMask(int chan)
   for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
     int c_x = (int)((*clit)->centerX() / (1000.0 * m_resolutionXY));
     int c_y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
+    if(c_x < 0 || c_y < 0) continue;
     if(c_x >= m_imWidth || c_y >= m_imHeight) continue;
     m->setValue(c_x,c_y,1);
     double threshold = 0.05 * (*clit)->intensity();
@@ -2069,6 +2105,7 @@ Mask* ImRecord::getStormClusterLocations(int chan)
   for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
     int c_x = (int)((*clit)->centerX() / (1000.0 * m_resolutionXY));
     int c_y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
+    if(c_x < 0 || c_y < 0) continue;
     if(c_x >= m_imWidth || c_y >= m_imHeight) continue;
     int window = 5;
     int bx = c_x - window;

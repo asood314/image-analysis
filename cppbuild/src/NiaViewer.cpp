@@ -2,7 +2,7 @@
 
 NiaViewer::NiaViewer() :
   VBox(),
-  m_view_w(0), m_view_z(0), m_view_p(0), m_view_t(0),
+  m_view_w(0), m_view_z(0), m_view_p(0), m_view_t(0), m_centerZ(0.0), m_zwindow(500.0),
   m_red(255), m_green(255), m_blue(255),
   m_grayMin(0), m_grayMax(65535),
   m_redMin(0), m_redMax(65535), m_greenMin(0), m_greenMax(65535), m_blueMin(0), m_blueMax(65535),
@@ -381,7 +381,68 @@ void NiaViewer::autoscale()
 
 void NiaViewer::toggleImageType()
 {
-  if(m_imageType == CONFOCAL) m_imageType = STORM;
+  if(m_imageType == CONFOCAL){
+    m_imageType = STORM;
+    ImRecord* rec = currentRecord();
+    if(!rec){
+      updateImage();
+      return;
+    }
+    if(m_mode == GRAY){
+      m_centerZ = 0.0;
+      int nClusters = rec->nStormClusters(m_view_w);
+      for(int i = 0; i < nClusters; i++){
+	StormCluster* sc = rec->stormCluster(m_view_w,i);
+	int nMol = sc->nMolecules();
+	for(int j = 0; j < nMol; j++){
+	  StormData::Blink b = sc->molecule(j);
+	  m_centerZ += b.z / nMol;
+	}
+      }
+      m_centerZ = m_centerZ / nClusters;
+    }
+    else if(m_mode == RGB){
+      m_centerZ = 0.0;
+      int nClustersRed = 0;
+      int nClustersGreen = 0;
+      int nClustersBlue = 0;
+      if(m_red < 255){
+	nClustersRed = rec->nStormClusters(m_red);
+	for(int i = 0; i < nClustersRed; i++){
+	  StormCluster* sc = rec->stormCluster(m_red,i);
+	  int nMol = sc->nMolecules();
+	  for(int j = 0; j < nMol; j++){
+	    StormData::Blink b = sc->molecule(j);
+	    m_centerZ += b.z / nMol;
+	  }
+	}
+      }
+      if(m_green < 255){
+	nClustersGreen = rec->nStormClusters(m_green);
+	for(int i = 0; i < nClustersGreen; i++){
+	  StormCluster* sc = rec->stormCluster(m_green,i);
+	  int nMol = sc->nMolecules();
+	  for(int j = 0; j < nMol; j++){
+	    StormData::Blink b = sc->molecule(j);
+	    m_centerZ += b.z / nMol;
+	  }
+	}
+      }
+      if(m_blue < 255){
+	nClustersBlue = rec->nStormClusters(m_blue);
+	for(int i = 0; i < nClustersBlue; i++){
+	  StormCluster* sc = rec->stormCluster(m_blue,i);
+	  int nMol = sc->nMolecules();
+	  for(int j = 0; j < nMol; j++){
+	    StormData::Blink b = sc->molecule(j);
+	    m_centerZ += b.z / nMol;
+	  }
+	}
+      }
+      int totalClusters = nClustersRed + nClustersGreen + nClustersBlue;
+      if(totalClusters > 0) m_centerZ = m_centerZ / totalClusters;
+    }
+  }
   else m_imageType = CONFOCAL;
   updateImage();
 }
@@ -460,18 +521,20 @@ void NiaViewer::setWavelength(int w)
 
 void NiaViewer::prevZ()
 {
+  m_centerZ -= 50.0;
   if(m_view_z > 0){
     m_view_z--;
-    updateImage();
   }
+  updateImage();
 }
 
 void NiaViewer::nextZ()
 {
+  m_centerZ += 50.0;
   if(m_view_z < m_data->fourLocation(m_view_p,m_view_t)->nz()-1){
     m_view_z++;
-    updateImage();
   }
+  updateImage();
 }
 
 void NiaViewer::prevPosition()
@@ -971,7 +1034,8 @@ void NiaViewer::alignStormData()
   ImFrame* frame = currentFrame();
   ImRecord* rec = currentRecord();
   if(!rec) return;
-  Mask* m = rec->getStormClusterMask(m_view_w);
+  //Mask* m = rec->getStormClusterMask(m_view_w);
+  std::vector<LocalizedObject::Point> cents = rec->getStormClusterCenters(m_view_w);
   int maxI = 0;
   int minShiftX = -frame->width();
   int maxShiftX = frame->width();
@@ -987,18 +1051,30 @@ void NiaViewer::alignStormData()
       for(int shiftY = minShiftY; shiftY < maxShiftY; shiftY += stepY){
 	int I = 0;
 	int bx = -shiftX;
-	if(bx < 0) bx = 0;
-	int ex = frame->width();
-	if(shiftX > 0) ex -= shiftX;
+	int ex = frame->width()-1;
+	if(bx < 0){
+	  bx = 0;
+	  ex -= shiftX;
+	}
+	//if(shiftX > 0) ex -= shiftX;
 	int by = -shiftY;
-	if(by < 0) by = 0;
-	int ey = frame->height();
-	if(shiftY > 0) ey -= shiftY;
+	int ey = frame->height()-1;
+	if(by < 0){
+	  by = 0;
+	  ey -= shiftY;
+	}
+	//if(shiftY > 0) ey -= shiftY;
+	/*
 	for(int i = bx; i < ex; i++){
 	  for(int j = by; j < ey; j++){
 	    if(m->getValue(i,j) == 0) continue;
 	    I += frame->getPixel(i+shiftX,j+shiftY);
 	  }
+	}
+	*/
+	for(std::vector<LocalizedObject::Point>::iterator pit = cents.begin(); pit != cents.end(); pit++){
+	  if(pit->x < bx || pit->x > ex || pit->y < by || pit->y > ey) continue;
+	  I += frame->getPixel(pit->x + shiftX, pit->y + shiftY);
 	}
 	if(I > maxI){
 	  maxI = I;
@@ -1017,7 +1093,7 @@ void NiaViewer::alignStormData()
     if(stepY < 1) stepY = 1;
   }
   rec->shiftStormData(bestX,bestY);
-  delete m;
+  //delete m;
 }
 
 void NiaViewer::shareRegionsZ()
@@ -1430,6 +1506,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
     if(sc->isSelected()){
       for(int j = 0; j < sc->nMolecules(); j++){
 	StormData::Blink b = sc->molecule(j);
+	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
 	if(x >= w) continue;
 	int y = (int)(b.y / resolution);
@@ -1444,6 +1521,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
     else{
       for(int j = 0; j < sc->nMolecules(); j++){
 	StormData::Blink b = sc->molecule(j);
+	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
 	if(x >= w) continue;
 	int y = (int)(b.y / resolution);
@@ -1487,6 +1565,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       }
       for(int j = 0; j < sc->nMolecules(); j++){
 	StormData::Blink b = sc->molecule(j);
+	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
 	if(x >= w) continue;
 	int y = (int)(b.y / resolution);
@@ -1514,6 +1593,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       }
       for(int j = 0; j < sc->nMolecules(); j++){
 	StormData::Blink b = sc->molecule(j);
+	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
 	if(x >= w) continue;
 	int y = (int)(b.y / resolution);
@@ -1541,6 +1621,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       }
       for(int j = 0; j < sc->nMolecules(); j++){
 	StormData::Blink b = sc->molecule(j);
+	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
 	if(x >= w) continue;
 	int y = (int)(b.y / resolution);
@@ -1555,4 +1636,17 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       
   Glib::RefPtr<Gdk::Pixbuf> retval = Gdk::Pixbuf::create_from_data(buf, Gdk::COLORSPACE_RGB, false, 8, w, h, w*3);
   return retval;
+}
+
+void NiaViewer::setZWindow()
+{
+  Gtk::Entry entry;
+  entry.set_max_length(15);
+  entry.set_width_chars(10);
+  entry.set_text(boost::lexical_cast<std::string>(m_zwindow));
+  Gtk::MessageDialog md("Select z window size");
+  md.get_message_area()->pack_start(entry,Gtk::PACK_SHRINK);
+  entry.show();
+  md.run();
+  m_zwindow = boost::lexical_cast<double>(entry.get_text());
 }

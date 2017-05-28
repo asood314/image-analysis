@@ -41,7 +41,7 @@ FileManager::input_file FileConverter::readV00(FileManager* fm, ImageAnalysisToo
     std::string fname(buf,len);
     infile.fnames.push_back(fname);
   }
-  kit->read(fin);
+  kit->read(fin,0);
   if(recs){
     int prevSize = recs->size();
     fin.read(buf,1);
@@ -105,7 +105,7 @@ FileManager::input_file FileConverter::readV01(FileManager* fm, ImageAnalysisToo
     std::string fname(buf,len);
     infile.fnames.push_back(fname);
   }
-  kit->read(fin);
+  kit->read(fin,version);
   if(recs){
     int prevSize = recs->size();
     fin.read(buf,1);

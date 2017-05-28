@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include "StormData.hpp"
+#include "NiaUtils.hpp"
 
 class StormCluster{
 
@@ -40,6 +41,8 @@ public:
   double sigma1(int i){ return m_molecules[i].sigma1; }
   double sigma2(int i){ return m_molecules[i].sigma2; }
   double intensity(int i){ return m_molecules[i].intensity; }
+  void write(char* buf, std::ofstream& fout);
+  void read(char* buf, std::ifstream& fin, int version);
   
 };
 

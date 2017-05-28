@@ -391,7 +391,8 @@ double ImFrame::median(int x1, int x2, int y1, int y2)
 
 double ImFrame::median(int x1, int x2, int y1, int y2, Mask* m)
 {
-  int* values = new int[65536];
+  std::vector<int> values;
+  values.assign(65536, 0);
   int target = 0;
   for(int i = 0; i < 65536; i++) values[i] = 0;
   for(int i = x1; i < x2; i++){
@@ -405,7 +406,6 @@ double ImFrame::median(int x1, int x2, int y1, int y2, Mask* m)
   target = target/2;
   int index;
   for(index = 0; sum < target; index++) sum += values[index];
-  delete[] values;
   return (double)index;
 }
 
@@ -564,6 +564,24 @@ double ImFrame::std(int x1, int x2, int y1, int y2, Mask* m)
   else return mn;
 }
 
+double ImFrame::stdLow(int x1, int x2, int y1, int y2, Mask* m)
+{
+  double mn = median(x1,x2,y1,y2,m);
+  double sum = 0.0;
+  int npix = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      int a = m->getValue(i,j);
+      if(m_pixels[i][j] < mn){
+	sum += a * pow(m_pixels[i][j] - mn,2);
+	npix += a;
+      }
+    }
+  }
+  if(npix > 1) return sqrt(sum / (npix - 1));
+  else return mn;
+}
+
 void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, double& med, double& stdv)
 {
   //int* values = new int[nVals];
@@ -695,4 +713,41 @@ ImFrame* ImFrame::d2EigenvectorMax()
     }
   }
   return retVal;
+}
+
+double ImFrame::percentile(double frac, int x1, int x2, int y1, int y2)
+{
+  int* values = new int[65536];
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      values[m_pixels[i][j]]++;
+    }
+  }
+  int sum = 0;
+  int target = (x2-x1)*(y2-y1)*frac;
+  int index;
+  for(index = 0; sum < target; index++) sum += values[index];
+  delete[] values;
+  return (double)index;
+}
+
+double ImFrame::percentile(double frac, int x1, int x2, int y1, int y2, Mask* m)
+{
+  int* values = new int[65536];
+  int target = 0;
+  for(int i = 0; i < 65536; i++) values[i] = 0;
+  for(int i = x1; i < x2; i++){
+    for(int j = y1; j < y2; j++){
+      int a = m->getValue(i,j);
+      values[m_pixels[i][j]] += a;
+      target += a;
+    }
+  }
+  int sum = 0;
+  target = target * frac;
+  int index;
+  for(index = 0; sum < target; index++) sum += values[index];
+  delete[] values;
+  return (double)index;
 }

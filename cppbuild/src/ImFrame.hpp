@@ -53,7 +53,10 @@ public:
   double mode(int x1, int x2, int y1, int y2, int offset, Mask* m);
   double std(int x1, int x2, int y1, int y2);
   double std(int x1, int x2, int y1, int y2, Mask* m);
+  double stdLow(int x1, int x2, int y1, int y2, Mask* m);
   void getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, double& med, double& std);
+  double percentile(double frac, int x1, int x2, int y1, int y2);
+  double percentile(double frac, int x1, int x2, int y1, int y2, Mask* m);
 
   int min(){ return min(0,m_width,0,m_height); }
   double mean(){ return mean(0,m_width,0,m_height); }

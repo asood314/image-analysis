@@ -7,7 +7,7 @@ int main(int argc, char** argv)
 
   Gtk::Main kit(argc,argv);
   NiaCore nc;
-  nia::niaVersion = 2;
+  nia::niaVersion = 5;
   Gtk::Main::run(nc);
 
   return 0;

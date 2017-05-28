@@ -103,6 +103,7 @@ public:
   int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
   StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }
   void shiftStormData(int shiftX_pix, int shiftY_pix);
+  std::vector<LocalizedObject::Point> getStormClusterCenters(int chan);
   Mask* getStormClusterMask(int chan);
   Mask* getStormClusterLocations(int chan);
   bool selectStormCluster(double x, double y);

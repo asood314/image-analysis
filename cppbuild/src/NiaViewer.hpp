@@ -22,7 +22,7 @@ protected:
   ImSeries* m_data;
   std::vector<ImRecord*> m_records;
   int m_width,m_height;
-  double m_zoom;
+  double m_zoom,m_centerZ,m_zwindow;
   int m_view_w,m_view_z,m_view_p,m_view_t;
   int m_red,m_green,m_blue;
   int m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
@@ -182,6 +182,7 @@ public:
   void saveTimeSeries(std::string basename);
   void unscale(){ if(m_data) m_data->divide(16); }
   int grayMin(){ return m_grayMin; }
+  void setZWindow();
 
 };
 

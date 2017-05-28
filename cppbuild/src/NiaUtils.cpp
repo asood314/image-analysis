@@ -22,7 +22,7 @@ double NiaUtils::convertToDouble(char c0, char c1, char c2, char c3)
   uint32_t b1 = (uint32_t)c1;
   uint32_t b2 = (uint32_t)c2;
   uint32_t b3 = (uint32_t)c3;
-  uint32_t t1000 = ((b3 & 0x000000ff) << 24) | ((b2 & 0x000000ff) << 16) | ((b1 & 0x000000ff) << 8) | (b0 & 0x000000ff);
+  int32_t t1000 = ((b3 & 0x000000ff) << 24) | ((b2 & 0x000000ff) << 16) | ((b1 & 0x000000ff) << 8) | (b0 & 0x000000ff);
   return double(t1000) / 1000.0;
 }
 

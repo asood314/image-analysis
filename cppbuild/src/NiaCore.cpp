@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 
 void NiaCore::init()
 {
-  set_title("Neuron Image Analysis v0.1");
+  set_title("Neuron Image Analysis v0.5");
   set_default_size(1200,1000);
   add(m_vbox);
 
@@ -65,6 +65,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
   m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),sigc::mem_fun(m_viewer, &NiaViewer::toggleImageType));
+  m_refActionGroup->add(Gtk::Action::create("stormZWin","Set Z Window"),sigc::mem_fun(m_viewer, &NiaViewer::setZWindow));
   m_refActionGroup->add(Gtk::Action::create("derivative","Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative));
   m_refActionGroup->add(Gtk::Action::create("derivative2","2nd Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative2));
   m_refActionGroup->add(Gtk::Action::create("stats","Image Statistics"),sigc::mem_fun(m_viewer, &NiaViewer::showStats));
@@ -87,6 +88,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
   m_refActionGroup->add(Gtk::Action::create("alignStorm","Align Storm Data"),sigc::mem_fun(m_viewer, &NiaViewer::alignStormData));
   m_refActionGroup->add(Gtk::Action::create("findout","Find Outliers"),sigc::mem_fun(*this, &NiaCore::on_find_outliers_clicked));
+  m_refActionGroup->add(Gtk::Action::create("filter","Filter"),sigc::mem_fun(*this, &NiaCore::on_filter_clicked));
   m_refActionGroup->add(Gtk::Action::create("findsigMenu","Find Signal"));
   m_refActionGroup->add(Gtk::Action::create("findsigOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),false));
   m_refActionGroup->add(Gtk::Action::create("findsigAll","All channels"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_signal_clicked),true));
@@ -162,6 +164,7 @@ void NiaCore::init()
     "    <menuitem action='clearMask'/>"
     "   </menu>"
     "   <menuitem action='viewStorm'/>"
+    "   <menuitem action='stormZWin'/>"
     "   <menuitem action='derivative'/>"
     "   <menuitem action='derivative2'/>"
     "   <menuitem action='zoomin'/>"
@@ -181,6 +184,7 @@ void NiaCore::init()
     "   <menuitem action='config'/>"
     "   <menuitem action='alignStorm'/>"
     "   <menuitem action='findout'/>"
+    "   <menuitem action='filter'/>"
     "   <menu action='findsigMenu'>"
     "    <menuitem action='findsigOne'/>"
     "    <menuitem action='findsigAll'/>"
@@ -365,6 +369,7 @@ void NiaCore::on_start_batch_jobs()
   biat->setMode(cd.getMode());
   biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
+  biat->setMaxSignalFindingIterations(cd.getSignalFindingIterations());
   if(cd.doSeparateConfigs()){
     if(biat->nConfigs() < cd.nchannels()){
       biat->makeSingleConfig();
@@ -372,7 +377,9 @@ void NiaCore::on_start_batch_jobs()
     }
     for(int i = 0; i < cd.nchannels(); i++){
       biat->setLocalWindow(i,cd.getLocalWindow(i));
+      biat->setWindowSteps(i,cd.getWindowSteps(i));
       biat->setMinPunctaRadius(i,cd.getRadius(i));
+      biat->setMaxPunctaRadius(i,cd.getMaxRadius(i));
       biat->setReclusterThreshold(i,cd.getRecluster(i));
       biat->setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       biat->setPeakThreshold(i,cd.getPeak(i));
@@ -382,7 +389,9 @@ void NiaCore::on_start_batch_jobs()
   }
   else{
     biat->setLocalWindow(cd.getLocalWindow());
+    biat->setWindowSteps(cd.getWindowSteps());
     biat->setMinPunctaRadius(cd.getRadius());
+    biat->setMaxPunctaRadius(cd.getMaxRadius());
     biat->setReclusterThreshold(cd.getRecluster());
     biat->setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     biat->setPeakThreshold(cd.getPeak());
@@ -426,6 +435,7 @@ void NiaCore::on_configure_clicked()
   m_iat.setMode(cd.getMode());
   m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
+  m_iat.setMaxSignalFindingIterations(cd.getSignalFindingIterations());
   if(cd.doSeparateConfigs()){
     if(m_iat.nConfigs() < nchan){
       m_iat.makeSingleConfig();
@@ -433,7 +443,9 @@ void NiaCore::on_configure_clicked()
     }
     for(int i = 0; i < nchan; i++){
       m_iat.setLocalWindow(i,cd.getLocalWindow(i));
+      m_iat.setWindowSteps(i,cd.getWindowSteps(i));
       m_iat.setMinPunctaRadius(i,cd.getRadius(i));
+      m_iat.setMaxPunctaRadius(i,cd.getMaxRadius(i));
       m_iat.setReclusterThreshold(i,cd.getRecluster(i));
       m_iat.setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       m_iat.setPeakThreshold(i,cd.getPeak(i));
@@ -443,7 +455,9 @@ void NiaCore::on_configure_clicked()
   }
   else{
     m_iat.setLocalWindow(cd.getLocalWindow());
+    m_iat.setWindowSteps(cd.getWindowSteps());
     m_iat.setMinPunctaRadius(cd.getRadius());
+    m_iat.setMaxPunctaRadius(cd.getMaxRadius());
     m_iat.setReclusterThreshold(cd.getRecluster());
     m_iat.setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     m_iat.setPeakThreshold(cd.getPeak());
@@ -461,6 +475,14 @@ void NiaCore::on_find_outliers_clicked()
   Mask* m = m_iat.findOutliers(frame);
   m_viewer.toggleMask(m->inverse());
   delete m;
+}
+
+void NiaCore::on_filter_clicked()
+{
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
+  m_iat.filter(frame);
+  m_viewer.autoscale();
 }
 
 void NiaCore::on_load_storm_data_clicked()

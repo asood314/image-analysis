@@ -104,7 +104,7 @@ bool StormCluster::colocalWith(StormCluster* c)
       double ydiff = mit->y - b.y;
       double zdiff = mit->z - b.z;
       double dist = sqrt(xdiff*xdiff + ydiff*ydiff + zdiff*zdiff);
-      if(dist < 50.0) return true;
+      if(dist < 100.0) return true;
     }
   }
   return false;
@@ -117,5 +117,49 @@ void StormCluster::shiftXY(double shiftX, double shiftY)
   for(std::vector<StormData::Blink>::iterator mit = m_molecules.begin(); mit != m_molecules.end(); mit++){
     (*mit).x += shiftX;
     (*mit).y += shiftY;
+  }
+}
+
+void StormCluster::write(char* buf, std::ofstream& fout)
+{
+  int nmol = m_molecules.size();
+  NiaUtils::writeShortToBuffer(buf,0,nmol);
+  NiaUtils::writeDoubleToBuffer(buf,2,m_centerX);
+  NiaUtils::writeDoubleToBuffer(buf,6,m_centerY);
+  NiaUtils::writeDoubleToBuffer(buf,10,m_centerZ);
+  NiaUtils::writeDoubleToBuffer(buf,14,m_intensity);
+  int offset = 18;
+  for(int i = 0; i < nmol; i++){
+    StormData::Blink b = m_molecules[i];
+    NiaUtils::writeDoubleToBuffer(buf,offset,b.x);
+    offset += 4;
+    NiaUtils::writeDoubleToBuffer(buf,offset,b.y);
+    offset += 4;
+    NiaUtils::writeDoubleToBuffer(buf,offset,b.z);
+    offset += 4;
+    NiaUtils::writeDoubleToBuffer(buf,offset,b.intensity);
+    offset += 4;
+  }
+  fout.write(buf,offset);
+}
+
+void StormCluster::read(char* buf, std::ifstream& fin, int version)
+{
+  fin.read(buf,18);
+  int nmol = NiaUtils::convertToShort(buf[0],buf[1]);
+  m_centerX = NiaUtils::convertToDouble(buf[2],buf[3],buf[4],buf[5]);
+  m_centerY = NiaUtils::convertToDouble(buf[6],buf[7],buf[8],buf[9]);
+  m_centerZ = NiaUtils::convertToDouble(buf[10],buf[11],buf[12],buf[13]);
+  m_intensity = NiaUtils::convertToDouble(buf[14],buf[15],buf[16],buf[17]);
+  fin.read(buf,16*nmol);
+  StormData::Blink b;
+  int offset = 0;
+  for(int i = 0; i < nmol; i++){
+    b.x = NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]);
+    b.y = NiaUtils::convertToDouble(buf[offset+4],buf[offset+5],buf[offset+6],buf[offset+7]);
+    b.z = NiaUtils::convertToDouble(buf[offset+8],buf[offset+9],buf[offset+10],buf[offset+11]);
+    b.intensity = NiaUtils::convertToDouble(buf[offset+12],buf[offset+13],buf[offset+14],buf[offset+15]);
+    m_molecules.push_back(b);
+    offset += 16;
   }
 }
