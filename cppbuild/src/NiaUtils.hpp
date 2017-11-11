@@ -3,6 +3,9 @@
 
 #include <iostream>
 
+/*--------------------------------------------------
+Methods for converting integers/floating point numbers to character arrays and vice-versa
+--------------------------------------------------*/
 class NiaUtils
 {
 

@@ -194,37 +194,6 @@ bool Mask::isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, bool allowBo
   }
   return true;
   
-  /*
-  float minDist = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
-  float distTraveled = 0.0;
-  int dx[8] = {-1,1,0,0,-1,-1,1,1};
-  int dy[8] = {0,0,-1,1,-1,1,-1,1};
-  int curX = x1;
-  int curY = y1;
-  float curDist = minDist;
-  while(curDist > 0.0){
-    int minI = -1;
-    for(int i = 0; i < 8; i++){
-      int nextX = curX+dx[i];
-      if(nextX < 0 || nextX >= m_width) continue;
-      int nextY = curY+dy[i];
-      if(nextY < 0 || nextY >= m_height) continue;
-      if(m_mask[nextX][nextY] == 0) continue;
-      int xdiff = x2-nextX;
-      int ydiff = y2-nextY;
-      float iDist = sqrt(xdiff*xdiff - ydiff*ydiff);
-      if(iDist < curDist){
-	curDist = iDist;
-	minI = i;
-      }
-    }
-    if(minI < 0) break;
-    if(minI < 4) distTraveled += 1.0;
-    else distTraveled += 1.414;
-  }
-  if(curDist > 0.0 || distTraveled > minDist) return false;
-  return true;
-  */
 }
 
 bool Mask::isMinimallyConnected(int& x1, int& y1, int& x2, int& y2, int id1, int id2)

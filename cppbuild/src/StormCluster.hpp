@@ -21,12 +21,14 @@ protected:
 public:
   StormCluster();
   virtual ~StormCluster(){}
-  static std::vector<StormCluster*> cluster(StormData* blinks);
+  static std::vector<StormCluster*> cluster(StormData* blinks, double bpc);
   void addMolecule(StormData::Blink b);
   void computeCenter();
+  double estimateVolume();
   double distanceTo(StormCluster* c);
+  double distanceTo(StormData::Blink& b);
   bool colocalWith(StormCluster* c);
-  void shiftXY(double shiftX, double shiftY);
+  void shiftXY(double shiftX, double shiftY, double scale);
   void toggleSelected(){ m_selected = !m_selected; }
   bool isSelected(){ return m_selected; }
   int nMolecules(){ return m_molecules.size(); }

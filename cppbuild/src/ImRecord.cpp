@@ -67,6 +67,14 @@ void ImRecord::clearRegions()
   m_regions.clear();
 }
 
+void ImRecord::clearSegments()
+{
+  for(std::vector<Segment*>::iterator it = m_segments.begin(); it != m_segments.end(); it++){
+    if(*it) delete *it;
+  }
+  m_segments.clear();
+}
+
 Segment* ImRecord::selectSegment(LocalizedObject::Point pt)
 {
   double minDist = 999999.9;
@@ -202,10 +210,12 @@ void ImRecord::convertRegionsToSegments(int chan)
       }
     }
   }
+  /*
   for(std::vector<Segment*>::iterator sit = m_segments.begin(); sit != m_segments.end(); sit++){
     if(*sit) delete *sit;
   }
   m_segments.clear();
+  */
   for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
     (*clit)->computeCenter();
     (*clit)->findBorder();
@@ -213,9 +223,10 @@ void ImRecord::convertRegionsToSegments(int chan)
     s->findOrientation();
     m_segments.push_back(s);
   }
+  clearRegions();
 }
 
-Mask* ImRecord::segment3(int chan)
+Mask* ImRecord::segment(int chan)
 {
   for(std::vector<Segment*>::iterator sit = m_segments.begin(); sit != m_segments.end(); sit++){
     if(*sit) delete *sit;
@@ -634,7 +645,6 @@ Mask* ImRecord::segment3(int chan)
 	    maxSize = size2;
 	  }
 	}
-	//if(cent1.x == 648 && cent1.y == 173) std::cout << "(" << cent1.x << "," << cent1.y << "):\t" << totalBorder << ",\t" << perimeter << ",\t" << maxBorder << std::endl;
 	if(maxSeg != segments.end() && totalBorder > perimeter/2){
 	  //if(size1 > (*maxSeg)->size() / 3 || (*maxSeg)->circularity() > 0.1 || totalBorder > 2*perimeter/3){
 	  if(maxSize < size1*sizeLimit && size1 < maxSize*sizeLimit){
@@ -745,36 +755,6 @@ Mask* ImRecord::segment3(int chan)
 	  dist = sqrt(diffx*diffx + diffy*diffy);
 	  angle = acos(diffx*cos(vec2)/dist + diffy*sin(vec2)/dist);
 	  if(fabs(angle) > 1.570796327) vec2 += 3.141592654;
-	  /*
-	  Cluster* borderCluster = (*sit)->cluster()->findBorderWith((*sjt)->cluster());
-	  int border = borderCluster->size();
-	  totalBorder += border;
-	  if(border > 0){
-	    borderClusters.push_back(borderCluster);
-	    clusterSizes.push_back(size2);
-	  }
-	  else{
-	    delete borderCluster;
-	    continue;
-	  }
-	  //if(size2 > size1 && (*sjt)->circularity() > circ1) continue;
-	  if((*sjt)->circularity() - circ1 > 0.1 && size2 > size1) continue;
-	  if((*sjt)->circularity() - circ1 < -0.1 && size1 > size2) continue;
-	  borderCluster->computeCenter();
-	  LocalizedObject::Point borderCenter = borderCluster->center();
-	  double vec1 = (*sit)->eigenVector1();
-	  diffy = borderCenter.y - cent1.y;
-	  diffx = borderCenter.x - cent1.x;
-	  dist = sqrt(diffx*diffx + diffy*diffy);
-	  double angle = acos(diffx*cos(vec1)/dist + diffy*sin(vec1)/dist);
-	  if(fabs(angle) > 1.570796327) vec1 += 3.141592654;
-	  double vec2 = (*sjt)->eigenVector1();
-	  diffy = cent2.y - borderCenter.y;
-	  diffx = cent2.x - borderCenter.x;
-	  dist = sqrt(diffx*diffx + diffy*diffy);
-	  angle = acos(diffx*cos(vec2)/dist + diffy*sin(vec2)/dist);
-	  if(fabs(angle) > 1.570796327) vec2 += 3.141592654;
-	  */
 	  angle = fabs(vec2 - vec1);
 	  if(angle > 3.141592654) angle = 6.283185307 - angle;
 	  if(angle < minAngle){
@@ -786,14 +766,7 @@ Mask* ImRecord::segment3(int chan)
 	    minBorder = border;
 	  }
 	}
-	/*
-	if((cent1.x > 150 && cent1.x < 400 && cent1.y > 125 && cent1.y < 400) || (minCent.x > 150 && minCent.x < 400 && minCent.y > 125 && minCent.y < 400)){
-	  std::cout << "(" << cent1.x << "," << cent1.y << "): " << size1 << ", " << perimeter << ", " << totalBorder << ", " << circ1 << ", " << minAngle << std::endl;
-	  if(minSeg != segments.end()) std::cout << "\t(" << minCent.x << "," << minCent.y << "): " << (*minSeg)->size() << ", " << minCirc << std::endl;
-	}
-	*/
 	if(totalBorder < perimeter / 3 && minSeg != segments.end() && minAngle < 0.2618 + 0.7854*exp((circ1 + minCirc - 2)/2.0)){
-	  //if(totalBorder < perimeter / 3 && minSeg != segments.end() && minAngle < 0.5236 + 0.7854*exp((circ1 + minCirc - 2)/2.0)){
 	  bool uniqueBorder = true;
 	  if(circularityLimit < 0.4){
 	    for(unsigned i = 0; i < borderClusters.size(); i++){
@@ -815,22 +788,7 @@ Mask* ImRecord::segment3(int chan)
 	      }
 	    }
 	  }
-	  /*
-	  for(unsigned i = 0; i < borderClusters.size(); i++){
-	    if(borderClusters[i] == minBC) continue;
-	    if(clusterSizes[i] < 1000) continue;
-	    for(std::vector<LocalizedObject::Point>::iterator pit = minBC->begin(); pit != minBC->end(); pit++){
-	      if(borderClusters[i]->contains(*pit)){
-		uniqueBorder = false;
-		break;
-	      }
-	    }
-	    if(!uniqueBorder) break;
-	  }
-	  */
 	  if(uniqueBorder){
-	    //if((cent1.x > 150 && cent1.x < 400 && cent1.y > 125 && cent1.y < 400) || (minCent.x > 150 && minCent.x < 400 && minCent.y > 125 && minCent.y < 400))
-	    //std::cout << "\tSegments merged." << std::endl;
 	    (*sit)->merge(*minSeg);
 	    int segID = segmentMask->getValue(cent1.x,cent1.y);
 	    for(std::vector<LocalizedObject::Point>::iterator pit = (*minSeg)->cluster()->begin(); pit != (*minSeg)->cluster()->end(); pit++) segmentMask->setValue(pit->x,pit->y,segID);
@@ -839,7 +797,6 @@ Mask* ImRecord::segment3(int chan)
 	    nChanges++;
 	  }
 	}
-	//for(std::vector<Cluster*>::iterator clit = borderClusters.begin(); clit != borderClusters.end(); clit++) delete *clit;
       }
     }
   }
@@ -858,438 +815,6 @@ Mask* ImRecord::segment3(int chan)
   delete contourMask;
   delete used;
   return segmentMask;
-}
-
-Mask* ImRecord::segment2(int chan)
-{
-  Mask* contourMask = getContourMap(chan);
-  Mask* segmentMask = new Mask(m_imWidth,m_imHeight,0);
-  for(std::vector<Segment*>::iterator sit = m_segments.begin(); sit != m_segments.end(); sit++){
-    if(*sit) delete *sit;
-  }
-  m_segments.clear();
-
-  std::vector<Segment*> segments;
-  std::vector<Cluster*> clusters;
-  Mask* subMask = contourMask->getCopy();
-  for(int x = 0; x < m_imWidth; x++){
-    for(int y = 0; y < m_imHeight; y++){
-      int val = subMask->getValue(x,y);
-      if(val < 1) continue;
-      Cluster* c = new Cluster();
-      std::vector<int> borderX;
-      std::vector<int> borderY;
-      borderX.push_back(x);
-      borderY.push_back(y);
-      subMask->setValue(x,y,0);
-      while(borderX.size() > 0){
-	uint32_t nborder = borderX.size();
-	for(uint32_t b = 0; b < nborder; b++){
-	  int bi = borderX.at(0);
-	  int bj = borderY.at(0);
-	  int left = bi-1;
-	  int right = bi+2;
-	  int top = bj-1;
-	  int bottom = bj+2;
-	  if(left < 0) left++;
-	  if(right >= m_imWidth) right--;
-	  if(top < 0) top++;
-	  if(bottom >= m_imHeight) bottom--;
-	  c->addPoint(bi,bj);
-	  for(int di = left; di < right; di++){
-	    for(int dj = top; dj < bottom; dj++){
-	      if(subMask->getValue(di,dj) < 1) continue;
-	      subMask->setValue(di,dj,0);
-	      borderX.push_back(di);
-	      borderY.push_back(dj);
-	    }
-	  }
-	  borderX.erase(borderX.begin());
-	  borderY.erase(borderY.begin());
-	}
-      }
-      c->computeCenter();
-      clusters.push_back(c);
-    }
-  }
-
-  for(unsigned i = 0; i < clusters.size(); i++){
-    for(unsigned j = i+1; j < clusters.size(); j++){
-      if(clusters[j]->size() > clusters[i]->size()){
-	Cluster* tmp = clusters[i];
-	clusters[i] = clusters[j];
-	clusters[j] = tmp;
-      }
-    }
-  }
-  
-  int segmentID = 1;
-  int di[8] = {-1,-1,-1,0,0,1,1,1};
-  int dj[8] = {-1,0,1,-1,1,-1,0,1};
-  std::vector<int> lmx,lmy,lmh;
-  for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++){
-    if((*clit)->size() < 500){
-      //for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++) segmentMask->setValue(pt->x,pt->y,segmentID);
-      //segmentID++;
-      //(*clit)->findBorder();
-      Segment* newSegment = new Segment(*clit);
-      segments.push_back(newSegment);
-      continue;
-    }
-    for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
-      int val = contourMask->getValue(pt->x,pt->y);
-      if(val == 0) continue;
-      bool islocalMaximum = true;
-      for(int k = 0; k < 8; k++){
-	int i2 = pt->x+di[k];
-	if(i2 < 0 || i2 >= m_imWidth) continue;
-	int j2 = pt->y+dj[k];
-	if(j2 < 0 || j2 >= m_imHeight) continue;
-	if(contourMask->getValue(i2,j2) > val){
-	  islocalMaximum = false;
-	  break;
-	}
-      }
-      if(islocalMaximum){
-	lmx.push_back(pt->x);
-	lmy.push_back(pt->y);
-	lmh.push_back(val);
-      }
-    }
-    std::cout << "Found " << lmh.size() << " local maxima in cluster of size " << (*clit)->size() << std::endl;
-    for(unsigned i = 0; i < lmh.size(); i++){
-      int max = lmh[i];
-      int imax = i;
-      for(unsigned j = i+1; j < lmh.size(); j++){
-	if(lmh[j] > max){
-	  max = lmh[j];
-	  imax = j;
-	}
-      }
-      lmh[imax] = lmh[i];
-      lmh[i] = max;
-      int temp = lmx[imax];
-      lmx[imax] = lmx[i];
-      lmx[i] = temp;
-      temp = lmy[imax];
-      lmy[imax] = lmy[i];
-      lmy[i] = temp;
-    }
-    //std::cout << "Starting with maximum at (" << lmx[0] << "," << lmy[0] << ")" << std::endl;
-    subMask->clear(0,m_imWidth,0,m_imHeight);
-    for(unsigned i = 0; i < lmh.size(); i++){
-      if(segmentMask->getValue(lmx[i],lmy[i]) > 0) continue;
-      subMask->setValue(lmx[i],lmy[i],1);
-      int size = 1;
-      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
-	if(contourMask->getValue(pt->x,pt->y) != 1) continue;
-	if(segmentMask->getValue(pt->x,pt->y) > 0) continue;
-	if(contourMask->isMinimallyConnected(lmx[i],lmy[i],pt->x,pt->y,false)){
-	  subMask->setValue(pt->x,pt->y,1);
-	  size++;
-	}
-      }
-    
-      int clusterThreshold = size/100;
-      int newSize = size;
-      std::vector<Cluster*> borderClusters;
-      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
-	int val = subMask->getValue(pt->x,pt->y);
-	if(val != 1) continue;
-	Cluster* c = new Cluster();
-	std::vector<int> borderX;
-	std::vector<int> borderY;
-	borderX.push_back(pt->x);
-	borderY.push_back(pt->y);
-	subMask->setValue(pt->x,pt->y,2);
-	while(borderX.size() > 0){
-	  uint32_t nborder = borderX.size();
-	  for(uint32_t b = 0; b < nborder; b++){
-	    int bi = borderX.at(0);
-	    int bj = borderY.at(0);
-	    int left = bi-1;
-	    int right = bi+2;
-	    int top = bj-1;
-	    int bottom = bj+2;
-	    if(left < 0) left++;
-	    if(right >= m_imWidth) right--;
-	    if(top < 0) top++;
-	    if(bottom >= m_imHeight) bottom--;
-	    c->addPoint(bi,bj);
-	    for(int di = left; di < right; di++){
-	      for(int dj = top; dj < bottom; dj++){
-		if(subMask->getValue(di,dj) != 1) continue;
-		subMask->setValue(di,dj,2);
-		borderX.push_back(di);
-		borderY.push_back(dj);
-	      }
-	    }
-	    borderX.erase(borderX.begin());
-	    borderY.erase(borderY.begin());
-	  }
-	}
-	if(c->size() < clusterThreshold){
-	  std::vector<LocalizedObject::Point> pts = c->getPoints();
-	  for(std::vector<LocalizedObject::Point>::iterator it = pts.begin(); it != pts.end(); it++) subMask->setValue(it->x,it->y,0);
-	  newSize -= c->size();
-	  delete c;
-	}
-	else{
-	  c->computeCenter();
-	  borderClusters.push_back(c);
-	}
-      }
-
-      int offset = newSize/2;
-      for(std::vector<Cluster*>::iterator it = borderClusters.begin(); it != borderClusters.end(); it++){
-	LocalizedObject::Point p = (*it)->center();
-	int left = p.x - offset;
-	if(left < 0) left = 0;
-	int right = p.x + offset;
-	if(right > m_imWidth) right = m_imWidth;
-	int top = p.y - offset;
-	if(top < 0) top = 0;
-	int bottom = p.y + offset;
-	if(bottom > m_imHeight) bottom = m_imHeight;
-	int sum = 0;
-	for(int x = left; x < right; x++){
-	  for(int y = top; y < bottom; y++) sum += subMask->getValue(x,y);
-	}
-	if(sum < newSize/8){
-	  std::vector<LocalizedObject::Point> pts = (*it)->getPoints();
-	  for(std::vector<LocalizedObject::Point>::iterator jt = pts.begin(); jt != pts.end(); jt++) subMask->setValue(jt->x,jt->y,0);
-	}
-	delete *it;
-      }
-
-      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
-	if(subMask->getValue(pt->x,pt->y) < 2) continue;
-	int distx = pt->x - lmx[i];
-	int disty = pt->y - lmy[i];
-	float dist = sqrt(distx*distx + disty*disty);
-	for(std::vector<LocalizedObject::Point>::iterator pt2 = (*clit)->begin(); pt2 != (*clit)->end(); pt2++){
-	  if(contourMask->getValue(pt2->x,pt2->y) == 0) continue;
-	  if(segmentMask->getValue(pt2->x,pt2->y) > 0) continue;
-	  if(subMask->getValue(pt2->x,pt2->y) > 0) continue;
-	  distx = pt2->x - lmx[i];
-	  disty = pt2->y - lmy[i];
-	  if(sqrt(distx*distx + disty*disty) > dist) continue;
-	  if(contourMask->isMinimallyConnected(pt2->x,pt2->y,pt->x,pt->y)) subMask->setValue(pt2->x,pt2->y,1);
-	}
-      }
-    
-      //int segmentSize = 1;
-      //segmentMask->setValue(lmx[i],lmy[i],segmentID);
-      Cluster* newSegmentCluster = new Cluster();
-      for(std::vector<LocalizedObject::Point>::iterator pt = (*clit)->begin(); pt != (*clit)->end(); pt++){
-	//if(contourMask->getValue(x,y) == 0) continue;
-	//if(segmentMask->getValue(x,y) > 0) continue;
-	if(subMask->getValue(pt->x,pt->y) > 0){//>= mode){
-	  newSegmentCluster->addPoint(*pt);
-	  segmentMask->setValue(pt->x,pt->y,segmentID);
-	  contourMask->setValue(pt->x,pt->y,0);
-	  //segmentSize++;
-	}
-      }
-      //newSegment->findBorder();
-      Segment* newSegment = new Segment(newSegmentCluster);
-      //newSegment->findOrientation();
-      segments.push_back(newSegment);
-      //std::cout << "Segment " << segmentID << " has size " << segmentSize << std::endl;
-      std::cout << "Finished potential segment " << segmentID << std::endl;
-      segmentID++;
-      subMask->clear(0,m_imWidth,0,m_imHeight);
-    }
-    delete *clit;
-    lmx.clear();
-    lmy.clear();
-    lmh.clear();
-  }
-
-  bool finished = false;
-  int minSegmentSize = (int)(0.2 / (m_resolutionXY*m_resolutionXY));
-  while(!finished){
-    finished = true;
-    for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
-      if(!(*sit)) continue;
-      for(std::vector<Segment*>::iterator sit2 = segments.begin(); sit2 != segments.end(); sit2++){
-	if(!(*sit2)) continue;
-	if(sit2 == sit) continue;
-	if((*sit2)->cluster()->size() > minSegmentSize) continue;
-	if((*sit2)->cluster()->getBorderLength((*sit)->cluster()) > 0){//(*sit2)->cluster()->perimeter()/3){
-	  (*sit)->cluster()->add((*sit2)->cluster());
-	  (*sit)->cluster()->findBorder();
-	  delete *sit2;
-	  *sit2 = NULL;
-	  finished = false;
-	}
-      }
-    }
-  }
-
-  segmentMask->clear(0,m_imWidth,0,m_imHeight);
-  segmentID = 1;
-  for(std::vector<Segment*>::iterator sit = segments.begin(); sit != segments.end(); sit++){
-    if(!(*sit)) continue;
-    (*sit)->cluster()->computeCenter();
-    (*sit)->findOrientation();
-    for(std::vector<LocalizedObject::Point>::iterator pt = (*sit)->cluster()->begin(); pt != (*sit)->cluster()->end(); pt++){
-      segmentMask->setValue(pt->x,pt->y,segmentID);
-    }
-    m_segments.push_back(*sit);
-    std::cout << "Segment " << segmentID << " has size " << (*sit)->cluster()->size() << std::endl;
-    segmentID++;
-  }
-  
-  delete subMask;
-  delete contourMask;
-  return segmentMask;
-}
-
-Mask* ImRecord::segment(int chan)
-{
-  Mask* contourMask = getContourMap(chan);
-  Mask* nodeMask = new Mask(m_imWidth,m_imHeight);
-  std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail = new std::vector< std::vector< std::vector<LocalizedObject::Point> > >();
-  trail->assign(m_imWidth,std::vector< std::vector<LocalizedObject::Point> >());
-  for(int i = 0; i < m_imWidth; i++) trail->at(i).assign(m_imHeight,std::vector<LocalizedObject::Point>());
-  int di[8] = {-1,-1,-1,0,0,1,1,1};
-  int dj[8] = {-1,0,1,-1,1,-1,0,1};
-  std::cout << "Finding trails" << std::endl;
-  for(int i = 0; i < m_imWidth; i++){
-    for(int j = 0; j < m_imHeight; j++){
-      if(nodeMask->getValue(i,j) > 0) continue;
-      int base = contourMask->getValue(i,j);
-      if(base < 1) continue;
-      nodeMask->setValue(i,j,1);
-      int max = base;
-      std::vector<LocalizedObject::Point> steps;
-      for(int k = 0; k < 8; k++){
-	int i2 = i+di[k];
-	if(i2 < 0 || i2 >= m_imWidth) continue;
-	int j2 = j+dj[k];
-	if(j2 < 0 || j2 >= m_imHeight) continue;
-	int val = contourMask->getValue(i2,j2);
-	if(val > max){
-	  max = val;
-	  steps.clear();
-	  steps.push_back(LocalizedObject::Point(i2,j2));
-	}
-	else if(val == max) steps.push_back(LocalizedObject::Point(i2,j2));
-      }
-      if(steps.size() == 0){
-	nodeMask->setValue(i,j,2);
-	continue;
-      }
-      for(std::vector<LocalizedObject::Point>::iterator it = steps.begin(); it != steps.end(); it++){
-	trail->at(it->x).at(it->y).push_back(LocalizedObject::Point(i,j));
-	if(nodeMask->getValue(it->x,it->y) > 0) continue;
-	hike(*it,base,contourMask,nodeMask,trail);
-      }
-    }
-  }
-  
-  std::cout << "Building segments" << std::endl;
-  Mask* segmentMask = new Mask(m_imWidth,m_imHeight);
-  int segmentID = 1;
-  std::vector<int> borderX,borderY;
-  for(int i = 0; i < m_imWidth; i++){
-    for(int j = 0; j < m_imHeight; j++){
-      if(nodeMask->getValue(i,j) != 2 || segmentMask->getValue(i,j) > 0) continue;
-      std::cout << i << " " << j << " " << segmentID << std::endl;
-      segmentMask->setValue(i,j,segmentID);
-      std::vector<LocalizedObject::Point> steps = trail->at(i).at(j);
-      nodeMask->setValue(i,j,3);
-      borderX.push_back(i);
-      borderY.push_back(j);
-      while(borderX.size() > 0){
-	int nborder = borderX.size();
-	for(int b = 0; b < nborder; b++){
-	  int bi = borderX.at(0);
-	  int bj = borderY.at(0);
-	  int left = bi-1;
-	  int right = bi+2;
-	  int top = bj-1;
-	  int bottom = bj+2;
-	  if(left < 0) left++;
-	  if(right >= m_imWidth) right--;
-	  if(top < 0) top++;
-	  if(bottom >= m_imHeight) bottom--;
-	  for(int i2 = left; i2 < right; i2++){
-	    for(int j2 = top; j2 < bottom; j2++){
-	      if(nodeMask->getValue(i2,j2) == 2){
-		nodeMask->setValue(i2,j2,3);
-		segmentMask->setValue(i2,j2,segmentID);
-		borderX.push_back(i2);
-		borderY.push_back(j2);
-		std::vector<LocalizedObject::Point> tmp = trail->at(i2).at(j2);
-		for(std::vector<LocalizedObject::Point>::iterator jt = tmp.begin(); jt != tmp.end(); jt++) steps.push_back(*jt);
-	      }
-	    }
-	  }
-	  borderX.erase(borderX.begin());
-	  borderY.erase(borderY.begin());
-	}
-      }
-      int newSteps = steps.size();
-      while(newSteps > 0){
-	//std::cout << newSteps << std::endl;
-	for(int k = 0; k < newSteps; k++){
-	  LocalizedObject::Point pt = steps[k];
-	  if(segmentMask->getValue(pt.x,pt.y) == segmentID){
-	    continue;
-	  }
-	  segmentMask->setValue(pt.x,pt.y,segmentID);
-	  std::vector<LocalizedObject::Point> tmp = trail->at(pt.x).at(pt.y);
-	  for(std::vector<LocalizedObject::Point>::iterator jt = tmp.begin(); jt != tmp.end(); jt++) steps.push_back(*jt);
-	}
-	for(int k = 0; k < newSteps; k++) steps.erase(steps.begin());
-	newSteps = steps.size();
-      }
-      segmentID++;
-      //segmentID = segmentID % 256;
-    }
-  }
-  
-  delete contourMask;
-  delete nodeMask;
-  delete trail;
-  return segmentMask;
-  //return nodeMask;
-}
-
-void ImRecord::hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail)
-{
-  nodeMask->setValue(pt.x,pt.y,1);
-  int max = contourMask->getValue(pt.x,pt.y);
-  //if(max > base) max++;
-  std::vector<LocalizedObject::Point> steps;
-  int di[8] = {-1,-1,-1,0,0,1,1,1};
-  int dj[8] = {-1,0,1,-1,1,-1,0,1};
-  for(int k = 0; k < 8; k++){
-    int i2 = pt.x+di[k];
-    if(i2 < 0 || i2 >= m_imWidth) continue;
-    int j2 = pt.y+dj[k];
-    if(j2 < 0 || j2 >= m_imHeight) continue;
-    int val = contourMask->getValue(i2,j2);
-    if(val > max){
-      max = val;
-      steps.clear();
-      steps.push_back(LocalizedObject::Point(i2,j2));
-    }
-    else if(val == max) steps.push_back(LocalizedObject::Point(i2,j2));
-  }
-  int stepsTaken = 0;
-  for(std::vector<LocalizedObject::Point>::iterator it = steps.begin(); it != steps.end(); it++){
-    trail->at(it->x).at(it->y).push_back(LocalizedObject::Point(pt.x,pt.y));
-    if(nodeMask->getValue(it->x,it->y) > 0) continue;
-    hike(*it,base,contourMask,nodeMask,trail);
-    stepsTaken++;
-  }
-  if(stepsTaken == 0){
-    nodeMask->setValue(pt.x,pt.y,2);
-    return;
-  }
 }
 
 Mask* ImRecord::getPunctaMask(int chan, bool outline)
@@ -1650,126 +1175,291 @@ void ImRecord::calculateRegionStats(Region* r, int postChan)
   }
 }
 
+void ImRecord::calculateSegmentStats(Segment* r, int matchChan)
+{
+  Mask* m = r->getMask(m_imWidth,m_imHeight);
+  r->dendriteArea = r->size()*m_resolutionXY*m_resolutionXY;
+  r->dendriteLength = 1;//r->getLength() * m_resolutionXY;
+  r->nSynapses.clear();
+  r->nStormSynapses.clear();
+  r->avgSynapseSize.clear();
+  r->avgOverlap.clear();
+  r->nPuncta.clear();
+  r->avgPunctaSize.clear();
+  r->avgPeakIntensity.clear();
+  r->avgIntegratedIntensity.clear();
+  for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++){
+    r->nSynapses.push_back(0);
+    r->nStormSynapses.push_back(0);
+    r->avgSynapseSize.push_back(0.0);
+    r->avgOverlap.push_back(std::vector<double>());
+    std::vector<int>::iterator nsyn = r->nSynapses.end()-1;
+    std::vector<int>::iterator nsynStorm = r->nStormSynapses.end()-1;
+    std::vector<double>::iterator avgS = r->avgSynapseSize.end()-1;
+    std::vector< std::vector<double> >::iterator avgO = r->avgOverlap.end()-1;
+    int nreq = (*it)->nRequirements();
+    avgO->assign(nreq,0.0);
+    int n = (*it)->nSynapses();
+    int matchIndex = (*it)->getChannelIndex(matchChan);
+    for(int i = 0; i < n; i++){
+      Synapse* s = (*it)->getSynapse(i);
+      Cluster* c = s->getPunctum(matchIndex);
+      LocalizedObject::Point pt = c->center();
+      if(m->getValue(pt.x,pt.y) == 0) continue;
+      (*nsyn)++;
+      (*avgS) += s->size();
+      if((*it)->allRequired()) avgO->at(0) += s->punctaOverlap();
+      else{
+	for(int ireq = 0; ireq < nreq; ireq++) avgO->at(ireq) += s->punctaOverlap((*it)->getRequiredColocalizationByIndex(ireq));
+      }
+    }
+    (*avgS) *= m_resolutionXY*m_resolutionXY/(*nsyn);
+    for(std::vector<double>::iterator jt = avgO->begin(); jt != avgO->end(); jt++) (*jt) *= m_resolutionXY*m_resolutionXY/(*nsyn);
+    n = (*it)->nStormSynapses();
+    for(int i = 0; i < n; i++){
+      StormCluster::StormSynapse s = (*it)->getStormSynapse(i);
+      if(m->getValue(s.centerX,s.centerY) == 0) continue;
+      (*nsynStorm)++;
+    }
+  }
+  for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
+    r->nPuncta.push_back(0);
+    r->avgPunctaSize.push_back(0.0);
+    r->avgPeakIntensity.push_back(0.0);
+    r->avgIntegratedIntensity.push_back(0.0);
+    std::vector<int>::iterator npunc = r->nPuncta.end()-1;
+    std::vector<double>::iterator avgS = r->avgPunctaSize.end()-1;
+    std::vector<double>::iterator avgP = r->avgPeakIntensity.end()-1;
+    std::vector<double>::iterator avgT = r->avgIntegratedIntensity.end()-1;
+    for(std::vector<Cluster*>::iterator jt = it->begin(); jt != it->end(); jt++){
+      LocalizedObject::Point pt = (*jt)->center();
+      if(m->getValue(pt.x,pt.y) == 0) continue;
+      (*npunc)++;
+      (*avgS) += (*jt)->size();
+      (*avgP) += (*jt)->peak();
+      (*avgT) += (*jt)->integratedIntensity();
+    }
+    (*avgS) *= m_resolutionXY*m_resolutionXY/(*npunc);
+    (*avgP) /= (*npunc);
+    (*avgT) /= (*npunc);
+  }
+}
+
 void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
 {
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++) calculateRegionStats(*it,postChan);
+  for(std::vector<Segment*>::iterator it = m_segments.begin(); it != m_segments.end(); it++) calculateSegmentStats(*it,postChan);
   int nROI = m_regions.size();
+  int nSeg = m_segments.size();
   std::vector<Region*>::iterator rit;
+  std::vector<Segment*>::iterator sit;
   std::ofstream fout(filename.c_str());
   fout << "Field,";
   for(int r = 0; r < nROI; r++) fout << "\"Region " << r << "\",";
+  fout << "Average,";
+  for(int r = 0; r < nSeg; r++) fout << "\"Segment " << r << "\",";
   fout << "Average,Description\n";
   for(int chan = 0; chan < m_nchannels; chan++){
     fout << "Channel " << chan << " threshold,";
     for(int r = 0; r < nROI; r++) fout << "-,";
-    fout << "" << m_thresholds.at(chan) << ",-\n";
+    fout << "" << m_thresholds[chan] << ",";
+    for(int r = 0; r < nSeg; r++) fout << "-,";
+    fout << "-\n";
   }
-  fout << "\"Dendrite area (um^2)\",";
+  fout << "\"Neurite area (um^2)\",";
   double sum = 0;
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
     fout << "" << (*rit)->dendriteArea << ",";
     sum += (*rit)->dendriteArea;
   }
-  fout << "" << (sum/nROI) << ",-\n";
-  fout << "\"Dendrite length (um)\",";
+  fout << "" << (sum/nROI) << ",";
+  sum = 0;
+  for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+    fout << "" << (*sit)->dendriteArea << ",";
+    sum += (*sit)->dendriteArea;
+  }
+  fout << "" << (sum/nSeg) << ",-\n";
+  
+  fout << "\"Neurite length (um)\",";
   sum = 0;
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
     fout << "" << (*rit)->dendriteLength << ",";
     sum += (*rit)->dendriteLength;
   }
-  fout << "" << (sum/nROI) << ",-\n";
-  fout << "-,";
+  fout << "" << (sum/nROI) << ",";
+  for(int i = 0; i < nSeg; i++) fout << "-,";
+  fout << "-,-\n-,";
   for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+  fout << "-,";
+  for(int i = 0; i < nSeg; i++) fout << "-,";
   fout << "-,-\n";
   int icol = 0;
   for(std::vector<SynapseCollection*>::iterator scit = m_synapseCollections.begin(); scit != m_synapseCollections.end(); scit++){
     fout << "\"Type " << icol << " synapses\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->nSynapses.at(icol) << ",";
-      sum += (*rit)->nSynapses.at(icol);
+      fout << "" << (*rit)->nSynapses[icol] << ",";
+      sum += (*rit)->nSynapses[icol];
     }
-    fout << "" << (sum/nROI) << ",\"" << (*scit)->description() << "\"\n\"Density (per 100 um^2)\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->nSynapses[icol] << ",";
+      sum += (*sit)->nSynapses[icol];
+    }
+    fout << "" << (sum/nSeg) << ",\"" << (*scit)->description() << "\"\n\"Density (per 100 um^2)\",";
+
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      double densityA = 100 * (*rit)->nSynapses.at(icol)/(*rit)->dendriteArea;
+      double densityA = 100 * (*rit)->nSynapses[icol]/(*rit)->dendriteArea;
       fout << "" << densityA << ",";
       sum += densityA;
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average size (um^2)\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      double densityA = 100 * (*sit)->nSynapses[icol]/(*sit)->dendriteArea;
+      fout << "" << densityA << ",";
+      sum += densityA;
+    }
+    fout << "" << (sum/nSeg) << ",-\n\"Average size (um^2)\",";
+    
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->avgSynapseSize.at(icol) << ",";
-      sum += (*rit)->avgSynapseSize.at(icol);
+      fout << "" << (*rit)->avgSynapseSize[icol] << ",";
+      sum += (*rit)->avgSynapseSize[icol];
     }
-    fout << "" << (sum/nROI) << ",-\n";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->avgSynapseSize[icol] << ",";
+      sum += (*sit)->avgSynapseSize[icol];
+    }
+    fout << "" << (sum/nSeg) << ",-\n";
+    
     int nreq = (*scit)->nRequirements();
     for(int i = 0; i < nreq; i++){
       fout << "\"Average overlap " << i << " (um^2)\",";
       sum = 0;
       for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-	fout << "" << (*rit)->avgOverlap.at(icol).at(i) << ",";
-	sum += (*rit)->avgOverlap.at(icol).at(i);
+	fout << "" << (*rit)->avgOverlap[icol][i] << ",";
+	sum += (*rit)->avgOverlap[icol][i];
       }
       fout << "" << (sum/nROI) << ",";
+      sum = 0;
+      for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+	fout << "" << (*sit)->avgOverlap[icol][i] << ",";
+	sum += (*sit)->avgOverlap[icol][i];
+      }
+      fout << "" << (sum/nSeg) << ",";
       if((*scit)->allRequired()) fout << "-\n";
       else{
 	std::vector<int> req = (*scit)->getRequiredColocalization(i);
-	fout << "\"" << m_channelNames.at(req.at(0));
-	for(std::vector<int>::iterator it = req.begin()+1; it != req.end(); it++) fout << " and " << m_channelNames.at(*it);
+	fout << "\"" << m_channelNames[req[0]];
+	for(std::vector<int>::iterator it = req.begin()+1; it != req.end(); it++) fout << " and " << m_channelNames[*it];
 	fout << "\"\n";
       }
     }
     fout << "-,";
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,";
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++) fout << "-,";
     fout << "-,-\n";
+    
     fout << "\"Storm synapses\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->nStormSynapses.at(icol) << ",";
-      sum += (*rit)->nStormSynapses.at(icol);
+      fout << "" << (*rit)->nStormSynapses[icol] << ",";
+      sum += (*rit)->nStormSynapses[icol];
     }
-    fout << "" << (sum/nROI) << ",\"" << (*scit)->description() << "\"\n";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->nStormSynapses[icol] << ",";
+      sum += (*sit)->nStormSynapses[icol];
+    }
+    fout << "" << (sum/nSeg) << ",\"" << (*scit)->description() << "\"\n";
+    
     fout << "-,";
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,";
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++) fout << "-,";
     fout << "-,-\n";
     icol++;
   }
   for(int chan = 0; chan < m_nchannels; chan++){
-    fout << "\"" << m_channelNames.at(chan) << " puncta\",";
+    fout << "\"" << m_channelNames[chan] << " puncta\",";
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->nPuncta.at(chan) << ",";
-      sum += (*rit)->nPuncta.at(chan);
+      fout << "" << (*rit)->nPuncta[chan] << ",";
+      sum += (*rit)->nPuncta[chan];
     }
-    fout << "" << (sum/nROI) << ",-\n\"Density (per 100 um^2)\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->nPuncta[chan] << ",";
+      sum += (*sit)->nPuncta[chan];
+    }
+    fout << "" << (sum/nSeg) << ",-\n\"Density (per 100 um^2)\",";
+    
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      double densityA = 100 * (*rit)->nPuncta.at(chan)/(*rit)->dendriteArea;
+      double densityA = 100 * (*rit)->nPuncta[chan]/(*rit)->dendriteArea;
       fout << "" << densityA << ",";
       sum += densityA;
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average size (um^2)\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      double densityA = 100 * (*sit)->nPuncta[chan]/(*sit)->dendriteArea;
+      fout << "" << densityA << ",";
+      sum += densityA;
+    }
+    fout << "" << (sum/nSeg) << ",-\n\"Average size (um^2)\",";
+    
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->avgPunctaSize.at(chan) << ",";
-      sum += (*rit)->avgPunctaSize.at(chan);
+      fout << "" << (*rit)->avgPunctaSize[chan] << ",";
+      sum += (*rit)->avgPunctaSize[chan];
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average peak intensity\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->avgPunctaSize[chan] << ",";
+      sum += (*sit)->avgPunctaSize[chan];
+    }
+    fout << "" << (sum/nSeg) << ",-\n\"Average peak intensity\",";
+    
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->avgPeakIntensity.at(chan) << ",";
-      sum += (*rit)->avgPeakIntensity.at(chan);
+      fout << "" << (*rit)->avgPeakIntensity[chan] << ",";
+      sum += (*rit)->avgPeakIntensity[chan];
     }
-    fout << "" << (sum/nROI) << ",-\n\"Average integrated intensity\",";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->avgPeakIntensity[chan] << ",";
+      sum += (*sit)->avgPeakIntensity[chan];
+    }
+    fout << "" << (sum/nSeg) << ",-\n\"Average integrated intensity\",";
+    
     sum = 0;
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++){
-      fout << "" << (*rit)->avgIntegratedIntensity.at(chan) << ",";
-      sum += (*rit)->avgIntegratedIntensity.at(chan);
+      fout << "" << (*rit)->avgIntegratedIntensity[chan] << ",";
+      sum += (*rit)->avgIntegratedIntensity[chan];
     }
-    fout << "" << (sum/nROI) << ",-\n";
+    fout << "" << (sum/nROI) << ",";
+    sum = 0;
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++){
+      fout << "" << (*sit)->avgIntegratedIntensity[chan] << ",";
+      sum += (*sit)->avgIntegratedIntensity[chan];
+    }
+    fout << "" << (sum/nSeg) << ",-\n";
+    
     fout << "-,";
     for(rit = m_regions.begin(); rit != m_regions.end(); rit++) fout << "-,";
+    fout << "-,";
+    for(sit = m_segments.begin(); sit != m_segments.end(); sit++) fout << "-,";
     fout << "-,-\n";
   }
   fout.close();
@@ -1793,7 +1483,7 @@ void ImRecord::write(std::ofstream& fout, int version)
     buf[0] = (char)len;
     fout.write(buf,1);
     fout.write(m_channelNames[chan].c_str(),len);
-    if(m_signalMasks.at(chan)){
+    if(m_signalMasks[chan]){
       buf[0] = (char)1;
       offset = 1;
       fout.write(buf,1);
@@ -1801,7 +1491,7 @@ void ImRecord::write(std::ofstream& fout, int version)
       if(m_imHeight % 8 > 0) npacks++;
       for(int i = 0; i < npacks; i++){
 	int startY = 8*i;
-	offset = pack(buf,m_signalMasks.at(chan),startY);
+	offset = pack(buf,m_signalMasks[chan],startY);
 	fout.write(buf,offset);
       }
     }
@@ -1812,7 +1502,7 @@ void ImRecord::write(std::ofstream& fout, int version)
     
     NiaUtils::writeIntToBuffer(buf,0,nPuncta(chan));
     fout.write(buf,4);
-    for(std::vector<Cluster*>::iterator it = m_puncta.at(chan).begin(); it != m_puncta.at(chan).end(); it++){
+    for(std::vector<Cluster*>::iterator it = m_puncta[chan].begin(); it != m_puncta[chan].end(); it++){
       (*it)->write(buf,fout);
     }
   }
@@ -2032,13 +1722,13 @@ void ImRecord::setStormClusters(int chan, std::vector<StormCluster*> clusters)
   m_stormClusters[chan] = clusters;
 }
 
-void ImRecord::shiftStormData(int shiftX_pix, int shiftY_pix)
+void ImRecord::shiftStormData(int shiftX_pix, int shiftY_pix, double scale)
 {
   double shiftX = shiftX_pix * 1000.0 * m_resolutionXY;
   double shiftY = shiftY_pix * 1000.0 * m_resolutionXY;
   for(int chan = 0; chan < m_nchannels; chan++){
     for(std::vector<StormCluster*>::iterator clit = m_stormClusters[chan].begin(); clit != m_stormClusters[chan].end(); clit++){
-      (*clit)->shiftXY(shiftX,shiftY);
+      (*clit)->shiftXY(shiftX,shiftY,scale);
     }
   }
 }
@@ -2107,14 +1797,14 @@ Mask* ImRecord::getStormClusterLocations(int chan)
     int c_y = (int)((*clit)->centerY() / (1000.0 * m_resolutionXY));
     if(c_x < 0 || c_y < 0) continue;
     if(c_x >= m_imWidth || c_y >= m_imHeight) continue;
-    int window = 5;
+    int window = 1;
     int bx = c_x - window;
     if(bx < 0) bx = 0;
-    int ex = c_x + window;
+    int ex = c_x + window + 1;
     if(ex >= m_imWidth) ex = m_imWidth;
     int by = c_y - window;
     if(by < 0) by = 0;
-    int ey = c_y + window;
+    int ey = c_y + window + 1;
     if(ey >= m_imHeight) ey = m_imHeight;
     for(int i = bx; i < ex; i++) m->setValue(i,c_y,1);
     for(int i = by; i < ey; i++) m->setValue(c_x,i,1);
@@ -2189,4 +1879,50 @@ bool ImRecord::selectStormSynapse(double x, double y)
     return true;
   }
   return false;
+}
+
+double ImRecord::getBlinksPerCount(int chan, ImFrame* frame, StormData* sd)
+{
+  double scale = 1.12;
+  int shiftX = 17;//20;
+  int shiftY = 14;//-2;
+  std::vector< std::vector<int> > nBlinks;
+  nBlinks.assign(m_imWidth, std::vector<int>(m_imHeight,0));
+  std::vector< std::vector<int> > nBlinks3;
+  nBlinks3.assign(m_imWidth, std::vector<int>(m_imHeight,0));
+  for(int i = 0; i < sd->nMolecules(); i++){
+    StormData::Blink b = sd->molecule(i);
+    int x = (b.x / (1000.0 * m_resolutionXY)) + shiftX;
+    int y = (b.y * scale / (1000.0 * m_resolutionXY)) + shiftY;
+    if(x < 0 || x >= m_imWidth) continue;
+    if(y < 0 || y >= m_imHeight) continue;
+    nBlinks3[x][y]++;
+    for(int dx = x-1; dx < x+2; dx++){
+      if(dx < 0 || dx >= m_imWidth) continue;
+      for(int dy = y-1; dy < y+2; dy++){
+	if(dy < 0 || dy >= m_imHeight) continue;
+	nBlinks[dx][dy]++;
+      }
+    }
+  }
+  Mask* m = getPunctaMask(chan);
+  double bpc = 0.0;
+  double bpc3 = 0.0;
+  int n = 0;
+  int count = 0;
+  for(int i = 0; i < m_imWidth; i++){
+    for(int j = 0; j < m_imHeight; j++){
+      if(nBlinks[i][j] > 0) count += frame->getPixel(i,j);
+      if(m->getValue(i,j) < 1) continue;
+      bpc += nBlinks[i][j]*1.0 / frame->getPixel(i,j);
+      bpc3 += nBlinks3[i][j]*1.0 / frame->getPixel(i,j);
+      n++;
+    }
+  }
+  bpc = bpc / n;
+  bpc3 = bpc3 / n;
+  double bpc2 = sd->nMolecules() * 1.0 / count;
+  std::cout << "Blinks per count: " << bpc << ", " << bpc2 << ", " << bpc3 << std::endl;
+  delete m;
+  return bpc3;
 }

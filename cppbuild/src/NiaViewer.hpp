@@ -31,7 +31,7 @@ protected:
   Gtk::EventBox m_eventBox;
   Gtk::Label m_grayMinLabel,m_grayMaxLabel,m_redMinLabel,m_redMaxLabel,m_greenMinLabel,m_greenMaxLabel,m_blueMinLabel,m_blueMaxLabel;
   Gtk::Entry m_grayMinEntry,m_grayMaxEntry,m_redMinEntry,m_redMaxEntry,m_greenMinEntry,m_greenMaxEntry,m_blueMinEntry,m_blueMaxEntry;
-  Gtk::VBox /*m_mainBox,*/m_vbox1,m_vbox2,m_vbox3,m_vbox4,m_vbox5,m_vbox6,m_vbox7,m_vbox8;
+  Gtk::VBox m_vbox1,m_vbox2,m_vbox3,m_vbox4,m_vbox5,m_vbox6,m_vbox7,m_vbox8;
   Gtk::Alignment m_alignment;
   Gtk::ScrolledWindow m_swin;
   Gtk::VSeparator m_vsep1,m_vsep2;
@@ -85,6 +85,7 @@ public:
   void togglePunctaMask();
   void toggleSynapseMask();
   void toggleRegionMask();
+  void toggleSegmentMask();
   void toggleStormMask();
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
@@ -183,6 +184,7 @@ public:
   void unscale(){ if(m_data) m_data->divide(16); }
   int grayMin(){ return m_grayMin; }
   void setZWindow();
+  void manualStormAlignment();
 
 };
 

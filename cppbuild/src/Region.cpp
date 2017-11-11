@@ -40,10 +40,21 @@ void Region::getEnclosure(int& x1, int& x2, int& y1, int& y2)
   }
 }
 
-Mask* Region::getMask(int width, int height, bool outline)
+Mask* Region::getMask(int width, int height, int regNum, bool outline)
 {
+  if(m_vertices.size() < 1) return NULL;
   Mask* m = new Mask(width,height);
   int x1,x2,y1,y2;
+  LocalizedObject::Point top = m_vertices[0];
+  LocalizedObject::Point bottom = m_vertices[0];
+  LocalizedObject::Point left = m_vertices[0];
+  LocalizedObject::Point right = m_vertices[0];
+  for(std::vector<LocalizedObject::Point>::iterator it = m_vertices.begin(); it != m_vertices.end(); it++){
+    if(it->y < top.y) top = *it;
+    if(it->y > bottom.y) bottom = *it;
+    if(it->x < left.x) left = *it;
+    if(it->x > right.x) right = *it;
+  }    
   if(outline){
     Mask* m2 = m->getCopy();
     getEnclosure(x1,x2,y1,y2);
@@ -96,6 +107,27 @@ Mask* Region::getMask(int width, int height, bool outline)
 	}
       }
     }
+    std::vector<LocalizedObject::Point> label = getLabel(regNum);
+    if(top.y > 15 && top.x > 10 && top.x < width-10){
+      for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+	m2->setValue(it->x + top.x - 5, it->y + top.y - 12,1);
+      }
+    }
+    else if(left.x > 15 && left.y > 10 && left.y < height-10){
+      for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+	m2->setValue(it->x + left.x - 14, it->y + left.y - 4,1);
+      }
+    }
+    else if(right.x < width-15 && right.y > 10 && right.y < height-10){
+      for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+	m2->setValue(it->x + right.x + 3, it->y + left.y - 4,1);
+      }
+    }
+    else if(bottom.y < height-15 && bottom.x > 10 && bottom.x < width-10){
+      for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+	m2->setValue(it->x + top.x - 5, it->y + top.y + 3,1);
+      }
+    }
     return m2;
   }
   getEnclosure(x1,x2,y1,y2);
@@ -129,7 +161,168 @@ Mask* Region::getMask(int width, int height, bool outline)
       }
     }
   }
+  std::vector<LocalizedObject::Point> label = getLabel(regNum);
+  if(top.y > 15 && top.x > 10 && top.x < width-10){
+    for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+      m->setValue(it->x + top.x - 5, it->y + top.y - 12,1);
+    }
+  }
+  else if(left.x > 15 && left.y > 10 && left.y < height-10){
+    for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+      m->setValue(it->x + left.x - 14, it->y + left.y - 4,1);
+    }
+  }
+  else if(right.x < width-15 && right.y > 10 && right.y < height-10){
+    for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+      m->setValue(it->x + right.x + 3, it->y + left.y - 4,1);
+    }
+  }
+  else if(bottom.y < height-15 && bottom.x > 10 && bottom.x < width-10){
+    for(std::vector<LocalizedObject::Point>::iterator it = label.begin(); it != label.end(); it++){
+      m->setValue(it->x + top.x - 5, it->y + top.y + 3,1);
+    }
+  }
   return m;
+}
+
+std::vector<LocalizedObject::Point> Region::getLabel(int regNum)
+{
+  std::vector<LocalizedObject::Point> retVec;
+  for(int i = 0; i < 9; i++) retVec.push_back(LocalizedObject::Point(0,i));
+  retVec.push_back(LocalizedObject::Point(4,8));
+  retVec.push_back(LocalizedObject::Point(3,7));
+  retVec.push_back(LocalizedObject::Point(2,6));
+  retVec.push_back(LocalizedObject::Point(1,5));
+  retVec.push_back(LocalizedObject::Point(1,4));
+  retVec.push_back(LocalizedObject::Point(2,4));
+  retVec.push_back(LocalizedObject::Point(3,3));
+  retVec.push_back(LocalizedObject::Point(4,2));
+  retVec.push_back(LocalizedObject::Point(3,1));
+  retVec.push_back(LocalizedObject::Point(2,0));
+  retVec.push_back(LocalizedObject::Point(1,0));
+  if(regNum == 0){
+    retVec.push_back(LocalizedObject::Point(8,0));
+    retVec.push_back(LocalizedObject::Point(7,1));
+    retVec.push_back(LocalizedObject::Point(9,1));
+    for(int i = 2; i < 7; i++){
+      retVec.push_back(LocalizedObject::Point(6,i));
+      retVec.push_back(LocalizedObject::Point(10,i));
+    }
+    retVec.push_back(LocalizedObject::Point(7,7));
+    retVec.push_back(LocalizedObject::Point(9,7));
+    retVec.push_back(LocalizedObject::Point(8,8));
+  }
+  else if(regNum == 1){
+    retVec.push_back(LocalizedObject::Point(6,2));
+    retVec.push_back(LocalizedObject::Point(7,1));
+    for(int i = 0; i < 9; i++) retVec.push_back(LocalizedObject::Point(8,i));
+    for(int i = 6; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,8));
+  }
+  else if(regNum == 2){
+    retVec.push_back(LocalizedObject::Point(8,0));
+    retVec.push_back(LocalizedObject::Point(7,1));
+    retVec.push_back(LocalizedObject::Point(9,1));
+    for(int i = 2; i < 4; i++){
+      retVec.push_back(LocalizedObject::Point(6,i));
+      retVec.push_back(LocalizedObject::Point(10,i));
+    }
+    retVec.push_back(LocalizedObject::Point(9,4));
+    retVec.push_back(LocalizedObject::Point(8,5));
+    retVec.push_back(LocalizedObject::Point(7,6));
+    retVec.push_back(LocalizedObject::Point(6,7));
+    for(int i = 6; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,8));
+  }
+  else if(regNum == 3){
+    retVec.push_back(LocalizedObject::Point(6,2));
+    retVec.push_back(LocalizedObject::Point(7,1));
+    retVec.push_back(LocalizedObject::Point(8,0));
+    retVec.push_back(LocalizedObject::Point(9,1));
+    retVec.push_back(LocalizedObject::Point(10,2));
+    retVec.push_back(LocalizedObject::Point(10,3));
+    retVec.push_back(LocalizedObject::Point(9,4));
+    retVec.push_back(LocalizedObject::Point(10,5));
+    retVec.push_back(LocalizedObject::Point(10,6));
+    retVec.push_back(LocalizedObject::Point(9,7));
+    retVec.push_back(LocalizedObject::Point(8,8));
+    retVec.push_back(LocalizedObject::Point(7,7));
+    retVec.push_back(LocalizedObject::Point(6,6));
+  }
+  else if(regNum == 4){
+    for(int i = 0; i < 9; i++) retVec.push_back(LocalizedObject::Point(10,i));
+    for(int i = 6; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,4));
+    for(int i = 0; i < 4; i++) retVec.push_back(LocalizedObject::Point(6,i));
+  }
+  else if(regNum == 5){
+    retVec.push_back(LocalizedObject::Point(6,6));
+    retVec.push_back(LocalizedObject::Point(6,7));
+    retVec.push_back(LocalizedObject::Point(7,8));
+    retVec.push_back(LocalizedObject::Point(8,8));
+    retVec.push_back(LocalizedObject::Point(9,8));
+    retVec.push_back(LocalizedObject::Point(10,7));
+    retVec.push_back(LocalizedObject::Point(10,6));
+    retVec.push_back(LocalizedObject::Point(10,5));
+    for(int i = 7; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,4));
+    for(int i = 0; i < 4; i++) retVec.push_back(LocalizedObject::Point(6,i));
+    for(int i = 7; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,0));
+    
+  }
+  else if(regNum == 6){
+    retVec.push_back(LocalizedObject::Point(8,0));
+    retVec.push_back(LocalizedObject::Point(7,0));
+    retVec.push_back(LocalizedObject::Point(9,0));
+    retVec.push_back(LocalizedObject::Point(10,1));
+    retVec.push_back(LocalizedObject::Point(10,2));
+    for(int i = 1; i < 8; i++) retVec.push_back(LocalizedObject::Point(6,i));
+    for(int i = 7; i < 10; i++) retVec.push_back(LocalizedObject::Point(i,8));
+    for(int i = 5; i < 8; i++) retVec.push_back(LocalizedObject::Point(10,i));
+    for(int i = 7; i < 10; i++) retVec.push_back(LocalizedObject::Point(i,4));
+  }
+  else if(regNum == 7){
+    retVec.push_back(LocalizedObject::Point(6,1));
+    for(int i = 6; i < 11; i++) retVec.push_back(LocalizedObject::Point(i,0));
+    retVec.push_back(LocalizedObject::Point(9,2));
+    retVec.push_back(LocalizedObject::Point(10,1));
+    retVec.push_back(LocalizedObject::Point(10,2));
+    retVec.push_back(LocalizedObject::Point(8,4));
+    retVec.push_back(LocalizedObject::Point(7,6));
+    retVec.push_back(LocalizedObject::Point(7,8));
+    retVec.push_back(LocalizedObject::Point(9,3));
+    retVec.push_back(LocalizedObject::Point(8,5));
+    retVec.push_back(LocalizedObject::Point(7,7));
+  }
+  else if(regNum == 8){
+    retVec.push_back(LocalizedObject::Point(6,3));
+    retVec.push_back(LocalizedObject::Point(6,2));
+    retVec.push_back(LocalizedObject::Point(6,1));
+    retVec.push_back(LocalizedObject::Point(7,0));
+    retVec.push_back(LocalizedObject::Point(8,0));
+    retVec.push_back(LocalizedObject::Point(9,0));
+    retVec.push_back(LocalizedObject::Point(10,1));
+    retVec.push_back(LocalizedObject::Point(10,2));
+    retVec.push_back(LocalizedObject::Point(10,3));
+    retVec.push_back(LocalizedObject::Point(9,4));
+    retVec.push_back(LocalizedObject::Point(10,5));
+    retVec.push_back(LocalizedObject::Point(10,6));
+    retVec.push_back(LocalizedObject::Point(10,7));
+    retVec.push_back(LocalizedObject::Point(9,8));
+    retVec.push_back(LocalizedObject::Point(8,8));
+    retVec.push_back(LocalizedObject::Point(7,8));
+    retVec.push_back(LocalizedObject::Point(6,7));
+    retVec.push_back(LocalizedObject::Point(6,6));
+    retVec.push_back(LocalizedObject::Point(6,5));
+    retVec.push_back(LocalizedObject::Point(7,4));
+    retVec.push_back(LocalizedObject::Point(8,4));
+  }
+  else if(regNum == 9){
+    for(int i = 1; i < 8; i++) retVec.push_back(LocalizedObject::Point(10,i));
+    for(int i = 7; i < 10; i++) retVec.push_back(LocalizedObject::Point(i,0));
+    for(int i = 7; i < 10; i++) retVec.push_back(LocalizedObject::Point(i,4));
+    for(int i = 1; i < 4; i++) retVec.push_back(LocalizedObject::Point(6,i));
+    for(int i = 7; i < 10; i++) retVec.push_back(LocalizedObject::Point(i,8));
+    retVec.push_back(LocalizedObject::Point(6,7));
+    retVec.push_back(LocalizedObject::Point(6,6));
+  }
+  return retVec;
 }
 
 double Region::getLength()

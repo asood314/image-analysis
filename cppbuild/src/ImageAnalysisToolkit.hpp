@@ -56,6 +56,7 @@ public:
   void findPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void resolveOverlaps(ImFrame* frame, ImRecord* rec, int chan);
+  void watershedSegmentation(ImFrame* frame, ImRecord* rec, int chan);
   void findSynapses(ImRecord* rec);
   void findStormSynapses(ImRecord* rec);
   void write(std::ofstream& fout);

@@ -26,7 +26,8 @@ public:
   bool contains(LocalizedObject::Point pt);
   bool contains(int x, int y);
   void getEnclosure(int& x1, int& x2, int& y1, int& y2);
-  Mask* getMask(int width, int height, bool outline=true);
+  Mask* getMask(int width, int height, int regNum=0, bool outline=true);
+  std::vector<LocalizedObject::Point> getLabel(int regNum);
   void addVertex(LocalizedObject::Point pt){ m_vertices.push_back(pt); }
   uint8_t nVertices(){ return m_vertices.size(); }
   LocalizedObject::Point getVertex(int index){ return m_vertices.at(index); }

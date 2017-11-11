@@ -38,19 +38,47 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("chan0","Channel 0"),Gtk::AccelKey("<control>0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),0));
   m_refActionGroup->add(Gtk::Action::create("chan1","Channel 1"),Gtk::AccelKey("<control>1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),1));
   m_refActionGroup->add(Gtk::Action::create("chan2","Channel 2"),Gtk::AccelKey("<control>2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),2));
+  m_refActionGroup->add(Gtk::Action::create("chan3","Channel 3"),Gtk::AccelKey("<control>3"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),3));
+  m_refActionGroup->add(Gtk::Action::create("chan4","Channel 4"),Gtk::AccelKey("<control>4"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),4));
+  m_refActionGroup->add(Gtk::Action::create("chan5","Channel 5"),Gtk::AccelKey("<control>5"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),5));
+  m_refActionGroup->add(Gtk::Action::create("chan6","Channel 6"),Gtk::AccelKey("<control>6"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),6));
+  m_refActionGroup->add(Gtk::Action::create("chan7","Channel 7"),Gtk::AccelKey("<control>7"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),7));
+  m_refActionGroup->add(Gtk::Action::create("chan8","Channel 8"),Gtk::AccelKey("<control>8"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),8));
+  m_refActionGroup->add(Gtk::Action::create("chan9","Channel 9"),Gtk::AccelKey("<control>9"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setWavelength),9));
   m_refActionGroup->add(Gtk::Action::create("composite","Color Composite"),Gtk::AccelKey("<control>C"),sigc::bind<NiaViewer::ImageMode>(sigc::mem_fun(m_viewer, &NiaViewer::setMode),NiaViewer::RGB));
   m_refActionGroup->add(Gtk::Action::create("setRed","Set Red Channel"));
   m_refActionGroup->add(Gtk::Action::create("redChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),0));
   m_refActionGroup->add(Gtk::Action::create("redChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),1));
   m_refActionGroup->add(Gtk::Action::create("redChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),2));
+  m_refActionGroup->add(Gtk::Action::create("redChan3","Channel 3"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),3));
+  m_refActionGroup->add(Gtk::Action::create("redChan4","Channel 4"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),4));
+  m_refActionGroup->add(Gtk::Action::create("redChan5","Channel 5"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),5));
+  m_refActionGroup->add(Gtk::Action::create("redChan6","Channel 6"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),6));
+  m_refActionGroup->add(Gtk::Action::create("redChan7","Channel 7"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),7));
+  m_refActionGroup->add(Gtk::Action::create("redChan8","Channel 8"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),8));
+  m_refActionGroup->add(Gtk::Action::create("redChan9","Channel 9"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setRed),9));
   m_refActionGroup->add(Gtk::Action::create("setGreen","Set Green Channel"));
   m_refActionGroup->add(Gtk::Action::create("greenChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),0));
   m_refActionGroup->add(Gtk::Action::create("greenChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),1));
   m_refActionGroup->add(Gtk::Action::create("greenChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),2));
+  m_refActionGroup->add(Gtk::Action::create("greenChan3","Channel 3"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),3));
+  m_refActionGroup->add(Gtk::Action::create("greenChan4","Channel 4"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),4));
+  m_refActionGroup->add(Gtk::Action::create("greenChan5","Channel 5"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),5));
+  m_refActionGroup->add(Gtk::Action::create("greenChan6","Channel 6"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),6));
+  m_refActionGroup->add(Gtk::Action::create("greenChan7","Channel 7"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),7));
+  m_refActionGroup->add(Gtk::Action::create("greenChan8","Channel 8"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),8));
+  m_refActionGroup->add(Gtk::Action::create("greenChan9","Channel 9"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setGreen),9));
   m_refActionGroup->add(Gtk::Action::create("setBlue","Set Blue Channel"));
   m_refActionGroup->add(Gtk::Action::create("blueChan0","Channel 0"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),0));
   m_refActionGroup->add(Gtk::Action::create("blueChan1","Channel 1"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),1));
   m_refActionGroup->add(Gtk::Action::create("blueChan2","Channel 2"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),2));
+  m_refActionGroup->add(Gtk::Action::create("blueChan3","Channel 3"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),3));
+  m_refActionGroup->add(Gtk::Action::create("blueChan4","Channel 4"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),4));
+  m_refActionGroup->add(Gtk::Action::create("blueChan5","Channel 5"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),5));
+  m_refActionGroup->add(Gtk::Action::create("blueChan6","Channel 6"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),6));
+  m_refActionGroup->add(Gtk::Action::create("blueChan7","Channel 7"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),7));
+  m_refActionGroup->add(Gtk::Action::create("blueChan8","Channel 8"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),8));
+  m_refActionGroup->add(Gtk::Action::create("blueChan9","Channel 9"),sigc::bind<int>(sigc::mem_fun(m_viewer, &NiaViewer::setBlue),9));
   m_refActionGroup->add(Gtk::Action::create("zproj","Z-projection"),Gtk::AccelKey("<control>Z"),sigc::mem_fun(m_viewer, &NiaViewer::zproject));
   m_refActionGroup->add(Gtk::Action::create("scale","Adjust Scale"),Gtk::AccelKey("<control>A"),sigc::mem_fun(m_viewer, &NiaViewer::showScaleBox));
   m_refActionGroup->add(Gtk::Action::create("zoomin","Zoom In"),Gtk::AccelKey(GDK_KEY_equal,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomIn));
@@ -61,10 +89,11 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
+  m_refActionGroup->add(Gtk::Action::create("segMask","Segment Mask"),Gtk::AccelKey("<control><shift>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSegmentMask));
   m_refActionGroup->add(Gtk::Action::create("stormMask","Storm Mask"),Gtk::AccelKey("<control>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleStormMask));
   m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
-  m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),sigc::mem_fun(m_viewer, &NiaViewer::toggleImageType));
+  m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),Gtk::AccelKey("<control><shift>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleImageType));
   m_refActionGroup->add(Gtk::Action::create("stormZWin","Set Z Window"),sigc::mem_fun(m_viewer, &NiaViewer::setZWindow));
   m_refActionGroup->add(Gtk::Action::create("derivative","Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative));
   m_refActionGroup->add(Gtk::Action::create("derivative2","2nd Derivative"),sigc::mem_fun(m_viewer, &NiaViewer::showDerivative2));
@@ -87,6 +116,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("analyzeMenu","Analyze"));
   m_refActionGroup->add(Gtk::Action::create("config","Configure"),sigc::mem_fun(*this, &NiaCore::on_configure_clicked));
   m_refActionGroup->add(Gtk::Action::create("alignStorm","Align Storm Data"),sigc::mem_fun(m_viewer, &NiaViewer::alignStormData));
+  m_refActionGroup->add(Gtk::Action::create("alignStormMan","Manual Storm Alignment"),sigc::mem_fun(m_viewer, &NiaViewer::manualStormAlignment));
   m_refActionGroup->add(Gtk::Action::create("findout","Find Outliers"),sigc::mem_fun(*this, &NiaCore::on_find_outliers_clicked));
   m_refActionGroup->add(Gtk::Action::create("filter","Filter"),sigc::mem_fun(*this, &NiaCore::on_filter_clicked));
   m_refActionGroup->add(Gtk::Action::create("findsigMenu","Find Signal"));
@@ -135,22 +165,50 @@ void NiaCore::init()
     "    <menuitem action='chan0'/>"
     "    <menuitem action='chan1'/>"
     "    <menuitem action='chan2'/>"
+    "    <menuitem action='chan3'/>"
+    "    <menuitem action='chan4'/>"
+    "    <menuitem action='chan5'/>"
+    "    <menuitem action='chan6'/>"
+    "    <menuitem action='chan7'/>"
+    "    <menuitem action='chan8'/>"
+    "    <menuitem action='chan9'/>"
     "   </menu>"
     "   <menuitem action='composite'/>"
     "   <menu action='setRed'>"
     "    <menuitem action='redChan0'/>"
     "    <menuitem action='redChan1'/>"
     "    <menuitem action='redChan2'/>"
+    "    <menuitem action='redChan3'/>"
+    "    <menuitem action='redChan4'/>"
+    "    <menuitem action='redChan5'/>"
+    "    <menuitem action='redChan6'/>"
+    "    <menuitem action='redChan7'/>"
+    "    <menuitem action='redChan8'/>"
+    "    <menuitem action='redChan9'/>"
     "   </menu>"
     "   <menu action='setGreen'>"
     "    <menuitem action='greenChan0'/>"
     "    <menuitem action='greenChan1'/>"
     "    <menuitem action='greenChan2'/>"
+    "    <menuitem action='greenChan3'/>"
+    "    <menuitem action='greenChan4'/>"
+    "    <menuitem action='greenChan5'/>"
+    "    <menuitem action='greenChan6'/>"
+    "    <menuitem action='greenChan7'/>"
+    "    <menuitem action='greenChan8'/>"
+    "    <menuitem action='greenChan9'/>"
     "   </menu>"
     "   <menu action='setBlue'>"
     "    <menuitem action='blueChan0'/>"
     "    <menuitem action='blueChan1'/>"
     "    <menuitem action='blueChan2'/>"
+    "    <menuitem action='blueChan3'/>"
+    "    <menuitem action='blueChan4'/>"
+    "    <menuitem action='blueChan5'/>"
+    "    <menuitem action='blueChan6'/>"
+    "    <menuitem action='blueChan7'/>"
+    "    <menuitem action='blueChan8'/>"
+    "    <menuitem action='blueChan9'/>"
     "   </menu>"
     "   <menuitem action='zproj'/>"
     "   <menuitem action='scale'/>"
@@ -159,6 +217,7 @@ void NiaCore::init()
     "    <menuitem action='puncMask'/>"
     "    <menuitem action='synMask'/>"
     "    <menuitem action='regMask'/>"
+    "    <menuitem action='segMask'/>"
     "    <menuitem action='stormMask'/>"
     "    <menuitem action='conMap'/>"
     "    <menuitem action='clearMask'/>"
@@ -183,6 +242,7 @@ void NiaCore::init()
     "  <menu action='analyzeMenu'>"
     "   <menuitem action='config'/>"
     "   <menuitem action='alignStorm'/>"
+    "   <menuitem action='alignStormMan'/>"
     "   <menuitem action='findout'/>"
     "   <menuitem action='filter'/>"
     "   <menu action='findsigMenu'>"
@@ -232,6 +292,15 @@ void NiaCore::on_menu_load()
   m_fileManager.clearInputFiles();
   FileSelector fcd(&m_fileManager,&m_iat,&records,"",Gtk::FILE_CHOOSER_ACTION_OPEN);
   fcd.set_transient_for(*this);
+
+  Gtk::FileFilter filt_all;
+  filt_all.set_name("All files");
+  filt_all.add_pattern("*.tif");
+  filt_all.add_pattern("*.tiff");
+  filt_all.add_pattern("*.TIF");
+  filt_all.add_pattern("*.TIFF");
+  filt_all.add_pattern("*.nia");
+  fcd.add_filter(filt_all);
 
   Gtk::FileFilter filt;
   filt.set_name("TIFF files");
@@ -510,7 +579,8 @@ void NiaCore::on_load_storm_data_clicked()
   int result = fcd.run();
   if(result == Gtk::RESPONSE_OK){
     StormData* sd = new StormData(fcd.get_filename());
-    rec->setStormClusters(m_viewer.viewW(),StormCluster::cluster(sd));
+    double bpc = rec->getBlinksPerCount(m_viewer.viewW(),frame,sd);
+    rec->setStormClusters(m_viewer.viewW(),StormCluster::cluster(sd,bpc));
     delete sd;
   }
 }

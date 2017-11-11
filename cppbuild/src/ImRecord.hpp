@@ -7,6 +7,7 @@
 #include "NiaUtils.hpp"
 #include "Segment.hpp"
 #include "StormCluster.hpp"
+#include "ImFrame.hpp"
 #include <iostream>
 #include <fstream>
 #include <cmath>
@@ -60,6 +61,10 @@ public:
   int nRegions(){ return m_regions.size(); }
   std::vector<Region*> regions(){ return m_regions; }
   void clearRegions();
+  Segment* getSegment(int index){ return m_segments[index]; }
+  int nSegments(){ return m_segments.size(); }
+  std::vector<Segment*> segments(){ return m_segments; }
+  void clearSegments();
   void addPunctum(int chan, Cluster* c){ m_puncta.at(chan).push_back(c); }
   void removePunctum(int chan, int index);
   void clearPuncta(int chan);
@@ -79,8 +84,6 @@ public:
   Synapse* selectSynapseFromCollection(int index, LocalizedObject::Point pt);
   Mask* getContourMap(int chan);
   Mask* segment(int chan);
-  Mask* segment2(int chan);
-  Mask* segment3(int chan);
   void convertRegionsToSegments(int chan);
   void hike(LocalizedObject::Point pt, int base, Mask* contourMask, Mask* nodeMask, std::vector< std::vector< std::vector<LocalizedObject::Point> > >* trail);
   Mask* getPunctaMask(int chan, bool outline=false);
@@ -90,6 +93,7 @@ public:
   Mask* getSynapticPunctaMaskFromCollection(int index, int chan, bool outline=true);
   Mask* getRegionMask(bool outline=true);
   void calculateRegionStats(Region* r, int postChan);
+  void calculateSegmentStats(Segment* r, int matchChan);
   void printSynapseDensityTable(int postChan, std::string filename);
   void write(std::ofstream& fout, int version);
   uint64_t pack(char* buf, Mask* m, int startY);
@@ -102,13 +106,14 @@ public:
   void setStormClusters(int chan, std::vector<StormCluster*> clusters);
   int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
   StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }
-  void shiftStormData(int shiftX_pix, int shiftY_pix);
+  void shiftStormData(int shiftX_pix, int shiftY_pix, double scale);
   std::vector<LocalizedObject::Point> getStormClusterCenters(int chan);
   Mask* getStormClusterMask(int chan);
   Mask* getStormClusterLocations(int chan);
   bool selectStormCluster(double x, double y);
   bool selectStormCluster(int chan, double x, double y);
   bool selectStormSynapse(double x, double y);
+  double getBlinksPerCount(int chan, ImFrame* frame, StormData* sd);
   
 };
 

@@ -103,7 +103,6 @@ NiaViewer::NiaViewer() :
   m_scaleBox.pack_start(m_vsep2,Gtk::PACK_SHRINK,30);
   m_scaleBox.pack_start(m_autoscaleButton,Gtk::PACK_SHRINK,15);
   m_scaleBox.pack_start(m_scaleHideButton,Gtk::PACK_SHRINK,15);
-  //m_mainBox.pack_start(m_scaleBox,Gtk::PACK_SHRINK);
   pack_start(m_scaleBox,Gtk::PACK_SHRINK);
   pack_start(m_swin,Gtk::PACK_EXPAND_WIDGET);
 
@@ -112,10 +111,6 @@ NiaViewer::NiaViewer() :
   m_eventBox.set_events(Gdk::BUTTON_PRESS_MASK);
   m_eventBox.signal_button_press_event().connect(sigc::mem_fun(*this, &NiaViewer::on_button_press));
   m_eventBox.add(m_displayImage);
-  //m_eventBox.set_size_request(0,0);
-  //m_mainBox.pack_start(m_eventBox,false,false);
-
-  //add(m_mainBox);
 }
 
 NiaViewer::~NiaViewer()
@@ -220,7 +215,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	      setCurrentRecord(rec);
 	    }
 	    rec->addRegion(r);
-	    toggleMask(r->getMask(m_width,m_height,true));
+	    toggleMask(r->getMask(m_width,m_height,rec->nRegions()-1,true));
 	  }
 	  m_prevClicks.clear();
 	}
@@ -232,7 +227,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  ImRecord* rec = currentRecord();
 	  if(rec){
 	    int lastReg = rec->nRegions() - 1;
-	    removeMask(rec->getRegion(lastReg)->getMask(m_width,m_height,true));
+	    removeMask(rec->getRegion(lastReg)->getMask(m_width,m_height,lastReg,true));
 	    if(lastReg >= 0) rec->removeRegion(lastReg);
 	  }
 	}
@@ -472,22 +467,22 @@ void NiaViewer::setMode(NiaViewer::ImageMode mode)
   }
   else if(mode == RGB){
     m_colors[0].r = 0xff;
-    m_colors[0].g = 0xff;
+    m_colors[0].g = 0x00;
     m_colors[0].b = 0xff;
-    m_colors[1].r = 0xff;
-    m_colors[1].g = 0x00;
+    m_colors[1].r = 0x00;
+    m_colors[1].g = 0xff;
     m_colors[1].b = 0xff;
-    m_colors[2].r = 0x00;
-    m_colors[2].g = 0xff;
-    m_colors[2].b = 0xff;
-    m_colors[3].r = 0xff;
-    m_colors[3].g = 0x80;
-    m_colors[3].b = 0x00;
-    m_colors[4].r = 0x00;
-    m_colors[4].g = 0xff;
-    m_colors[4].b = 0x80;
-    m_colors[5].r = 0x80;
-    m_colors[5].g = 0x00;
+    m_colors[2].r = 0xff;
+    m_colors[2].g = 0x80;
+    m_colors[2].b = 0x00;
+    m_colors[3].r = 0x00;
+    m_colors[3].g = 0xff;
+    m_colors[3].b = 0x80;
+    m_colors[4].r = 0x80;
+    m_colors[4].g = 0x00;
+    m_colors[4].b = 0xff;
+    m_colors[5].r = 0xff;
+    m_colors[5].g = 0xff;
     m_colors[5].b = 0xff;
   }
   autoscale();
@@ -597,7 +592,7 @@ void NiaViewer::updateImage()
 void NiaViewer::showDerivative()
 {
   if(!m_data) return;
-  m_data->fourLocation(m_view_p,m_view_t)->derivativeDir();
+  m_data->fourLocation(m_view_p,m_view_t)->derivative();
   autoscale();
   updateImage();
 }
@@ -662,227 +657,44 @@ void NiaViewer::showContourMap()
   ImRecord* rec = currentRecord();
   if(!rec) return;
 
-  /*
-  Mask* m = rec->getContourMap(m_view_w);
-  Mask* used = new Mask(m->width(),m->height());
-  ImFrame* f = m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z);
-  //ImFrame* f2 = new ImFrame(f->width(),f->height());
-  std::vector<int> xvec,yvec,xvec2,yvec2;
-  for(int i = 1; i < f->width()-1; i++){
-    for(int j = 1; j < f->height()-1; j++){
-      if(m->getValue(i,j) != 1){
-	f->setPixel(i,j,-3);
-	continue;
-      }
-      int cx = 0;
-      int cy = 0;
-      int n = 0;
-      int cx2 = 0;
-      int cy2 = 0;
-      int n2 = 0;
-      std::vector<int> borderX,borderX2,tmpX;
-      std::vector<int> borderY,borderY2,tmpY;
-      borderX.push_back(0);
-      borderY.push_back(0);
-      borderX2.push_back(0);
-      borderY2.push_back(0);
-      for(int i2 = i-1; i2 < i+2; i2++){
-	for(int j2 = j-1; j2 < j+2; j2++){
-	  if(i2 == i && j2 == j) continue;
-	  if(m->getValue(i2,j2) != 1) continue;
-	  tmpX.push_back(i2);
-	  tmpY.push_back(j2);
-	}
-      }
-      if(tmpX.size() < 2){
-	f->setPixel(i,j,-2);
-	continue;
-      }
-      int maxDist = 0;
-      for(unsigned k = 0; k < tmpX.size(); k++){
-	for(unsigned l = k+1; l < tmpX.size(); l++){
-	  int dist = (tmpX[k] - tmpX[l])*(tmpX[k] - tmpX[l]) + (tmpY[k] - tmpY[l])*(tmpY[k] - tmpY[l]);
-	  if(dist > maxDist){
-	    maxDist = dist;
-	    borderX[0] = tmpX[k];
-	    borderY[0] = tmpY[k];
-	    borderX2[0] = tmpX[l];
-	    borderY2[0] = tmpY[l];
+  Mask* m = new Mask(m_width,m_height);
+  ImFrame* dFrame = m_data->fourLocation(m_view_p,m_view_t)->frame(m_view_w,m_view_z)->derivative();
+  Mask* pMask = rec->getPunctaMask(m_view_w);
+  int dx[8] = {-1,-1,-1,0,0,1,1,1};
+  int dy[8] = {-1,0,1,-1,1,-1,0,1};
+  for(int i = 1; i < m_width-1; i++){
+    for(int j = 1; j < m_height-1; j++){
+      if(pMask->getValue(i,j) < 1) continue;
+      int stepX = 1;
+      int stepY = 1;
+      int x = i;
+      int y = j;
+      int minD = dFrame->getPixel(i,j);
+      while(stepX != 0 || stepY != 0){
+	stepX = 0;
+	stepY = 0;
+	for(int k = 0; k < 8; k++){
+	  if(x+dx[k] < 0 || x+dx[k] >= m_width) continue;
+	  if(y+dy[k] < 0 || y+dy[k] >= m_height) continue;
+	  int val = dFrame->getPixel(x+dx[k],y+dy[k]);
+	  if(val < minD){
+	    minD = val;
+	    stepX = dx[k];
+	    stepY = dy[k];
 	  }
 	}
+	x += stepX;
+	y += stepY;
       }
-      //borderX.push_back(i);
-      //borderY.push_back(j);
-      used->setValue(i,j,1);
-      used->setValue(borderX[0],borderY[0],1);
-      used->setValue(borderX2[0],borderY2[0],1);
-      while(borderX.size() > 0 && borderX2.size() > 0 && (n < 100 || n2 < 100)){
-	uint32_t nborder = borderX.size();
-	for(uint32_t b = 0; b < nborder; b++){
-	  int bi = borderX.at(0);
-	  int bj = borderY.at(0);
-	  int left = bi-1;
-	  int right = bi+2;
-	  int top = bj-1;
-	  int bottom = bj+2;
-	  if(left < 0) left++;
-	  if(right >= f->width()) right--;
-	  if(top < 0) top++;
-	  if(bottom >= f->height()) bottom--;
-	  cx += bi;
-	  cy += bj;
-	  n++;
-	  xvec.push_back(bi);
-	  yvec.push_back(bj);
-	  for(int di = left; di < right; di++){
-	    for(int dj = top; dj < bottom; dj++){
-	      if(m->getValue(di,dj) != 1 || used->getValue(di,dj) > 0) continue;
-	      borderX.push_back(di);
-	      borderY.push_back(dj);
-	      used->setValue(di,dj,1);
-	    }
-	  }
-	  borderX.erase(borderX.begin());
-	  borderY.erase(borderY.begin());
-	}
-	nborder = borderX2.size();
-	for(uint32_t b = 0; b < nborder; b++){
-	  int bi = borderX2.at(0);
-	  int bj = borderY2.at(0);
-	  int left = bi-1;
-	  int right = bi+2;
-	  int top = bj-1;
-	  int bottom = bj+2;
-	  if(left < 0) left++;
-	  if(right >= f->width()) right--;
-	  if(top < 0) top++;
-	  if(bottom >= f->height()) bottom--;
-	  cx2 += bi;
-	  cy2 += bj;
-	  n2++;
-	  xvec2.push_back(bi);
-	  yvec2.push_back(bj);
-	  for(int di = left; di < right; di++){
-	    for(int dj = top; dj < bottom; dj++){
-	      if(m->getValue(di,dj) != 1 || used->getValue(di,dj) > 0) continue;
-	      borderX2.push_back(di);
-	      borderY2.push_back(dj);
-	      used->setValue(di,dj,1);
-	    }
-	  }
-	  borderX2.erase(borderX2.begin());
-	  borderY2.erase(borderY2.begin());
-	}
-      }
-      for(unsigned index = 0; index < borderX.size(); index++) used->setValue(borderX[index],borderY[index],0);
-      for(unsigned index = 0; index < borderX2.size(); index++) used->setValue(borderX2[index],borderY2[index],0);
-
-      if(n < 50 || n2 < 50){
-	f->setPixel(i,j,-1);
-	used->setValue(i,j,0);
-	for(unsigned index = 0; index < n; index++) used->setValue(xvec[index],yvec[index],0);
-	for(unsigned index = 0; index < n2; index++) used->setValue(xvec2[index],yvec2[index],0);
-	xvec.clear();
-	yvec.clear();
-	xvec2.clear();
-	yvec2.clear();
-	continue;
-      }
-      cx /= n;
-      cy /= n;
-      double vxx = 0.0;
-      double vyy = 0.0;
-      double vxy = 0.0;
-      for(unsigned index = 0; index < n; index++){
-	int xdiff = xvec[index] - cx;
-	int ydiff = yvec[index] - cy;
-	vxx += xdiff*xdiff;
-	vyy += ydiff*ydiff;
-	vxy += xdiff*ydiff;
-	used->setValue(xvec[index],yvec[index],0);
-      }
-      double det = sqrt((vxx - vyy)*(vxx-vyy) + 4*vxy*vxy);
-      double eigenval = (vxx + vyy + det) / 2.0;
-      double eigenvec = atan((eigenval - vxx) / vxy);
-      //double eigenval2 = (vxx + vyy - det) / 2.0;
-      cx2 /= n2;
-      cy2 /= n2;
-      vxx = 0.0;
-      vyy = 0.0;
-      vxy = 0.0;
-      for(unsigned index = 0; index < n2; index++){
-	int xdiff = xvec2[index] - cx2;
-	int ydiff = yvec2[index] - cy2;
-	vxx += xdiff*xdiff;
-	vyy += ydiff*ydiff;
-	vxy += xdiff*ydiff;
-	used->setValue(xvec2[index],yvec2[index],0);
-      }
-      det = sqrt((vxx - vyy)*(vxx-vyy) + 4*vxy*vxy);
-      double eigenval2 = (vxx + vyy + det) / 2.0;
-      double eigenvec2 = atan((eigenval - vxx) / vxy);
-      //f->setPixel(i,j,(int)(1000*(eigenvec+1.5708)));
-      //f->setPixel(i,j,(int)(1000*eigenval2/eigenval));
-      double angle = fabs(eigenvec - eigenvec2);
-      if(angle > 1.5708) angle = 3.1416 - angle;
-      f->setPixel(i,j,(int)(10000*angle));
-      xvec.clear();
-      yvec.clear();
-      xvec2.clear();
-      yvec2.clear();
-      used->setValue(i,j,0);
-      if(i == 119 && j == 102) std::cout << eigenvec << "\n" << eigenvec2 << std::endl;
+      m->setValue(x,y,1);
     }
   }
-  */
-  /*
-  for(int i = 0; i < f->width(); i++){
-    for(int j = 0; j < f->height(); j++){
-      if(m->getValue(i,j) != 1){
-	f->setPixel(i,j,0);
-	continue;
-      }
-      int left = i-80;
-      if(left < 0) left = 0;
-      int right = i+80;
-      if(right > f->width()) right = f->width();
-      int top = j-80;
-      if(top < 0) top = 0;
-      int bottom = j+80;
-      if(bottom > f->height()) bottom = f->height();
-      float avg = 0;
-      int val = f->getPixel(i,j);
-      int n = 0;
-      for(int i2 = left; i2 < right; i2++){
-	for(int j2 = top; j2 < bottom; j2++){
-	  if(m->getValue(i2,j2) != 1) continue;
-	  avg += atan(tan((f->getPixel(i2,j2) - val)/1000.0));
-	  xvec.push_back(f->getPixel(i2,j2));
-	  n++;
-	}
-      }
-      if(n < 10){
-	f->setPixel(i,j,0);
-	xvec.clear();
-	continue;
-      }
-      avg = avg/n + val/1000.0;
-      double vxx = 0.0;
-      for(unsigned index = 0; index < n; index++){
-	int xdiff = xvec[index]/1000.0 - avg;
-	vxx += xdiff*xdiff;
-      }
-      f2->setPixel(i,j,(int)(1000*sqrt(vxx/(n-1))));
-      xvec.clear();
-    }
-  }
-  delete f;
-  m_data->fourLocation(m_view_p,m_view_t)->insert(f2,m_view_w,m_view_z);
-  */
-  //displayMask(m);
-  
+  delete dFrame;
+  delete pMask;
+  toggleMask(m);
+	
   //displayMask(rec->getContourMap(m_view_w));
-  displayMask(rec->segment3(m_view_w));
+  //displayMask(rec->segment(m_view_w));
 }
 
 void NiaViewer::zoomIn()
@@ -960,7 +772,14 @@ void NiaViewer::togglePunctaMask()
   if(!m_data) return;
   int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
   int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
-  if(m_records.at(index)) toggleMask(m_records.at(index)->getPunctaMask(m_view_w,false));
+  if(m_records.at(index)){
+    if(m_mode == RGB){
+      if(m_red < 255 && m_red >= 0) toggleMask(m_records.at(index)->getPunctaMask(m_red,false));
+      if(m_green < 255 && m_green >= 0) toggleMask(m_records.at(index)->getPunctaMask(m_green,false));
+      if(m_blue < 255 && m_blue >= 0) toggleMask(m_records.at(index)->getPunctaMask(m_blue,false));
+    }
+    else toggleMask(m_records.at(index)->getPunctaMask(m_view_w,false));
+  }
 }
 
 void NiaViewer::toggleSynapseMask()
@@ -976,7 +795,21 @@ void NiaViewer::toggleRegionMask()
   if(!m_data) return;
   int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
   int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
-  if(m_records.at(index)) toggleMask(m_records.at(index)->getRegionMask(true));
+  ImRecord* rec = m_records[index];
+  if(rec){
+    for(int i = 0; i < rec->nRegions(); i++) toggleMask(rec->getRegion(i)->getMask(rec->imWidth(),rec->imHeight(),i,true));
+  }
+}
+
+void NiaViewer::toggleSegmentMask()
+{
+  if(!m_data) return;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
+  ImRecord* rec = m_records[index];
+  if(rec){
+    for(int i = 0; i < rec->nSegments(); i++) toggleMask(rec->getSegment(i)->getMask(rec->imWidth(),rec->imHeight(),true,i));
+  }
 }
 
 void NiaViewer::toggleStormMask()
@@ -1034,66 +867,62 @@ void NiaViewer::alignStormData()
   ImFrame* frame = currentFrame();
   ImRecord* rec = currentRecord();
   if(!rec) return;
-  //Mask* m = rec->getStormClusterMask(m_view_w);
   std::vector<LocalizedObject::Point> cents = rec->getStormClusterCenters(m_view_w);
   int maxI = 0;
-  int minShiftX = -frame->width();
-  int maxShiftX = frame->width();
-  int minShiftY = -frame->height();
-  int maxShiftY = frame->height();
-  int stepX = (maxShiftX - minShiftX) / 10;
-  int stepY = (maxShiftY - minShiftY) / 10;
+  double minScale = 1.12;
+  double maxScale = 1.2;
+  double step = 0.1;
+  double bestScale = 1.0;
   int bestX = 0;
   int bestY = 0;
-  bool finished = 0;
-  while(maxShiftX - minShiftX > 2 && maxShiftY - minShiftY > 2){
-    for(int shiftX = minShiftX; shiftX < maxShiftX; shiftX += stepX){
-      for(int shiftY = minShiftY; shiftY < maxShiftY; shiftY += stepY){
-	int I = 0;
-	int bx = -shiftX;
-	int ex = frame->width()-1;
-	if(bx < 0){
-	  bx = 0;
-	  ex -= shiftX;
-	}
-	//if(shiftX > 0) ex -= shiftX;
-	int by = -shiftY;
-	int ey = frame->height()-1;
-	if(by < 0){
-	  by = 0;
-	  ey -= shiftY;
-	}
-	//if(shiftY > 0) ey -= shiftY;
-	/*
-	for(int i = bx; i < ex; i++){
-	  for(int j = by; j < ey; j++){
-	    if(m->getValue(i,j) == 0) continue;
-	    I += frame->getPixel(i+shiftX,j+shiftY);
+  for(double scale = minScale; scale < maxScale; scale += step){
+    int minShiftX = -frame->width();
+    int maxShiftX = frame->width();
+    int minShiftY = -frame->height();
+    int maxShiftY = frame->height();
+    int stepX = (maxShiftX - minShiftX) / 10;
+    int stepY = (maxShiftY - minShiftY) / 10;
+    while(maxShiftX - minShiftX > 2 && maxShiftY - minShiftY > 2){
+      for(int shiftX = minShiftX; shiftX < maxShiftX; shiftX += stepX){
+	for(int shiftY = minShiftY; shiftY < maxShiftY; shiftY += stepY){
+	  int I = 0;
+	  int bx = -shiftX;
+	  int ex = frame->width()-1;
+	  if(bx < 0){
+	    bx = 0;
+	    ex -= shiftX;
+	  }
+	  int by = -shiftY;
+	  int ey = frame->height()-1;
+	  if(by < 0){
+	    by = 0;
+	    ey -= shiftY;
+	  }
+	  for(std::vector<LocalizedObject::Point>::iterator pit = cents.begin(); pit != cents.end(); pit++){
+	    int yprime = pit->y*scale;
+	    if(pit->x < bx || pit->x > ex || yprime < by || yprime > ey) continue;
+	    I += frame->getPixel(pit->x + shiftX, yprime + shiftY);
+	  }
+	  if(I > maxI){
+	    maxI = I;
+	    bestX = shiftX;
+	    bestY = shiftY;
+	    bestScale = scale;
 	  }
 	}
-	*/
-	for(std::vector<LocalizedObject::Point>::iterator pit = cents.begin(); pit != cents.end(); pit++){
-	  if(pit->x < bx || pit->x > ex || pit->y < by || pit->y > ey) continue;
-	  I += frame->getPixel(pit->x + shiftX, pit->y + shiftY);
-	}
-	if(I > maxI){
-	  maxI = I;
-	  bestX = shiftX;
-	  bestY = shiftY;
-	}
       }
+      minShiftX = bestX - stepX;
+      maxShiftX = bestX + stepX;
+      minShiftY = bestY - stepY;
+      maxShiftY = bestY + stepY;
+      stepX = (maxShiftX - minShiftX) / 10;
+      if(stepX < 1) stepX = 1;
+      stepY = (maxShiftY - minShiftY) / 10;
+      if(stepY < 1) stepY = 1;
     }
-    minShiftX = bestX - stepX;
-    maxShiftX = bestX + stepX;
-    minShiftY = bestY - stepY;
-    maxShiftY = bestY + stepY;
-    stepX = (maxShiftX - minShiftX) / 10;
-    if(stepX < 1) stepX = 1;
-    stepY = (maxShiftY - minShiftY) / 10;
-    if(stepY < 1) stepY = 1;
   }
-  rec->shiftStormData(bestX,bestY);
-  //delete m;
+  std::cout << bestScale << ", " << bestX << ", " << bestY << std::endl;
+  rec->shiftStormData(bestX,bestY,bestScale);
 }
 
 void NiaViewer::shareRegionsZ()
@@ -1142,7 +971,8 @@ void NiaViewer::convertRegions()
 {
   ImRecord* rec = currentRecord();
   if(!rec) return;
-  rec->convertRegionsToSegments(0);
+  rec->convertRegionsToSegments(m_view_w);
+  toggleSegmentMask();
 }
 
 Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbuf(ImFrame* frame)
@@ -1508,9 +1338,9 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
 	StormData::Blink b = sc->molecule(j);
 	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
-	if(x >= w) continue;
+	if(x < 0 || x >= w) continue;
 	int y = (int)(b.y / resolution);
-	if(y >= h) continue;
+	if(y < 0 || y >= h) continue;
 	int index = 3*w*y + 3*x;
 	unsigned colorIndex = i % m_ncolors;
 	buf[index] = m_colors[colorIndex].r;
@@ -1523,9 +1353,9 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm(int chan)
 	StormData::Blink b = sc->molecule(j);
 	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
-	if(x >= w) continue;
+	if(x < 0 || x >= w) continue;
 	int y = (int)(b.y / resolution);
-	if(y >= h) continue;
+	if(y < 0 || y >= h) continue;
 	int index = 3*w*y + 3*x;
 	buf[index] = 255;
 	buf[index+1] = 255;
@@ -1549,7 +1379,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
   for(int i = 0; i < w*h*3; i++){
       buf[i] = 0;
   }
-  if(m_red >= 0){
+  if(m_red >= 0 && m_red < 255){
     int nClusters = rec->nStormClusters(m_red);
     uint8_t rval = 255;
     uint8_t gval,bval;
@@ -1567,9 +1397,9 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
 	StormData::Blink b = sc->molecule(j);
 	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
-	if(x >= w) continue;
+	if(x < 0 || x >= w) continue;
 	int y = (int)(b.y / resolution);
-	if(y >= h) continue;
+	if(y < 0 || y >= h) continue;
 	int index = 3*w*y + 3*x;
 	buf[index] = buf[index] | rval;
 	buf[index+1] = buf[index+1] | gval;
@@ -1577,7 +1407,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       }
     }
   }
-  if(m_green >= 0){
+  if(m_green >= 0 && m_green < 255){
     int nClusters = rec->nStormClusters(m_green);
     uint8_t gval = 255;
     uint8_t rval,bval;
@@ -1595,9 +1425,9 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
 	StormData::Blink b = sc->molecule(j);
 	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
-	if(x >= w) continue;
+	if(x < 0 || x >= w) continue;
 	int y = (int)(b.y / resolution);
-	if(y >= h) continue;
+	if(y < 0 || y >= h) continue;
 	int index = 3*w*y + 3*x;
 	buf[index] = buf[index] | rval;
 	buf[index+1] = buf[index+1] | gval;
@@ -1605,7 +1435,7 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
       }
     }
   }
-  if(m_blue >= 0){
+  if(m_blue >= 0 && m_blue < 255){
     int nClusters = rec->nStormClusters(m_blue);
     uint8_t bval = 255;
     uint8_t gval,rval;
@@ -1623,9 +1453,9 @@ Glib::RefPtr<Gdk::Pixbuf> NiaViewer::createPixbufStorm()
 	StormData::Blink b = sc->molecule(j);
 	if(fabs(b.z - m_centerZ) > m_zwindow) continue;
 	int x = (int)(b.x / resolution);
-	if(x >= w) continue;
+	if(x < 0 || x >= w) continue;
 	int y = (int)(b.y / resolution);
-	if(y >= h) continue;
+	if(y < 0 || y >= h) continue;
 	int index = 3*w*y + 3*x;
 	buf[index] = buf[index] | rval;
 	buf[index+1] = buf[index+1] | gval;
@@ -1649,4 +1479,43 @@ void NiaViewer::setZWindow()
   entry.show();
   md.run();
   m_zwindow = boost::lexical_cast<double>(entry.get_text());
+}
+
+void NiaViewer::manualStormAlignment()
+{
+  ImRecord* rec = currentRecord();
+  if(!rec) return;
+  Gtk::Entry scale_entry,x_entry,y_entry;
+  Gtk::HBox hbox;
+  Gtk::VBox vbox1,vbox2,vbox3;
+  Gtk::Label scale_label("Y scale:");
+  Gtk::Label x_label("X shift:");
+  Gtk::Label y_label("Y shift:");
+  scale_entry.set_max_length(15);
+  scale_entry.set_width_chars(10);
+  scale_entry.set_text("1.0");
+  x_entry.set_max_length(15);
+  x_entry.set_width_chars(10);
+  x_entry.set_text("0");
+  y_entry.set_max_length(15);
+  y_entry.set_width_chars(10);
+  y_entry.set_text("0");
+  vbox1.pack_start(scale_label,Gtk::PACK_SHRINK);
+  vbox1.pack_start(scale_entry,Gtk::PACK_SHRINK);
+  vbox2.pack_start(x_label,Gtk::PACK_SHRINK);
+  vbox2.pack_start(x_entry,Gtk::PACK_SHRINK);
+  vbox3.pack_start(y_label,Gtk::PACK_SHRINK);
+  vbox3.pack_start(y_entry,Gtk::PACK_SHRINK);
+  hbox.pack_start(vbox1,Gtk::PACK_SHRINK);
+  hbox.pack_start(vbox2,Gtk::PACK_SHRINK);
+  hbox.pack_start(vbox3,Gtk::PACK_SHRINK);
+  Gtk::MessageDialog md("Enter manual STORM alignment");
+  md.get_message_area()->pack_start(hbox,Gtk::PACK_SHRINK);
+  md.show_all_children();
+  md.run();
+  double scale = boost::lexical_cast<double>(scale_entry.get_text());
+  int xshift = boost::lexical_cast<int>(x_entry.get_text());
+  int yshift = boost::lexical_cast<int>(y_entry.get_text());
+  std::cout << scale << ", " << xshift << ", " << yshift << std::endl;
+  rec->shiftStormData(xshift,yshift,scale);
 }

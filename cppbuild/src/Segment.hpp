@@ -24,6 +24,10 @@ protected:
   std::vector<Segment*> m_children;
 
 public:
+  double dendriteArea,dendriteLength;
+  std::vector<int> nSynapses,nStormSynapses,nPuncta;
+  std::vector<double> avgSynapseSize,avgPunctaSize,avgPeakIntensity,avgIntegratedIntensity;
+  std::vector< std::vector<double> > avgOverlap;
   Segment();
   Segment(Cluster* c);
   virtual ~Segment();
@@ -44,7 +48,8 @@ public:
   Segment* child(int i){ return m_children[i]; }
   std::vector<Segment*>::iterator firstChild(){ return m_children.begin(); }
   std::vector<Segment*>::iterator lastChild(){ return m_children.end(); }
-  Mask* getMask(int width, int height, bool outline=false){ return m_cluster->getMask(width,height,outline); }
+  Mask* getMask(int width, int height, bool outline=false, int num=-1);
+  std::vector<LocalizedObject::Point> getLabel(int regNum);
   int size(){ return m_cluster->size(); }
   
 };

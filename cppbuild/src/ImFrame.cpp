@@ -6,7 +6,6 @@ ImFrame::ImFrame()
   m_width = 2048;
   m_height = 2048;
   m_pixels.assign(2048,std::vector<int>(2048));
-  //for(int i = 0; i < 2048; i++) m_pixels[i] = new int[2048];
 }
 
 ImFrame::ImFrame(const int width, const int height)
@@ -14,13 +13,10 @@ ImFrame::ImFrame(const int width, const int height)
   m_width = width;
   m_height = height;
   m_pixels.assign(width,std::vector<int>(height));
-  //for(int i = 0; i < width; i++) m_pixels[i] = new int[height];
 }
 
 ImFrame::~ImFrame()
 {
-  //for(int i = 0; i < m_width; i++) delete[] m_pixels[i];
-  //delete[] m_pixels;
 }
 
 std::vector<ImFrame*> ImFrame::load(const char* fname)
@@ -618,41 +614,6 @@ ImFrame* ImFrame::derivative()
   ImFrame* retVal = new ImFrame(m_width,m_height);
   float dx = m_pixels[1][0] - m_pixels[0][0];
   float dy = m_pixels[0][1] - m_pixels[0][0];
-  /*
-  retVal->setPixel(0,0,(int)sqrt(dx*dx + dy*dy));
-  dx = m_pixels[1][m_height-1] - m_pixels[0][m_height-1];
-  dy = m_pixels[0][m_height-1] - m_pixels[0][m_height-2];
-  retVal->setPixel(0,m_height-1,(int)sqrt(dx*dx + dy*dy));
-  dx = m_pixels[m_width-1][0] - m_pixels[m_width-2][0];
-  dy = m_pixels[m_width-1][1] - m_pixels[m_width-1][0];
-  retVal->setPixel(m_width-1,0,(int)sqrt(dx*dx + dy*dy));
-  dx = m_pixels[m_width-1][m_height-1] - m_pixels[m_width-2][m_height-1];
-  dy = m_pixels[m_width-1][m_height-1] - m_pixels[m_width-1][m_height-2];
-  retVal->setPixel(m_width-1,m_height-1,(int)sqrt(dx*dx + dy*dy));
-  for(int i = 1; i < m_height-1; i++){
-    dx = m_pixels[1][i] - m_pixels[0][i];
-    dy = (m_pixels[0][i+1] - m_pixels[0][i-1])/2;
-    retVal->setPixel(0,i,(int)sqrt(dx*dx + dy*dy));
-    dx = m_pixels[m_width-1][i] - m_pixels[m_width-2][i];
-    dy = (m_pixels[m_width-1][i+1] - m_pixels[m_width-1][i-1])/2;
-    retVal->setPixel(m_width-1,i,(int)sqrt(dx*dx + dy*dy));
-  }
-  for(int i = 1; i < m_width-1; i++){
-    dy = m_pixels[i][1] - m_pixels[i][0];
-    dx = (m_pixels[i+1][0] - m_pixels[i-1][0])/2;
-    retVal->setPixel(i,0,(int)sqrt(dx*dx + dy*dy));
-    dy = m_pixels[i][m_height-1] - m_pixels[i][m_height-2];
-    dx = (m_pixels[i+1][m_height-1] - m_pixels[i-1][m_height-1])/2;
-    retVal->setPixel(i,m_height-1,(int)sqrt(dx*dx + dy*dy));
-  }
-  for(int i = 1; i < m_width-1; i++){
-    for(int j = 1; j < m_height-1; j++){
-      dx = (m_pixels[i+1][j] - m_pixels[i-1][j])/2;
-      dy = (m_pixels[i][j+1] - m_pixels[i][j-1])/2;
-      retVal->setPixel(i,j,(int)sqrt(dx*dx + dy*dy));
-    }
-  }
-  */
   for(int i = 1; i < m_width-1; i++){
     for(int j = 1; j < m_height-1; j++){
       dx = ((float)(m_pixels[i+1][j] - m_pixels[i-1][j]))/2.0;

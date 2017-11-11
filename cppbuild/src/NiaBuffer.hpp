@@ -4,6 +4,9 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
 
+/*--------------------------------------------------
+Buffer for synchronizing output from batch processes running in different threads
+--------------------------------------------------*/
 class NiaBuffer
 {
 

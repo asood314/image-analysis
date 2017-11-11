@@ -249,19 +249,6 @@ void BatchService::analyzeProjection(int seriesID, int p, int t)
     std::ostringstream filename;
     filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
     FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
-    /*
-    std::ofstream fout(filename.str().c_str(),std::ofstream::binary);
-    m_fileManager->saveInputFiles(fout,seriesID);
-    m_iat->write(fout);
-    char buf[1];
-    buf[0] = 1;
-    fout.write(buf,1);
-    for(std::vector<ImRecord*>::iterator rit = m_records.at(seriesID).begin(); rit != m_records.at(seriesID).end(); rit++){
-      (*rit)->write(fout);
-      delete *rit;
-    }
-    fout.close();
-    */
   }
   m_activeThreads--;
   if(m_progressWindow) m_progressWindow->taskCompleted();
@@ -302,19 +289,6 @@ void BatchService::analyzePlane(int seriesID, int p, int t, int z)
       std::ostringstream filename;
       filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
       FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
-      /*
-      std::ofstream fout(filename.str().c_str(),std::ofstream::binary);
-      m_fileManager->saveInputFiles(fout,seriesID);
-      m_iat->write(fout);
-      char buf[1];
-      buf[0] = 0;
-      fout.write(buf,1);
-      for(std::vector<ImRecord*>::iterator rit = m_records.at(seriesID).begin(); rit != m_records.at(seriesID).end(); rit++){
-	(*rit)->write(fout);
-	delete *rit;
-      }
-      fout.close();
-      */
     }
   }
   m_activeThreads--;

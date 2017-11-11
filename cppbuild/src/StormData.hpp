@@ -25,6 +25,7 @@ public:
   virtual ~StormData(){}
   void read(std::string infile);
   Blink molecule(int i){ return m_molecules[i]; }
+  void removeMolecule(int i){ m_molecules.erase(m_molecules.begin()+i); }
   int nMolecules(){ return m_molecules.size(); }
   void setClusterID(int i, int id){ m_molecules[i].clusterID = id; }
   bool isClustered(int i){ return (m_molecules[i].clusterID >= 0); }
