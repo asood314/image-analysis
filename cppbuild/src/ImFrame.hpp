@@ -35,7 +35,7 @@ public:
   void setPixel(int x, int y, int value){ m_pixels[x][y] = value; }
   int width(){ return m_width; }
   int height(){ return m_height; }
-  ImFrame* derivative();
+  ImFrame* derivative(double sigma = 1.0);
   ImFrame* derivativeDir();
   ImFrame* d2EigenvalueMax();
   ImFrame* d2EigenvectorMax();

@@ -3,6 +3,7 @@
 ImageAnalysisToolkit::ImageAnalysisToolkit()
 {
   m_master = 255;
+  m_postChan = 0;
   m_mode = OVERRIDE;
   m_punctaFindingIterations = 10;
   m_signalFindingIterations = 1;
@@ -11,8 +12,9 @@ ImageAnalysisToolkit::ImageAnalysisToolkit()
   m_windowSteps.push_back(1);
   m_backgroundThreshold.push_back(0.0);
   m_minPunctaRadius.push_back(0.1);
-  m_maxPunctaRadius.push_back(0.7);
+  //m_maxPunctaRadius.push_back(0.7);
   m_reclusterThreshold.push_back(3.0);
+  m_kernelWidth = 1.0;
   m_noiseRemovalThreshold.push_back(2.0);
   m_peakThreshold.push_back(3.0);
   m_floorThreshold.push_back(2.0);
@@ -32,7 +34,7 @@ void ImageAnalysisToolkit::makeSeparateConfigs(int nchan)
     m_windowSteps.push_back(m_windowSteps.at(0));
     m_backgroundThreshold.push_back(m_backgroundThreshold.at(0));
     m_minPunctaRadius.push_back(m_minPunctaRadius.at(0));
-    m_maxPunctaRadius.push_back(m_maxPunctaRadius.at(0));
+    //m_maxPunctaRadius.push_back(m_maxPunctaRadius.at(0));
     m_reclusterThreshold.push_back(m_reclusterThreshold.at(0));
     m_noiseRemovalThreshold.push_back(m_noiseRemovalThreshold.at(0));
     m_peakThreshold.push_back(m_peakThreshold.at(0));
@@ -48,7 +50,7 @@ void ImageAnalysisToolkit::makeSingleConfig()
     m_windowSteps.erase(m_windowSteps.begin()+1);
     m_backgroundThreshold.erase(m_backgroundThreshold.begin()+1);
     m_minPunctaRadius.erase(m_minPunctaRadius.begin()+1);
-    m_maxPunctaRadius.erase(m_maxPunctaRadius.begin()+1);
+    //m_maxPunctaRadius.erase(m_maxPunctaRadius.begin()+1);
     m_reclusterThreshold.erase(m_reclusterThreshold.begin()+1);
     m_noiseRemovalThreshold.erase(m_noiseRemovalThreshold.begin()+1);
     m_peakThreshold.erase(m_peakThreshold.begin()+1);
@@ -73,7 +75,8 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
   }
 
   findSynapses(rec);
-  
+
+  if(arg_zplane < 0) delete analysisStack;
 }
 
 void ImageAnalysisToolkit::filter(ImFrame* frame)
@@ -404,7 +407,7 @@ Mask* ImageAnalysisToolkit::applyThreshold(ImFrame* frame, ImRecord* rec, int ch
 int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 {
   Mask* outMask = findOutliers(frame);
-  ImFrame* dFrame = frame->derivative();
+  ImFrame* dFrame = frame->derivative(m_kernelWidth);
   Mask* m = new Mask(frame->width(),frame->height());
   double lowerLimit = frame->mode(outMask);
   double mode = lowerLimit;
@@ -604,7 +607,7 @@ int ImageAnalysisToolkit::findThreshold(ImFrame* frame)
 
 int ImageAnalysisToolkit::findThreshold(ImFrame* frame, Mask* sigMask, Mask* outMask, int prev)
 {
-  ImFrame* dFrame = frame->derivative();
+  ImFrame* dFrame = frame->derivative(m_kernelWidth);
   Mask* m = new Mask(frame->width(),frame->height());
   double lowerLimit = frame->mode(outMask);
   double mode = lowerLimit;
@@ -883,10 +886,12 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, int chan)
   Mask* prevMask = new Mask(frame->width(),frame->height());
   Mask* currMask = new Mask(frame->width(),frame->height());
   Mask* used = m->getCopy();
-  used->subtract(*(rec->getPunctaMask(chan,false)));
+  Mask* currentPunctaMask = rec->getPunctaMask(chan,false);
+  used->subtract(*currentPunctaMask);
+  delete currentPunctaMask;
   double radius = m_minPunctaRadius.at(configChan);
   double punctaAreaThreshold = 3.14159*radius*radius/(rec->resolutionXY()*rec->resolutionXY());
-  double punctaAreaSoftMax = 3.14159*m_maxPunctaRadius[configChan]*m_maxPunctaRadius[configChan];
+  //double punctaAreaSoftMax = 3.14159*m_maxPunctaRadius[configChan]*m_maxPunctaRadius[configChan];
   int retryThreshold = (int)(m_reclusterThreshold.at(configChan)*punctaAreaThreshold) + 1;
   double globalMode = frame->mode(0,frame->width(),0,frame->height());
 
@@ -1517,7 +1522,7 @@ void ImageAnalysisToolkit::resolveOverlaps(ImFrame* frame, ImRecord* rec, int ch
 void ImageAnalysisToolkit::watershedSegmentation(ImFrame* frame, ImRecord* rec, int chan)
 {
   Mask* m = new Mask(frame->width(),frame->height());
-  ImFrame* dFrame = frame->derivative();
+  ImFrame* dFrame = frame->derivative(m_kernelWidth);
   Mask* pMask = rec->getPunctaMask(chan);
   int dx[8] = {-1,-1,-1,0,0,1,1,1};
   int dy[8] = {-1,0,1,-1,1,-1,0,1};
@@ -1724,7 +1729,7 @@ void ImageAnalysisToolkit::watershedSegmentation(ImFrame* frame, ImRecord* rec, 
   }
   double globalMed = frame->median(0,frame->width(),0,frame->height(),used);
   double globalStd = frame->std(0,frame->width(),0,frame->height(),used);
-  std::cout << globalStd << std::endl;
+  //std::cout << globalStd << std::endl;
   for(int i = 1; i < frame->width()-1; i++){
     for(int j = 1; j < frame->height()-1; j++){
       int val = pMask->getValue(i,j);
@@ -1761,6 +1766,7 @@ void ImageAnalysisToolkit::watershedSegmentation(ImFrame* frame, ImRecord* rec, 
 
   rec->clearPuncta(chan);
   for(int i = 0; i < newClusters.size(); i++){
+    newClusters[i]->computeCenter();
     if(newClusters[i]->peak() > m_saturationThreshold){
       continue;
     }
@@ -1770,7 +1776,6 @@ void ImageAnalysisToolkit::watershedSegmentation(ImFrame* frame, ImRecord* rec, 
       newClusters[i] = NULL;
       continue;
     }
-    newClusters[i]->computeCenter();
     if(!newClusters[i]->contains(newClusters[i]->center())){
       delete newClusters[i];
       newClusters[i] = NULL;
@@ -1860,11 +1865,16 @@ void ImageAnalysisToolkit::watershedSegmentation(ImFrame* frame, ImRecord* rec, 
       continue;
     }
     if(iSize > 3) rec->addPunctum(chan,*it);
+    else{
+      delete *it;
+      *it = NULL;
+    }
   }
 
   delete used;
   delete dFrame;
   delete pMask;
+  delete subMask;
   delete borderMask;
   delete m;
 }
@@ -2030,13 +2040,15 @@ void ImageAnalysisToolkit::write(std::ofstream& fout)
     NiaUtils::writeDoubleToBuffer(buf,offset,m_localWindow[i]);
     NiaUtils::writeDoubleToBuffer(buf,offset+4,m_backgroundThreshold[i]);
     NiaUtils::writeDoubleToBuffer(buf,offset+8,m_minPunctaRadius[i]);
-    NiaUtils::writeDoubleToBuffer(buf,offset+12,m_maxPunctaRadius[i]);
-    NiaUtils::writeDoubleToBuffer(buf,offset+16,m_reclusterThreshold[i]);
-    NiaUtils::writeDoubleToBuffer(buf,offset+20,m_noiseRemovalThreshold[i]);
-    NiaUtils::writeDoubleToBuffer(buf,offset+24,m_peakThreshold[i]);
-    NiaUtils::writeDoubleToBuffer(buf,offset+28,m_floorThreshold[i]);
-    offset += 32;
+    //NiaUtils::writeDoubleToBuffer(buf,offset+12,m_maxPunctaRadius[i]);
+    NiaUtils::writeDoubleToBuffer(buf,offset+12,m_reclusterThreshold[i]);
+    NiaUtils::writeDoubleToBuffer(buf,offset+16,m_noiseRemovalThreshold[i]);
+    NiaUtils::writeDoubleToBuffer(buf,offset+20,m_peakThreshold[i]);
+    NiaUtils::writeDoubleToBuffer(buf,offset+24,m_floorThreshold[i]);
+    offset += 28;
   }
+  NiaUtils::writeDoubleToBuffer(buf,offset,m_kernelWidth);
+  offset += 4;
   fout.write(buf,offset);
   delete[] buf;
 }
@@ -2096,7 +2108,7 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
       offset += 4;
     }
   }
-  else{
+  else if(version < 6){
     fin.read(buf,nchan*32);
     uint32_t offset = 0;
     m_localWindow.clear();
@@ -2125,6 +2137,37 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
       m_floorThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
       offset += 4;
     }
+  }
+  else{
+    fin.read(buf,nchan*28+4);
+    uint32_t offset = 0;
+    m_localWindow.clear();
+    m_backgroundThreshold.clear();
+    m_minPunctaRadius.clear();
+    m_maxPunctaRadius.clear();
+    m_reclusterThreshold.clear();
+    m_noiseRemovalThreshold.clear();
+    m_peakThreshold.clear();
+    m_floorThreshold.clear();
+    for(int i = 0; i < nchan; i++){
+      m_localWindow.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_backgroundThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_minPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_maxPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_reclusterThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_noiseRemovalThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_peakThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+      m_floorThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      offset += 4;
+    }
+    m_kernelWidth = NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]);
   }
   delete[] buf;
 }

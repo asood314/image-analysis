@@ -14,14 +14,14 @@ protected:
   ImageAnalysisToolkit* m_toolkit;
   int m_nchannels;
   Gtk::CheckButton m_masterBox,m_splitConfigBox;
-  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry;
-  std::vector<Gtk::Entry*> m_lwEntry,m_windowStepsEntry,m_radiusEntry,m_maxRadiusEntry,m_reclusterEntry,m_nrtEntry,m_peakEntry,m_floorEntry,m_bkgEntry;
+  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry,m_kernelEntry;
+  std::vector<Gtk::Entry*> m_lwEntry,m_windowStepsEntry,m_radiusEntry,/*m_maxRadiusEntry,*/m_reclusterEntry,m_nrtEntry,m_peakEntry,m_floorEntry,m_bkgEntry;
   Gtk::ComboBox m_modeBox;
   Gtk::TreeModelColumn<ImageAnalysisToolkit::MasterMode> m_colMode;
   Gtk::TreeModelColumn<std::string> m_colString;
   Gtk::TreeModel::ColumnRecord m_columns;
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
-  Gtk::Label m_modeLabel,m_pfiLabel,m_saturationLabel,m_sfiLabel,m_lwLabel,m_windowStepsLabel,m_radiusLabel,m_maxRadiusLabel,m_reclusterLabel,m_nrtLabel,m_peakLabel,m_floorLabel,m_bkgLabel;
+  Gtk::Label m_modeLabel,m_pfiLabel,m_saturationLabel,m_sfiLabel,m_lwLabel,m_windowStepsLabel,m_radiusLabel,/*m_maxRadiusLabel,*/m_reclusterLabel,m_nrtLabel,m_peakLabel,m_floorLabel,m_bkgLabel,m_kernelLabel;
 
   std::vector<Gtk::CheckButton*> m_synapseChannels;
   std::vector<Gtk::Entry*> m_channelEntries;
@@ -62,11 +62,12 @@ public:
   int getBitDepth(){ return boost::lexical_cast<int>(m_saturationEntry.get_text()); }
   int getPunctaFindingIterations(){ return boost::lexical_cast<int>(m_pfiEntry.get_text()); }
   int getSignalFindingIterations(){ return boost::lexical_cast<int>(m_sfiEntry.get_text()); }
+  double getKernelWidth(){ return boost::lexical_cast<double>(m_kernelEntry.get_text()); }
   bool doSeparateConfigs(){ return m_splitConfigBox.get_active(); }
   double getLocalWindow(int index = 0){ return boost::lexical_cast<double>(m_lwEntry[index]->get_text()); }
   int getWindowSteps(int index = 0){ return boost::lexical_cast<int>(m_windowStepsEntry[index]->get_text()); }
   double getRadius(int index = 0){ return boost::lexical_cast<double>(m_radiusEntry[index]->get_text()); }
-  double getMaxRadius(int index = 0){ return boost::lexical_cast<double>(m_maxRadiusEntry[index]->get_text()); }
+  //double getMaxRadius(int index = 0){ return boost::lexical_cast<double>(m_maxRadiusEntry[index]->get_text()); }
   double getRecluster(int index = 0){ return boost::lexical_cast<double>(m_reclusterEntry[index]->get_text()); }
   double getNoiseRemovalThreshold(int index = 0){ return boost::lexical_cast<double>(m_nrtEntry[index]->get_text()); }
   double getPeak(int index = 0){ return boost::lexical_cast<double>(m_peakEntry[index]->get_text()); }

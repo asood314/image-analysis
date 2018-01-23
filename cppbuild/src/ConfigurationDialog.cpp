@@ -6,11 +6,12 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_pfiLabel("Set max puncta finding iterations"),
   m_sfiLabel("Set max signal finding iterations"),
   m_saturationLabel("Set bit depth"),
+  m_kernelLabel("Set smoothing kernel width"),
   m_splitConfigBox("Use separate channel configurations"),
   m_lwLabel("Set local window size (um^2)"),
   m_windowStepsLabel("Set window expansion iterations"),
   m_radiusLabel("Set min puncta radius (um)"),
-  m_maxRadiusLabel("Set (soft) max puncta radius (um)"),
+  //m_maxRadiusLabel("Set (soft) max puncta radius (um)"),
   m_reclusterLabel("Set recluster threshold (N * min radius)"),
   m_nrtLabel("Set noise removal threshold (N * min radius)"),
   m_peakLabel("Set peak intensity threshold (N std above local median)"),
@@ -88,6 +89,13 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_hbox17.pack_start(m_sfiEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox17, Gtk::PACK_SHRINK);
 
+  m_kernelEntry.set_max_length(5);
+  m_kernelEntry.set_width_chars(5);
+  m_kernelEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->kernelWidth()));
+  m_hbox19.pack_start(m_kernelLabel, Gtk::PACK_SHRINK);
+  m_hbox19.pack_start(m_kernelEntry, Gtk::PACK_SHRINK);
+  m_analysisBox.pack_start(m_hbox19, Gtk::PACK_SHRINK);
+
   int nconfig = m_toolkit->nConfigs();
   if(nconfig > 1) m_splitConfigBox.set_active(true);
   else m_splitConfigBox.set_active(false);
@@ -106,6 +114,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   }
   m_analysisBox.pack_start(m_hbox4, Gtk::PACK_SHRINK);
 
+  /*
   m_hbox19.pack_start(m_maxRadiusLabel, Gtk::PACK_SHRINK);
   m_maxRadiusEntry.assign(nchan,NULL);
   for(int i = 0; i < nchan; i++){
@@ -117,6 +126,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
     m_hbox19.pack_start(*(m_maxRadiusEntry[i]), Gtk::PACK_SHRINK, 10);
   }
   m_analysisBox.pack_start(m_hbox19, Gtk::PACK_SHRINK);
+  */
 
   m_hbox5.pack_start(m_nrtLabel, Gtk::PACK_SHRINK);
   m_nrtEntry.assign(nchan,NULL);
@@ -315,7 +325,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   if(!m_splitConfigBox.get_active()){
     for(int i = 1; i < nchan; i++){
       m_radiusEntry[i]->hide();
-      m_maxRadiusEntry[i]->hide();
+      //m_maxRadiusEntry[i]->hide();
       m_nrtEntry[i]->hide();
       m_reclusterEntry[i]->hide();
       m_lwEntry[i]->hide();
@@ -341,9 +351,11 @@ ConfigurationDialog::~ConfigurationDialog()
   for(std::vector<Gtk::Entry*>::iterator it = m_radiusEntry.begin(); it != m_radiusEntry.end(); it++){
     if(*it) delete *it;
   }
+  /*
   for(std::vector<Gtk::Entry*>::iterator it = m_maxRadiusEntry.begin(); it != m_maxRadiusEntry.end(); it++){
     if(*it) delete *it;
   }
+  */
   for(std::vector<Gtk::Entry*>::iterator it = m_nrtEntry.begin(); it != m_nrtEntry.end(); it++){
     if(*it) delete *it;
   }
@@ -372,7 +384,7 @@ void ConfigurationDialog::on_split_button_clicked()
   if(m_splitConfigBox.get_active()){
     for(int i = 1; i < m_nchannels; i++){
       m_radiusEntry[i]->show();
-      m_maxRadiusEntry[i]->show();
+      //m_maxRadiusEntry[i]->show();
       m_nrtEntry[i]->show();
       m_reclusterEntry[i]->show();
       m_lwEntry[i]->show();
@@ -385,7 +397,7 @@ void ConfigurationDialog::on_split_button_clicked()
   else{
     for(int i = 1; i < m_nchannels; i++){
       m_radiusEntry[i]->hide();
-      m_maxRadiusEntry[i]->hide();
+      //m_maxRadiusEntry[i]->hide();
       m_nrtEntry[i]->hide();
       m_reclusterEntry[i]->hide();
       m_lwEntry[i]->hide();

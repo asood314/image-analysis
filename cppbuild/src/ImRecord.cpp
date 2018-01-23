@@ -29,9 +29,20 @@ ImRecord::~ImRecord()
 
 void ImRecord::removePunctum(int chan, int index)
 {
-  std::vector<Cluster*> clusters = m_puncta.at(chan);
+  std::vector<Cluster*> clusters = m_puncta[chan];
   delete clusters.at(index);
   m_puncta[chan].erase(m_puncta[chan].begin()+index);
+}
+
+void ImRecord::removePunctum(int chan, Cluster* c)
+{
+  for(std::vector<Cluster*>::iterator clit = m_puncta[chan].begin(); clit != m_puncta[chan].end(); clit++){
+    if(c == *clit){
+      delete *clit;
+      m_puncta[chan].erase(clit);
+      return;
+    }
+  }
 }
 
 void ImRecord::clearPuncta(int chan)
@@ -119,6 +130,15 @@ Cluster* ImRecord::selectPunctum(int chan, LocalizedObject::Point pt)
     }
   }
   return closest;
+}
+
+Cluster* ImRecord::selectPunctumStrict(int chan, LocalizedObject::Point pt)
+{
+  std::vector<Cluster*> clusters = m_puncta.at(chan);
+  for(std::vector<Cluster*>::iterator jt = clusters.begin(); jt != clusters.end(); jt++){
+    if((*jt)->contains(pt)) return *jt;
+  }
+  return NULL;
 }
 
 Synapse* ImRecord::selectSynapse(LocalizedObject::Point pt)
@@ -1468,6 +1488,7 @@ void ImRecord::printSynapseDensityTable(int postChan, std::string filename)
 void ImRecord::write(std::ofstream& fout, int version)
 {
   char* buf = new char[400000];
+  for(int i = 0; i < 400000; i++) buf[i] = 0;
   buf[0] = (char)m_nchannels;
   NiaUtils::writeShortToBuffer(buf,1,m_imWidth);
   NiaUtils::writeShortToBuffer(buf,3,m_imHeight);

@@ -2,7 +2,7 @@
 
 ImStack::ImStack()
 {
-  m_frames = NULL;
+  //m_frames = NULL;
   m_nwaves = -1;
   m_nz = -1;
 }
@@ -11,15 +11,21 @@ ImStack::ImStack(int nw, int nz)
 {
   m_nwaves = nw;
   m_nz = nz;
-  m_frames = new ImFrame**[m_nwaves];
-  for(int i = 0; i < m_nwaves; i++) m_frames[i] = new ImFrame*[nz];
+  //m_frames = new ImFrame**[m_nwaves];
+  //for(int i = 0; i < m_nwaves; i++) m_frames[i] = new ImFrame*[nz];
+  for(int i = 0; i < nw; i++) m_frames.push_back(std::vector<ImFrame*>(nz,NULL));
 }
 
 ImStack::~ImStack()
 {
-  if(m_frames){
-    for(int i = 0; i < m_nwaves; i++) delete[] m_frames[i];
-    delete[] m_frames;
+  //if(m_frames){
+  //for(int i = 0; i < m_nwaves; i++) delete[] m_frames[i];
+  //delete[] m_frames;
+  //}
+  for(std::vector< std::vector<ImFrame*> >::iterator wit = m_frames.begin(); wit != m_frames.end(); wit++){
+    for(std::vector<ImFrame*>::iterator zit = wit->begin(); zit != wit->end(); zit++){
+      if(*zit) delete *zit;
+    }
   }
 }
 

@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 
 void NiaCore::init()
 {
-  set_title("Neuron Image Analysis v0.5");
+  set_title("Neuron Image Analysis v0.6");
   set_default_size(1200,1000);
   add(m_vbox);
 
@@ -85,7 +85,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("zoomout","Zoom Out"),Gtk::AccelKey(GDK_KEY_minus,Gdk::CONTROL_MASK),sigc::mem_fun(m_viewer, &NiaViewer::zoomOut));
   m_refActionGroup->add(Gtk::Action::create("unzoom","Unzoom"),Gtk::AccelKey("<control>U"),sigc::mem_fun(m_viewer, &NiaViewer::unzoom));
   m_refActionGroup->add(Gtk::Action::create("maskMenu","Masks"));
-  m_refActionGroup->add(Gtk::Action::create("sigMask","Signal Mask"),Gtk::AccelKey("<control>M"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSignalMask));
+  m_refActionGroup->add(Gtk::Action::create("sigMask","Signal Mask"),Gtk::AccelKey("<control>F"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSignalMask));
   m_refActionGroup->add(Gtk::Action::create("puncMask","Puncta Mask"),Gtk::AccelKey("<control>P"),sigc::mem_fun(m_viewer, &NiaViewer::togglePunctaMask));
   m_refActionGroup->add(Gtk::Action::create("synMask","Synapse Mask"),Gtk::AccelKey("<control>S"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSynapseMask));
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
@@ -126,6 +126,10 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("findpuncMenu","Find Puncta"));
   m_refActionGroup->add(Gtk::Action::create("findpuncOne","Current channel"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked),false));
   m_refActionGroup->add(Gtk::Action::create("findpuncAll","All channels"),sigc::bind<bool>(sigc::mem_fun(*this, &NiaCore::on_find_puncta_clicked),true));
+  m_refActionGroup->add(Gtk::Action::create("manualMenu","Manual Tools"));
+  m_refActionGroup->add(Gtk::Action::create("manualAdd","Add Puncta"),Gtk::AccelKey("<control>M"),sigc::bind<NiaViewer::AnalysisMode>(sigc::mem_fun(m_viewer, &NiaViewer::setAnalysisMode),NiaViewer::MANUAL_ADD));
+  m_refActionGroup->add(Gtk::Action::create("manualEdit","Edit Puncta"),Gtk::AccelKey("<control>E"),sigc::bind<NiaViewer::AnalysisMode>(sigc::mem_fun(m_viewer, &NiaViewer::setAnalysisMode),NiaViewer::MANUAL_EDIT));
+  m_refActionGroup->add(Gtk::Action::create("endManual","End Manual Editing"),Gtk::AccelKey("<control>X"),sigc::bind<NiaViewer::AnalysisMode>(sigc::mem_fun(m_viewer, &NiaViewer::setAnalysisMode),NiaViewer::AUTOMATIC));
   m_refActionGroup->add(Gtk::Action::create("findsyn","Find Synapses"),sigc::mem_fun(*this, &NiaCore::on_find_synapses_clicked));
   m_refActionGroup->add(Gtk::Action::create("fullanal","Full Analysis"),sigc::mem_fun(*this, &NiaCore::on_full_analysis_clicked));
   m_refActionGroup->add(Gtk::Action::create("density","Print Synapse Density Table"),sigc::mem_fun(*this, &NiaCore::on_print_density));
@@ -253,6 +257,11 @@ void NiaCore::init()
     "   <menu action='findpuncMenu'>"
     "    <menuitem action='findpuncOne'/>"
     "    <menuitem action='findpuncAll'/>"
+    "    <menu action='manualMenu'>"
+    "     <menuitem action='manualAdd'/>"
+    "     <menuitem action='manualEdit'/>"
+    "     <menuitem action='endManual'/>"
+    "    </menu>"
     "   </menu>"
     "   <menuitem action='findsyn'/>"
     "   <menuitem action='fullanal'/>"
@@ -439,6 +448,7 @@ void NiaCore::on_start_batch_jobs()
   biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   biat->setMaxSignalFindingIterations(cd.getSignalFindingIterations());
+  biat->setKernelWidth(cd.getKernelWidth());
   if(cd.doSeparateConfigs()){
     if(biat->nConfigs() < cd.nchannels()){
       biat->makeSingleConfig();
@@ -448,7 +458,7 @@ void NiaCore::on_start_batch_jobs()
       biat->setLocalWindow(i,cd.getLocalWindow(i));
       biat->setWindowSteps(i,cd.getWindowSteps(i));
       biat->setMinPunctaRadius(i,cd.getRadius(i));
-      biat->setMaxPunctaRadius(i,cd.getMaxRadius(i));
+      //biat->setMaxPunctaRadius(i,cd.getMaxRadius(i));
       biat->setReclusterThreshold(i,cd.getRecluster(i));
       biat->setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       biat->setPeakThreshold(i,cd.getPeak(i));
@@ -460,7 +470,7 @@ void NiaCore::on_start_batch_jobs()
     biat->setLocalWindow(cd.getLocalWindow());
     biat->setWindowSteps(cd.getWindowSteps());
     biat->setMinPunctaRadius(cd.getRadius());
-    biat->setMaxPunctaRadius(cd.getMaxRadius());
+    //biat->setMaxPunctaRadius(cd.getMaxRadius());
     biat->setReclusterThreshold(cd.getRecluster());
     biat->setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     biat->setPeakThreshold(cd.getPeak());
@@ -505,6 +515,7 @@ void NiaCore::on_configure_clicked()
   m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   m_iat.setMaxSignalFindingIterations(cd.getSignalFindingIterations());
+  m_iat.setKernelWidth(cd.getKernelWidth());
   if(cd.doSeparateConfigs()){
     if(m_iat.nConfigs() < nchan){
       m_iat.makeSingleConfig();
@@ -514,7 +525,7 @@ void NiaCore::on_configure_clicked()
       m_iat.setLocalWindow(i,cd.getLocalWindow(i));
       m_iat.setWindowSteps(i,cd.getWindowSteps(i));
       m_iat.setMinPunctaRadius(i,cd.getRadius(i));
-      m_iat.setMaxPunctaRadius(i,cd.getMaxRadius(i));
+      //m_iat.setMaxPunctaRadius(i,cd.getMaxRadius(i));
       m_iat.setReclusterThreshold(i,cd.getRecluster(i));
       m_iat.setNoiseRemovalThreshold(i,cd.getNoiseRemovalThreshold(i));
       m_iat.setPeakThreshold(i,cd.getPeak(i));
@@ -526,7 +537,7 @@ void NiaCore::on_configure_clicked()
     m_iat.setLocalWindow(cd.getLocalWindow());
     m_iat.setWindowSteps(cd.getWindowSteps());
     m_iat.setMinPunctaRadius(cd.getRadius());
-    m_iat.setMaxPunctaRadius(cd.getMaxRadius());
+    //m_iat.setMaxPunctaRadius(cd.getMaxRadius());
     m_iat.setReclusterThreshold(cd.getRecluster());
     m_iat.setNoiseRemovalThreshold(cd.getNoiseRemovalThreshold());
     m_iat.setPeakThreshold(cd.getPeak());
@@ -535,6 +546,7 @@ void NiaCore::on_configure_clicked()
   }
   m_iat.setChannelNames(cd.getChannelNames());
   m_iat.setPostChan(cd.getPostChan());
+  m_viewer.setToolkit(&m_iat);
 }
 
 void NiaCore::on_find_outliers_clicked()

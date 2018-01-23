@@ -6,7 +6,7 @@ NiaViewer::NiaViewer() :
   m_red(255), m_green(255), m_blue(255),
   m_grayMin(0), m_grayMax(65535),
   m_redMin(0), m_redMax(65535), m_greenMin(0), m_greenMax(65535), m_blueMin(0), m_blueMax(65535),
-  m_mode(GRAY), m_imageType(CONFOCAL),
+  m_mode(GRAY), m_imageType(CONFOCAL), m_analMode(AUTOMATIC),
   m_width(0),m_height(0),m_zoom(1.0),
   m_grayMinLabel("Gray Min."),m_grayMaxLabel("Gray Max."),
   m_redMinLabel("Red Min."),m_redMaxLabel("Red Max."),m_greenMinLabel("Green Min."),m_greenMaxLabel("Green Max."),m_blueMinLabel("Blue Min."),m_blueMaxLabel("Blue Max."),
@@ -16,6 +16,8 @@ NiaViewer::NiaViewer() :
   m_prevButton(0)
 {
   m_data = NULL;
+  m_toolkit = NULL;
+  m_currentPunctum = NULL;
   m_colors[0].r = 0xff;
   m_colors[0].g = 0x00;
   m_colors[0].b = 0x00;
@@ -132,7 +134,161 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
   thisClick.x = (int)(evt->x / m_zoom);
   thisClick.y = (int)(evt->y / m_zoom);
   if(evt->type == GDK_BUTTON_PRESS){
-    if(m_pixelSelector){
+    if(m_analMode == MANUAL_ADD){
+      ImRecord* rec = currentRecord();
+      if(!rec){
+	std::cout << "Couldn't find image record" << std::endl;
+	return false;
+      }
+      clearMasks();
+      Mask* pMask = rec->getPunctaMask(m_view_w);
+      toggleMask(pMask);
+      if(evt->button == 1){
+	ImFrame* frame = currentFrame();
+	ImFrame* dFrame = frame->derivative(m_toolkit->kernelWidth());
+	std::vector<LocalizedObject::Point> seeds;
+	std::vector<int> borderX,borderY;
+	borderX.push_back(thisClick.x);
+	borderY.push_back(thisClick.y);
+	while(borderX.size() > 0){
+	  bool isMinimum = true;
+	  int bx = borderX[0]-1;
+	  if(bx < 0) bx = 0;
+	  int by = borderY[0]-1;
+	  if(by < 0) by = 0;
+	  int ex = borderX[0]+2;
+	  if(ex > frame->width()) ex = frame->width();
+	  int ey = borderY[0]+2;
+	  if(ey > frame->height()) ey = frame->height();
+	  int base = dFrame->getPixel(borderX[0],borderY[0]);
+	  for(int x = bx; x < ex; x++){
+	    for(int y = by; y < ey; y++){
+	      if(dFrame->getPixel(x,y) < base){
+		borderX.push_back(x);
+		borderY.push_back(y);
+		isMinimum = false;
+	      }
+	    }
+	  }
+	  if(isMinimum){
+	    seeds.push_back(LocalizedObject::Point(borderX[0],borderY[0]));
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	}
+	borderX.push_back(thisClick.x);
+	borderY.push_back(thisClick.y);
+	while(borderX.size() > 0){
+	  bool isMaximum = true;
+	  int bx = borderX[0]-1;
+	  if(bx < 0) bx = 0;
+	  int by = borderY[0]-1;
+	  if(by < 0) by = 0;
+	  int ex = borderX[0]+2;
+	  if(ex > frame->width()) ex = frame->width();
+	  int ey = borderY[0]+2;
+	  if(ey > frame->height()) ey = frame->height();
+	  int base = frame->getPixel(borderX[0],borderY[0]);
+	  for(int x = bx; x < ex; x++){
+	    for(int y = by; y < ey; y++){
+	      if(frame->getPixel(x,y) > base){
+		borderX.push_back(x);
+		borderY.push_back(y);
+		isMaximum = false;
+	      }
+	    }
+	  }
+	  if(isMaximum){
+	    seeds.push_back(LocalizedObject::Point(borderX[0],borderY[0]));
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	}
+	for(std::vector<LocalizedObject::Point>::iterator pit = seeds.begin(); pit != seeds.end(); pit++){
+	  if(pMask->getValue(pit->x,pit->y) > 0) continue;
+	  std::vector<int> borderX;
+	  std::vector<int> borderY;
+	  borderX.push_back(pit->x);
+	  borderY.push_back(pit->y);
+	  Cluster* c = new Cluster();
+	  c->addPoint(pit->x,pit->y,frame->getPixel(pit->x,pit->y));
+	  pMask->setValue(pit->x,pit->y,1);
+	  while(borderX.size() > 0){
+	    int bx = borderX[0]-1;
+	    if(bx < 0) bx = 0;
+	    int by = borderY[0]-1;
+	    if(by < 0) by = 0;
+	    int ex = borderX[0]+2;
+	    if(ex > frame->width()) ex = frame->width();
+	    int ey = borderY[0]+2;
+	    if(ey > frame->height()) ey = frame->height();
+	    int base = dFrame->getPixel(borderX[0],borderY[0]);
+	    for(int x = bx; x < ex; x++){
+	      for(int y = by; y < ey; y++){
+		if(pMask->getValue(x,y) < 1 && dFrame->getPixel(x,y) > base){
+		  c->addPoint(x,y,frame->getPixel(x,y));
+		  pMask->setValue(x,y,1);
+		  borderX.push_back(x);
+		  borderY.push_back(y);
+		}
+	      }
+	    }
+	    borderX.erase(borderX.begin());
+	    borderY.erase(borderY.begin());
+	  }
+	  rec->addPunctum(m_view_w,c);
+	  updateImage();
+	  delete dFrame;
+	  return true;
+	}
+	return false;
+      }
+      else if(evt->button == 3){
+	Cluster* c = rec->selectPunctumStrict(m_view_w,thisClick);
+	if(c){
+	  for(std::vector<LocalizedObject::Point>::iterator it = c->begin(); it != c->end(); it++) pMask->setValue(it->x,it->y,0);
+	  rec->removePunctum(m_view_w,c);
+	}
+	else return false;
+	updateImage();
+	return true;
+      }
+      return false;
+    }
+    else if(m_analMode == MANUAL_EDIT){
+      ImRecord* rec = currentRecord();
+      if(!rec){
+	std::cout << "Couldn't find image record" << std::endl;
+	return false;
+      }
+      if(evt->button == 1){
+	Cluster* c = rec->selectPunctumStrict(m_view_w,thisClick);
+	if(c){
+	  if(m_currentPunctum != c){
+	    if(m_currentPunctum) toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	    m_currentPunctum = c;
+	    toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	  }
+	  return true;
+	}
+	if(!m_currentPunctum) return false;
+	ImFrame* frame = currentFrame();
+	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	m_currentPunctum->addPoint(thisClick,frame->getPixel(thisClick.x,thisClick.y));
+	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	return true;
+      }
+      else if(evt->button == 3){
+	if(!m_currentPunctum) return false;
+	ImFrame* frame = currentFrame();
+	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	m_currentPunctum->removePoint(thisClick,frame->getPixel(thisClick.x,thisClick.y));
+	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	return true;
+      }
+      return false;
+    }
+    else if(m_pixelSelector){
       std::cout << "Location (" << thisClick.x << "," << thisClick.y << ") has intensity " << currentFrame()->getPixel(thisClick.x,thisClick.y) << std::endl;
       return true;
     }
@@ -735,6 +891,7 @@ void NiaViewer::toggleMask(Mask* m)
   if(!m) return;
   for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
     if(m->equals(**it)){
+      if(m != *it) delete *it;
       m_masks.erase(it);
       delete m;
       updateImage();

@@ -32,6 +32,7 @@ protected:
   MasterMode m_mode;
   int m_punctaFindingIterations,m_signalFindingIterations;
   int m_saturationThreshold;
+  double m_kernelWidth;
   std::vector<std::string> m_channelNames;
   std::vector<double> m_localWindow,m_backgroundThreshold;
   std::vector<int> m_windowSteps;
@@ -70,6 +71,7 @@ public:
   void setMaxPunctaFindingIterations(int it){ m_punctaFindingIterations = it; }
   void setMaxSignalFindingIterations(int it){ m_signalFindingIterations = it; }
   void setSaturationThreshold(int s){ m_saturationThreshold = s; }
+  void setKernelWidth(double sigma){ m_kernelWidth = sigma; }
   void setChannelNames(std::vector<std::string> names){ m_channelNames = names; }
   void setLocalWindow(double lw){ m_localWindow[0] = lw; }
   void setWindowSteps(int nsteps){ m_windowSteps[0] = nsteps; }
@@ -96,6 +98,7 @@ public:
   int maxPunctaFindingIterations(){ return m_punctaFindingIterations; }
   int maxSignalFindingIterations(){ return m_signalFindingIterations; }
   int saturationThreshold(){ return m_saturationThreshold; }
+  double kernelWidth(){ return m_kernelWidth; }
   std::string getChannelName(int chan){ return m_channelNames[chan]; }
   std::vector<std::string> getChannelNames(){ return m_channelNames; }
   double localWindow(int chan = 0){ return m_localWindow[chan]; }

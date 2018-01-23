@@ -7,7 +7,7 @@ class ImStack
 {
 
 protected:
-  ImFrame*** m_frames;
+  std::vector< std::vector<ImFrame*> > m_frames;
   int m_nwaves;
   int m_nz;
 

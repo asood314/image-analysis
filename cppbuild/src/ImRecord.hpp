@@ -67,6 +67,7 @@ public:
   void clearSegments();
   void addPunctum(int chan, Cluster* c){ m_puncta.at(chan).push_back(c); }
   void removePunctum(int chan, int index);
+  void removePunctum(int chan, Cluster* c);
   void clearPuncta(int chan);
   Cluster* getPunctum(int chan, int index){ return m_puncta.at(chan).at(index); }
   int nPuncta(int chan){ return m_puncta.at(chan).size(); }
@@ -80,6 +81,7 @@ public:
   Segment* selectSegment(LocalizedObject::Point pt);
   Cluster* selectPunctum(LocalizedObject::Point pt);
   Cluster* selectPunctum(int chan, LocalizedObject::Point pt);
+  Cluster* selectPunctumStrict(int chan, LocalizedObject::Point pt);
   Synapse* selectSynapse(LocalizedObject::Point pt);
   Synapse* selectSynapseFromCollection(int index, LocalizedObject::Point pt);
   Mask* getContourMap(int chan);

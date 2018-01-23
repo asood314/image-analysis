@@ -148,7 +148,9 @@ bool Cluster::onBorder(LocalizedObject::Point pt, Cluster* c)
 {
   Cluster* bord = findBorderWith(c);
   if(bord->size() == 0) return false;
-  return bord->contains(pt);
+  bool retVal = bord->contains(pt);
+  delete bord;
+  return retVal;
 }
 
 bool Cluster::onBorder(LocalizedObject::Point pt)

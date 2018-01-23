@@ -609,18 +609,64 @@ void ImFrame::getMedianStd(int x1, int x2, int y1, int y2, Mask* m, int nVals, d
   //delete[] values;
 }
 
-ImFrame* ImFrame::derivative()
+ImFrame* ImFrame::derivative(double sigma)
 {
+  int smoothingDist = (int)(6*sigma);
   ImFrame* retVal = new ImFrame(m_width,m_height);
-  float dx = m_pixels[1][0] - m_pixels[0][0];
-  float dy = m_pixels[0][1] - m_pixels[0][0];
-  for(int i = 1; i < m_width-1; i++){
-    for(int j = 1; j < m_height-1; j++){
-      dx = ((float)(m_pixels[i+1][j] - m_pixels[i-1][j]))/2.0;
-      dy = ((float)(m_pixels[i][j+1] - m_pixels[i][j-1]))/2.0;
+  std::vector< std::vector<double> >* smoothedFrame = new std::vector< std::vector<double> >(m_width,std::vector<double>(m_height));
+  if(smoothingDist > 0){
+    std::vector< std::vector<double> > kernel(2*smoothingDist+1,std::vector<double>(2*smoothingDist+1));
+    for(int i = 0; i < smoothingDist; i++){
+      for(int j = 0; j < smoothingDist; j++){
+	double dist = sqrt(i*i + j*j);
+	double val = exp(-dist*dist/(2*sigma*sigma)) / (sigma*sqrt(6.2831853072));
+	kernel[smoothingDist-i][smoothingDist-j] = val;
+	kernel[smoothingDist+i][smoothingDist-j] = val;
+	kernel[smoothingDist-i][smoothingDist+j] = val;
+	kernel[smoothingDist+i][smoothingDist+j] = val;
+      }
+    }
+    for(int i = 0; i < m_width; i++){
+      for(int j = 0; j < m_height; j++){
+	int bi = i - smoothingDist;
+	if(bi < 0) bi = 0;
+	int bj = j - smoothingDist;
+	if(bj < 0) bj = 0;
+	int ei = i + smoothingDist;
+	if(ei > m_width) ei = m_width;
+	int ej = j + smoothingDist;
+	if(ej > m_height) ej = m_height;
+	smoothedFrame->at(i)[j] = 0.0;
+	for(int di = bi; di < ei; di++){
+	  for(int dj = bj; dj < ej; dj++){
+	    smoothedFrame->at(i)[j] += kernel[di-i+smoothingDist][dj-j+smoothingDist]*m_pixels[di][dj];
+	  }
+	}
+      }
+    }
+  }
+  else{
+    for(int i = 0; i < m_width; i++){
+      for(int j = 0; j < m_height; j++){
+	smoothedFrame->at(i)[j] = m_pixels[i][j];
+      }
+    }
+  }
+  
+  double dx;
+  double dy;
+  for(int i = 0; i < m_width; i++){
+    for(int j = 0; j < m_height; j++){
+      if(i == 0) dx = smoothedFrame->at(i+1)[j] - smoothedFrame->at(i)[j];
+      else if(i == m_width-1) dx = smoothedFrame->at(i)[j] - smoothedFrame->at(i-1)[j];
+      else dx = (smoothedFrame->at(i+1)[j] - smoothedFrame->at(i-1)[j])/2.0;
+      if(j == 0) dy = smoothedFrame->at(i)[j+1] - smoothedFrame->at(i)[j];
+      else if(j == m_height-1) dy = smoothedFrame->at(i)[j] - smoothedFrame->at(i)[j-1];
+      else dy = (smoothedFrame->at(i)[j+1] - smoothedFrame->at(i)[j-1])/2.0;
       retVal->setPixel(i,j,(int)sqrt(dx*dx + dy*dy));
     }
   }
+  delete smoothedFrame;
   return retVal;
 }
 

@@ -6,6 +6,7 @@
 #include "ImSeries.hpp"
 #include "FileManager.hpp"
 #include "ImRecord.hpp"
+#include "ImageAnalysisToolkit.hpp"
 
 class NiaViewer : public Gtk::VBox
 {
@@ -13,6 +14,7 @@ class NiaViewer : public Gtk::VBox
 public:
   enum ImageMode{ GRAY=0,RGB };
   enum ImageType{ CONFOCAL=0,STORM };
+  enum AnalysisMode{ AUTOMATIC=0,MANUAL_ADD,MANUAL_EDIT};
 
   typedef struct mask_color{
     uint8_t r,g,b;
@@ -21,6 +23,8 @@ public:
 protected:
   ImSeries* m_data;
   std::vector<ImRecord*> m_records;
+  ImageAnalysisToolkit* m_toolkit;
+  Cluster* m_currentPunctum;
   int m_width,m_height;
   double m_zoom,m_centerZ,m_zwindow;
   int m_view_w,m_view_z,m_view_p,m_view_t;
@@ -28,6 +32,7 @@ protected:
   int m_grayMin,m_grayMax,m_redMin,m_redMax,m_greenMin,m_greenMax,m_blueMin,m_blueMax;
   ImageMode m_mode;
   ImageType m_imageType;
+  AnalysisMode m_analMode;
   Gtk::EventBox m_eventBox;
   Gtk::Label m_grayMinLabel,m_grayMaxLabel,m_redMinLabel,m_redMaxLabel,m_greenMinLabel,m_greenMaxLabel,m_blueMinLabel,m_blueMaxLabel;
   Gtk::Entry m_grayMinEntry,m_grayMaxEntry,m_redMinEntry,m_redMaxEntry,m_greenMinEntry,m_greenMaxEntry,m_blueMinEntry,m_blueMaxEntry;
@@ -62,6 +67,7 @@ public:
   void autoscale();
   void setMode(ImageMode mode);
   void toggleImageType();
+  void setAnalysisMode(AnalysisMode mode){ m_analMode = mode; }
   void setWavelength(int w);
   void prevZ();
   void nextZ();
@@ -89,6 +95,7 @@ public:
   void toggleStormMask();
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
+  void setToolkit(ImageAnalysisToolkit* kit){ m_toolkit = kit; }
   void setCurrentRecord(ImRecord* rec);
   ImRecord* getRecord(int pos, int t, int z);
   void alignStormData();
