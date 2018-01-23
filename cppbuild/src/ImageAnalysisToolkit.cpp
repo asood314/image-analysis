@@ -2144,7 +2144,7 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
     m_localWindow.clear();
     m_backgroundThreshold.clear();
     m_minPunctaRadius.clear();
-    m_maxPunctaRadius.clear();
+    //m_maxPunctaRadius.clear();
     m_reclusterThreshold.clear();
     m_noiseRemovalThreshold.clear();
     m_peakThreshold.clear();
@@ -2156,8 +2156,8 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
       offset += 4;
       m_minPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
       offset += 4;
-      m_maxPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
-      offset += 4;
+      //m_maxPunctaRadius.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
+      //offset += 4;
       m_reclusterThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
       offset += 4;
       m_noiseRemovalThreshold.push_back(NiaUtils::convertToDouble(buf[offset],buf[offset+1],buf[offset+2],buf[offset+3]));
