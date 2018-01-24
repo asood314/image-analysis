@@ -86,6 +86,7 @@ public:
   void zoomOut();
   void unzoom();
   void toggleMask(Mask* m);
+  void addMask(Mask* m);
   void removeMask(Mask* m);
   void toggleSignalMask();
   void togglePunctaMask();

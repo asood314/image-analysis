@@ -146,6 +146,8 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
       if(evt->button == 1){
 	ImFrame* frame = currentFrame();
 	ImFrame* dFrame = frame->derivative(m_toolkit->kernelWidth());
+	Mask* used = new Mask(frame->width(),frame->height());
+	int distLimit = (int)(1.5 / rec->resolutionXY());
 	std::vector<LocalizedObject::Point> seeds;
 	std::vector<int> borderX,borderY;
 	borderX.push_back(thisClick.x);
@@ -163,9 +165,10 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  int base = frame->getPixel(borderX[0],borderY[0]);
 	  for(int x = bx; x < ex; x++){
 	    for(int y = by; y < ey; y++){
-	      if(frame->getPixel(x,y) > base){
+	      if(frame->getPixel(x,y) > base && used->getValue(x,y) < 1 && abs(x - thisClick.x) < distLimit && abs(y - thisClick.y) < distLimit){
 		borderX.push_back(x);
 		borderY.push_back(y);
+		used->setValue(x,y,1);
 		isMaximum = false;
 	      }
 	    }
@@ -178,6 +181,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	}
 	borderX.push_back(thisClick.x);
 	borderY.push_back(thisClick.y);
+	used->clear(0,frame->width(),0,frame->height());
 	while(borderX.size() > 0){
 	  bool isMinimum = true;
 	  int bx = borderX[0]-1;
@@ -191,9 +195,10 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  int base = dFrame->getPixel(borderX[0],borderY[0]);
 	  for(int x = bx; x < ex; x++){
 	    for(int y = by; y < ey; y++){
-	      if(dFrame->getPixel(x,y) < base){
+	      if(dFrame->getPixel(x,y) < base && used->getValue(x,y) < 1 && abs(x - thisClick.x) < distLimit && abs(y - thisClick.y) < distLimit){
 		borderX.push_back(x);
 		borderY.push_back(y);
+		used->setValue(x,y,1);
 		isMinimum = false;
 	      }
 	    }
@@ -204,6 +209,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  borderX.erase(borderX.begin());
 	  borderY.erase(borderY.begin());
 	}
+	delete used;
 	for(std::vector<LocalizedObject::Point>::iterator pit = seeds.begin(); pit != seeds.end(); pit++){
 	  if(pMask->getValue(pit->x,pit->y) > 0) continue;
 	  std::vector<int> borderX;
@@ -213,7 +219,6 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  Cluster* c = new Cluster();
 	  c->addPoint(pit->x,pit->y,frame->getPixel(pit->x,pit->y));
 	  pMask->setValue(pit->x,pit->y,1);
-	  int distLimit = (int)(1.0 / rec->resolutionXY());
 	  while(borderX.size() > 0){
 	    int bx = borderX[0]-1;
 	    if(bx < 0) bx = 0;
@@ -266,25 +271,25 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	Cluster* c = rec->selectPunctumStrict(m_view_w,thisClick);
 	if(c){
 	  if(m_currentPunctum != c){
-	    if(m_currentPunctum) toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	    if(m_currentPunctum) removeMask(m_currentPunctum->getMask(m_width,m_height,false));
 	    m_currentPunctum = c;
-	    toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	    addMask(m_currentPunctum->getMask(m_width,m_height,false));
 	  }
 	  return true;
 	}
 	if(!m_currentPunctum) return false;
 	ImFrame* frame = currentFrame();
-	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	removeMask(m_currentPunctum->getMask(m_width,m_height,false));
 	m_currentPunctum->addPoint(thisClick,frame->getPixel(thisClick.x,thisClick.y));
-	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	addMask(m_currentPunctum->getMask(m_width,m_height,false));
 	return true;
       }
       else if(evt->button == 3){
 	if(!m_currentPunctum) return false;
 	ImFrame* frame = currentFrame();
-	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	removeMask(m_currentPunctum->getMask(m_width,m_height,false));
 	m_currentPunctum->removePoint(thisClick,frame->getPixel(thisClick.x,thisClick.y));
-	toggleMask(m_currentPunctum->getMask(m_width,m_height,false));
+	addMask(m_currentPunctum->getMask(m_width,m_height,false));
 	return true;
       }
       return false;
@@ -903,12 +908,25 @@ void NiaViewer::toggleMask(Mask* m)
   updateImage();
 }
 
+void NiaViewer::addMask(Mask* m)
+{
+  if(!m) return;
+  for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
+    if(m->equals(**it)){
+      if(m != *it) delete m;
+      return;
+    }
+  }
+  m_masks.push_back(m);
+  updateImage();
+}
+
 void NiaViewer::removeMask(Mask* m)
 {
   if(!m) return;
   for(std::vector<Mask*>::iterator it = m_masks.begin(); it != m_masks.end(); it++){
     if(m->equals(**it)){
-      delete *it;
+      if(m != *it) delete *it;
       m_masks.erase(it);
       delete m;
       updateImage();
