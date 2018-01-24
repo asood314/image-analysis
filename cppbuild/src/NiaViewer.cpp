@@ -151,34 +151,6 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	borderX.push_back(thisClick.x);
 	borderY.push_back(thisClick.y);
 	while(borderX.size() > 0){
-	  bool isMinimum = true;
-	  int bx = borderX[0]-1;
-	  if(bx < 0) bx = 0;
-	  int by = borderY[0]-1;
-	  if(by < 0) by = 0;
-	  int ex = borderX[0]+2;
-	  if(ex > frame->width()) ex = frame->width();
-	  int ey = borderY[0]+2;
-	  if(ey > frame->height()) ey = frame->height();
-	  int base = dFrame->getPixel(borderX[0],borderY[0]);
-	  for(int x = bx; x < ex; x++){
-	    for(int y = by; y < ey; y++){
-	      if(dFrame->getPixel(x,y) < base){
-		borderX.push_back(x);
-		borderY.push_back(y);
-		isMinimum = false;
-	      }
-	    }
-	  }
-	  if(isMinimum){
-	    seeds.push_back(LocalizedObject::Point(borderX[0],borderY[0]));
-	  }
-	  borderX.erase(borderX.begin());
-	  borderY.erase(borderY.begin());
-	}
-	borderX.push_back(thisClick.x);
-	borderY.push_back(thisClick.y);
-	while(borderX.size() > 0){
 	  bool isMaximum = true;
 	  int bx = borderX[0]-1;
 	  if(bx < 0) bx = 0;
@@ -204,6 +176,34 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  borderX.erase(borderX.begin());
 	  borderY.erase(borderY.begin());
 	}
+	borderX.push_back(thisClick.x);
+	borderY.push_back(thisClick.y);
+	while(borderX.size() > 0){
+	  bool isMinimum = true;
+	  int bx = borderX[0]-1;
+	  if(bx < 0) bx = 0;
+	  int by = borderY[0]-1;
+	  if(by < 0) by = 0;
+	  int ex = borderX[0]+2;
+	  if(ex > frame->width()) ex = frame->width();
+	  int ey = borderY[0]+2;
+	  if(ey > frame->height()) ey = frame->height();
+	  int base = dFrame->getPixel(borderX[0],borderY[0]);
+	  for(int x = bx; x < ex; x++){
+	    for(int y = by; y < ey; y++){
+	      if(dFrame->getPixel(x,y) < base){
+		borderX.push_back(x);
+		borderY.push_back(y);
+		isMinimum = false;
+	      }
+	    }
+	  }
+	  if(isMinimum){
+	    seeds.push_back(LocalizedObject::Point(borderX[0],borderY[0]));
+	  }
+	  borderX.erase(borderX.begin());
+	  borderY.erase(borderY.begin());
+	}
 	for(std::vector<LocalizedObject::Point>::iterator pit = seeds.begin(); pit != seeds.end(); pit++){
 	  if(pMask->getValue(pit->x,pit->y) > 0) continue;
 	  std::vector<int> borderX;
@@ -213,6 +213,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	  Cluster* c = new Cluster();
 	  c->addPoint(pit->x,pit->y,frame->getPixel(pit->x,pit->y));
 	  pMask->setValue(pit->x,pit->y,1);
+	  int distLimit = (int)(1.0 / rec->resolutionXY());
 	  while(borderX.size() > 0){
 	    int bx = borderX[0]-1;
 	    if(bx < 0) bx = 0;
@@ -225,7 +226,7 @@ bool NiaViewer::on_button_press(GdkEventButton* evt)
 	    int base = dFrame->getPixel(borderX[0],borderY[0]);
 	    for(int x = bx; x < ex; x++){
 	      for(int y = by; y < ey; y++){
-		if(pMask->getValue(x,y) < 1 && dFrame->getPixel(x,y) > base){
+		if(pMask->getValue(x,y) < 1 && dFrame->getPixel(x,y) > base && abs(x-pit->x) < distLimit && abs(y-pit->y) < distLimit){
 		  c->addPoint(x,y,frame->getPixel(x,y));
 		  pMask->setValue(x,y,1);
 		  borderX.push_back(x);

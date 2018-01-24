@@ -293,6 +293,7 @@ void NiaCore::init()
 
   show_all_children();
   m_viewer.hideScaleBox();
+  m_viewer.setToolkit(&m_iat);
 }
 
 void NiaCore::on_menu_load()
@@ -546,7 +547,6 @@ void NiaCore::on_configure_clicked()
   }
   m_iat.setChannelNames(cd.getChannelNames());
   m_iat.setPostChan(cd.getPostChan());
-  m_viewer.setToolkit(&m_iat);
 }
 
 void NiaCore::on_find_outliers_clicked()
