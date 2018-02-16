@@ -39,6 +39,7 @@ public:
   ImFrame* derivativeDir();
   ImFrame* d2EigenvalueMax();
   ImFrame* d2EigenvectorMax();
+  ImFrame* backgroundSubtractedFrame(Mask* m, double x);
 
   int min(int x1, int x2, int y1, int y2);
   double mean(int x1, int x2, int y1, int y2);

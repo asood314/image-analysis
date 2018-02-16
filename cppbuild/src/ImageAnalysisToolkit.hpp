@@ -32,7 +32,8 @@ protected:
   MasterMode m_mode;
   int m_punctaFindingIterations,m_signalFindingIterations;
   int m_saturationThreshold;
-  double m_kernelWidth;
+  double m_kernelWidth,m_subtractionAmount;
+  std::vector<int> m_contaminatedChannels,m_backgroundChannels;
   std::vector<std::string> m_channelNames;
   std::vector<double> m_localWindow,m_backgroundThreshold;
   std::vector<int> m_windowSteps;
@@ -72,6 +73,7 @@ public:
   void setMaxSignalFindingIterations(int it){ m_signalFindingIterations = it; }
   void setSaturationThreshold(int s){ m_saturationThreshold = s; }
   void setKernelWidth(double sigma){ m_kernelWidth = sigma; }
+  void setSubtractionAmount(double x){ m_subtractionAmount = x; }
   void setChannelNames(std::vector<std::string> names){ m_channelNames = names; }
   void setLocalWindow(double lw){ m_localWindow[0] = lw; }
   void setWindowSteps(int nsteps){ m_windowSteps[0] = nsteps; }
@@ -91,6 +93,14 @@ public:
   void setNoiseRemovalThreshold(int chan, double nrt){ m_noiseRemovalThreshold[chan] = nrt; }
   void setPeakThreshold(int chan, double p){ m_peakThreshold[chan] = p; }
   void setFloorThreshold(int chan, double f){ m_floorThreshold[chan] = f; }
+  void setContaminatedChannel(int chan1, int chan2){
+    m_contaminatedChannels.push_back(chan1);
+    m_backgroundChannels.push_back(chan2);
+  }
+  void clearContaminatedChannels(){
+    m_contaminatedChannels.clear();
+    m_backgroundChannels.clear();
+  }
 
   int master(){ return m_master; }
   int postChan(){ return m_postChan; }
@@ -99,6 +109,7 @@ public:
   int maxSignalFindingIterations(){ return m_signalFindingIterations; }
   int saturationThreshold(){ return m_saturationThreshold; }
   double kernelWidth(){ return m_kernelWidth; }
+  double subtractionAmount(){ return m_subtractionAmount; }
   std::string getChannelName(int chan){ return m_channelNames[chan]; }
   std::vector<std::string> getChannelNames(){ return m_channelNames; }
   double localWindow(int chan = 0){ return m_localWindow[chan]; }
@@ -110,6 +121,8 @@ public:
   double noiseRemovalThreshold(int chan = 0){ return m_noiseRemovalThreshold[chan]; }
   double peakThreshold(int chan = 0){ return m_peakThreshold[chan]; }
   double floorThreshold(int chan = 0){ return m_floorThreshold[chan]; }
+  std::vector<int> contaminatedChannels(){ return m_contaminatedChannels; }
+  std::vector<int> backgroundChannels(){ return m_backgroundChannels; }
 
   void addSynapseDefinition(SynapseCollection* sc){ m_synapseDefinitions.push_back(sc); }
   std::vector<SynapseCollection*> synapseDefinitions(){ return m_synapseDefinitions; };

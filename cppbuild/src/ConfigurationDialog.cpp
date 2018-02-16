@@ -7,7 +7,11 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_sfiLabel("Set max signal finding iterations"),
   m_saturationLabel("Set bit depth"),
   m_kernelLabel("Set smoothing kernel width"),
+  m_subAmtLabel("Set amount to subtract (bkg median + x*(bkg mean - bkg median)"),
   m_splitConfigBox("Use separate channel configurations"),
+  m_subtractBackgroundBox("Do background subtraction"),
+  m_contChanLabel("Contaminated channel(s)"),
+  m_bkgChanLabel("Background source channel(s)"),
   m_lwLabel("Set local window size (um^2)"),
   m_windowStepsLabel("Set window expansion iterations"),
   m_radiusLabel("Set min puncta radius (um)"),
@@ -67,6 +71,41 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_hbox1.pack_start(m_vbox1, Gtk::PACK_SHRINK);
   m_hbox1.pack_start(m_vbox2, Gtk::PACK_EXPAND_PADDING);
   m_analysisBox.pack_start(m_hbox1, Gtk::PACK_SHRINK);
+
+  std::vector<int> contChans = m_toolkit->contaminatedChannels();
+  int ncontChan = contChans.size();
+  if(ncontChan > 0) m_subtractBackgroundBox.set_active(true);
+  else m_subtractBackgroundBox.set_active(false);
+  //m_splitConfigBox.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_split_button_clicked));
+  m_analysisBox.pack_start(m_subtractBackgroundBox, Gtk::PACK_SHRINK);
+
+  m_contChanEntry.set_max_length(10);
+  m_contChanEntry.set_width_chars(5);
+  m_bkgChanEntry.set_max_length(10);
+  m_bkgChanEntry.set_width_chars(5);
+  if(ncontChan > 0){
+    std::ostringstream s;
+    s << contChans[0];
+    for(int i = 1; i < ncontChan; i++) s << "," << contChans[i];
+    m_contChanEntry.set_text(s.str());
+    std::vector<int> bkgChans = m_toolkit->backgroundChannels();
+    std::ostringstream s2;
+    s2 << bkgChans[0];
+    for(int i = 1; i < ncontChan; i++) s2 << "," << bkgChans[i];
+    m_bkgChanEntry.set_text(s2.str());
+  }
+  m_hbox20.pack_start(m_contChanLabel, Gtk::PACK_SHRINK);
+  m_hbox20.pack_start(m_contChanEntry, Gtk::PACK_SHRINK);
+  m_hbox20.pack_start(m_bkgChanLabel, Gtk::PACK_SHRINK);
+  m_hbox20.pack_start(m_bkgChanEntry, Gtk::PACK_SHRINK);
+  m_analysisBox.pack_start(m_hbox20, Gtk::PACK_SHRINK);
+
+  m_subAmtEntry.set_max_length(10);
+  m_subAmtEntry.set_width_chars(5);
+  m_subAmtEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->subtractionAmount()));
+  m_hbox21.pack_start(m_subAmtLabel, Gtk::PACK_SHRINK);
+  m_hbox21.pack_start(m_subAmtEntry, Gtk::PACK_SHRINK);
+  m_analysisBox.pack_start(m_hbox21, Gtk::PACK_SHRINK);
 
   m_saturationEntry.set_max_length(3);
   m_saturationEntry.set_width_chars(5);
@@ -472,6 +511,26 @@ ImageAnalysisToolkit::MasterMode ConfigurationDialog::getMode()
   Gtk::TreeModel::iterator it = m_modeBox.get_active();
   if(it) return (*it)[m_colMode];
   return ImageAnalysisToolkit::OVERRIDE;
+}
+
+std::vector<int> ConfigurationDialog::getContaminatedChannels()
+{
+  std::string contStr = m_contChanEntry.get_text();
+  boost::char_separator<char> sep2(",");
+  boost::tokenizer< boost::char_separator<char> > tokens(contStr,sep2);
+  std::vector<int> contChans;
+  for(const auto& t : tokens) contChans.push_back(boost::lexical_cast<int>(t));
+  return contChans;
+}
+
+std::vector<int> ConfigurationDialog::getBackgroundChannels()
+{
+  std::string bkgStr = m_bkgChanEntry.get_text();
+  boost::char_separator<char> sep2(",");
+  boost::tokenizer< boost::char_separator<char> > tokens(bkgStr,sep2);
+  std::vector<int> bkgChans;
+  for(const auto& t : tokens) bkgChans.push_back(boost::lexical_cast<int>(t));
+  return bkgChans;
 }
 
 int ConfigurationDialog::getDivisor()

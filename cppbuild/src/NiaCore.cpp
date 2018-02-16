@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 
 void NiaCore::init()
 {
-  set_title("Neuron Image Analysis v0.6");
+  set_title("Neuron Image Analysis v0.7");
   set_default_size(1200,1000);
   add(m_vbox);
 
@@ -446,6 +446,15 @@ void NiaCore::on_start_batch_jobs()
   if(result != Gtk::RESPONSE_OK) return;
   biat->setMaster(cd.getMaster());
   biat->setMode(cd.getMode());
+  biat->clearContaminatedChannels();
+  if(cd.doBackgroundSubtraction()){
+    std::vector<int> contChans = cd.getContaminatedChannels();
+    std::vector<int> bkgChans = cd.getBackgroundChannels();
+    for(int i = 0; i < contChans.size(); i++){
+      biat->setContaminatedChannel(contChans[i],bkgChans[i]);
+    }
+  }
+  biat->setSubtractionAmount(cd.getSubtractionAmount());
   biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   biat->setMaxSignalFindingIterations(cd.getSignalFindingIterations());
@@ -513,6 +522,15 @@ void NiaCore::on_configure_clicked()
   if(result != Gtk::RESPONSE_OK) return;
   m_iat.setMaster(cd.getMaster());
   m_iat.setMode(cd.getMode());
+  m_iat.clearContaminatedChannels();
+  if(cd.doBackgroundSubtraction()){
+    std::vector<int> contChans = cd.getContaminatedChannels();
+    std::vector<int> bkgChans = cd.getBackgroundChannels();
+    for(int i = 0; i < contChans.size(); i++){
+      m_iat.setContaminatedChannel(contChans[i],bkgChans[i]);
+    }
+  }
+  m_iat.setSubtractionAmount(cd.getSubtractionAmount());
   m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   m_iat.setMaxSignalFindingIterations(cd.getSignalFindingIterations());
@@ -617,6 +635,19 @@ void NiaCore::on_find_signal_clicked(bool doAll)
   }
   else{
     //rec->setThreshold(m_viewer.viewW(),m_iat.findThreshold(frame));
+    int chan = m_viewer.viewW();
+    std::vector<int> contChans = m_iat.contaminatedChannels();
+    for(int i = 0; i < contChans.size(); i++){
+      if(contChans[i] == chan){
+	std::vector<int> bkgChans = m_iat.backgroundChannels();
+	Mask* bkgMask = rec->getSignalMask(bkgChans[i]);
+	if(!bkgMask) return;
+	ImFrame* subFrame = frame->backgroundSubtractedFrame(bkgMask,m_iat.subtractionAmount());
+	m_iat.findSignal(subFrame,rec,m_viewer.viewW());
+	delete subFrame;
+	return;
+      }
+    }
     m_iat.findSignal(frame,rec,m_viewer.viewW());
   }
 }

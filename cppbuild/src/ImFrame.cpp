@@ -722,6 +722,20 @@ ImFrame* ImFrame::d2EigenvectorMax()
   return retVal;
 }
 
+ImFrame* ImFrame::backgroundSubtractedFrame(Mask* m, double x)
+{
+  ImFrame* retVal = new ImFrame(m_width,m_height);
+  int med = median(m);
+  int sub = int(med + x*(mean(m) - med));
+  for(int i = 0; i < m_width; i++){
+    for(int j = 0; j < m_height; j++){
+      if(m_pixels[i][j] > sub) retVal->setPixel(i,j,m_pixels[i][j] - sub);
+      else retVal->setPixel(i,j,0);
+    }
+  }
+  return retVal;
+}
+
 double ImFrame::percentile(double frac, int x1, int x2, int y1, int y2)
 {
   int* values = new int[65536];

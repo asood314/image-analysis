@@ -5,6 +5,7 @@ ImageAnalysisToolkit::ImageAnalysisToolkit()
   m_master = 255;
   m_postChan = 0;
   m_mode = OVERRIDE;
+  m_subtractionAmount = 1.0;
   m_punctaFindingIterations = 10;
   m_signalFindingIterations = 1;
   m_saturationThreshold = 4094;
@@ -132,8 +133,18 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
 {
   if(m_master > 254 || m_master < 0){
     for(int w = 0; w < analysisStack->nwaves(); w++){
-      //rec->setThreshold(w,findThreshold(analysisStack->frame(w,zplane)));
+      bool skip = false;
+      for(int i = 0; !skip && i < m_contaminatedChannels.size(); i++){
+	if(m_contaminatedChannels[i] == w) skip = true;
+      }
+      if(skip) continue;
       findSignal(analysisStack->frame(w,zplane),rec,w);
+    }
+    for(int i = 0; i < m_contaminatedChannels.size(); i++){
+      int w = m_contaminatedChannels[i];
+      ImFrame* f = analysisStack->frame(w,zplane)->backgroundSubtractedFrame(rec->getSignalMask(m_backgroundChannels[i]),m_subtractionAmount);
+      findSignal(f,rec,w);
+      delete f;
     }
   }
   else{
@@ -2029,9 +2040,17 @@ void ImageAnalysisToolkit::write(std::ofstream& fout)
   buf[3] = (char)m_signalFindingIterations;
   buf[4] = (char)m_punctaFindingIterations;
   NiaUtils::writeShortToBuffer(buf,5,m_saturationThreshold);
+  NiaUtils::writeDoubleToBuffer(buf,7,m_subtractionAmount);
+  buf[11] = (char)m_contaminatedChannels.size();
+  uint32_t offset = 12;
+  for(int i = 0; i < m_contaminatedChannels.size(); i++){
+    buf[offset] = (char)m_contaminatedChannels[i];
+    buf[offset+1] = (char)m_backgroundChannels[i];
+    offset += 2;
+  }
   int nchan = m_localWindow.size();
-  buf[7] = (char)nchan;
-  uint32_t offset = 8;
+  buf[offset] = (char)nchan;
+  offset++;
   for(int i = 0; i < nchan; i++){
     buf[offset] = (char)m_windowSteps[i];
     offset++;
@@ -2067,7 +2086,7 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
     m_saturationThreshold = NiaUtils::convertToShort(buf[4],buf[5]);
     nchan = (int)buf[6];
   }
-  else{
+  else if(version < 7){
     fin.read(buf,8);
     m_master = (int)buf[0];
     if((int)buf[1] == 0) m_mode = OVERRIDE;
@@ -2077,6 +2096,30 @@ void ImageAnalysisToolkit::read(std::ifstream& fin, int version)
     m_punctaFindingIterations = (int)buf[4];
     m_saturationThreshold = NiaUtils::convertToShort(buf[5],buf[6]);
     nchan = (int)buf[7];
+    fin.read(buf,nchan);
+    m_windowSteps.clear();
+    for(int i = 0; i < nchan; i++) m_windowSteps.push_back((int)buf[i]);
+  }
+  else{
+    fin.read(buf,12);
+    m_master = (int)buf[0];
+    if((int)buf[1] == 0) m_mode = OVERRIDE;
+    else m_mode = OR;
+    m_postChan = (int)buf[2];
+    m_signalFindingIterations = (int)buf[3];
+    m_punctaFindingIterations = (int)buf[4];
+    m_saturationThreshold = NiaUtils::convertToShort(buf[5],buf[6]);
+    m_subtractionAmount = NiaUtils::convertToDouble(buf[7],buf[8],buf[9],buf[10]);
+    nchan = (int)buf[11];
+    fin.read(buf,2*nchan);
+    m_contaminatedChannels.clear();
+    m_backgroundChannels.clear();
+    for(int i = 0; i < nchan; i++){
+      m_contaminatedChannels.push_back((int)buf[2*i]);
+      m_backgroundChannels.push_back((int)buf[2*i+1]);
+    }
+    fin.read(buf,1);
+    nchan = (int)buf[0];
     fin.read(buf,nchan);
     m_windowSteps.clear();
     for(int i = 0; i < nchan; i++) m_windowSteps.push_back((int)buf[i]);

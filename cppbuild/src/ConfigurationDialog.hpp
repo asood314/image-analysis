@@ -13,15 +13,15 @@ class ConfigurationDialog : public Gtk::Dialog
 protected:
   ImageAnalysisToolkit* m_toolkit;
   int m_nchannels;
-  Gtk::CheckButton m_masterBox,m_splitConfigBox;
-  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry,m_kernelEntry;
+  Gtk::CheckButton m_masterBox,m_splitConfigBox,m_subtractBackgroundBox;
+  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry,m_kernelEntry,m_contChanEntry,m_bkgChanEntry,m_subAmtEntry;
   std::vector<Gtk::Entry*> m_lwEntry,m_windowStepsEntry,m_radiusEntry,/*m_maxRadiusEntry,*/m_reclusterEntry,m_nrtEntry,m_peakEntry,m_floorEntry,m_bkgEntry;
   Gtk::ComboBox m_modeBox;
   Gtk::TreeModelColumn<ImageAnalysisToolkit::MasterMode> m_colMode;
   Gtk::TreeModelColumn<std::string> m_colString;
   Gtk::TreeModel::ColumnRecord m_columns;
   Glib::RefPtr<Gtk::ListStore> m_refTreeModel;
-  Gtk::Label m_modeLabel,m_pfiLabel,m_saturationLabel,m_sfiLabel,m_lwLabel,m_windowStepsLabel,m_radiusLabel,/*m_maxRadiusLabel,*/m_reclusterLabel,m_nrtLabel,m_peakLabel,m_floorLabel,m_bkgLabel,m_kernelLabel;
+  Gtk::Label m_modeLabel,m_pfiLabel,m_saturationLabel,m_sfiLabel,m_lwLabel,m_windowStepsLabel,m_radiusLabel,/*m_maxRadiusLabel,*/m_reclusterLabel,m_nrtLabel,m_peakLabel,m_floorLabel,m_bkgLabel,m_kernelLabel,m_contChanLabel,m_bkgChanLabel,m_subAmtLabel;
 
   std::vector<Gtk::CheckButton*> m_synapseChannels;
   std::vector<Gtk::Entry*> m_channelEntries;
@@ -45,7 +45,7 @@ protected:
   Gtk::Notebook m_Notebook;
   Gtk::ScrolledWindow m_synapseWindow;
   Gtk::VBox m_analysisBox,m_synapseBox,m_batchBox;
-  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12,m_hbox13,m_hbox14,m_hbox15,m_hbox16,m_hbox17,m_hbox18,m_hbox19;
+  Gtk::HBox m_hbox1,m_hbox2,m_hbox3,m_hbox4,m_hbox5,m_hbox6,m_hbox7,m_hbox8,m_hbox9,m_hbox10,m_hbox11,m_hbox12,m_hbox13,m_hbox14,m_hbox15,m_hbox16,m_hbox17,m_hbox18,m_hbox19,m_hbox20,m_hbox21;
   Gtk::VBox m_vbox1,m_vbox2,m_vbox3;
   Gtk::HSeparator m_hsep1;
 
@@ -59,11 +59,15 @@ public:
   int nchannels(){ return m_nchannels; }
   int getMaster();
   ImageAnalysisToolkit::MasterMode getMode();
+  std::vector<int> getContaminatedChannels();
+  std::vector<int> getBackgroundChannels();
   int getBitDepth(){ return boost::lexical_cast<int>(m_saturationEntry.get_text()); }
   int getPunctaFindingIterations(){ return boost::lexical_cast<int>(m_pfiEntry.get_text()); }
   int getSignalFindingIterations(){ return boost::lexical_cast<int>(m_sfiEntry.get_text()); }
   double getKernelWidth(){ return boost::lexical_cast<double>(m_kernelEntry.get_text()); }
+  double getSubtractionAmount(){ return boost::lexical_cast<double>(m_subAmtEntry.get_text()); }
   bool doSeparateConfigs(){ return m_splitConfigBox.get_active(); }
+  bool doBackgroundSubtraction(){ return m_subtractBackgroundBox.get_active(); }
   double getLocalWindow(int index = 0){ return boost::lexical_cast<double>(m_lwEntry[index]->get_text()); }
   int getWindowSteps(int index = 0){ return boost::lexical_cast<int>(m_windowStepsEntry[index]->get_text()); }
   double getRadius(int index = 0){ return boost::lexical_cast<double>(m_radiusEntry[index]->get_text()); }
