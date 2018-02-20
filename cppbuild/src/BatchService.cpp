@@ -249,6 +249,8 @@ void BatchService::analyzeProjection(int seriesID, int p, int t)
     std::ostringstream filename;
     filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
     FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
+    std::vector<ImRecord*> rvec = m_records[seriesID];
+    for(std::vector<ImRecord*>::iterator rit = rvec.begin(); rit != rvec.end(); rit++) delete *rit;
   }
   m_activeThreads--;
   if(m_progressWindow) m_progressWindow->taskCompleted();
@@ -289,6 +291,8 @@ void BatchService::analyzePlane(int seriesID, int p, int t, int z)
       std::ostringstream filename;
       filename << m_name << "_" << m_fileManager->getName(seriesID) << ".nia";
       FileConverter::write(m_fileManager,m_iat,&(m_records.at(seriesID)),filename.str(),seriesID,nia::niaVersion);
+      std::vector<ImRecord*> rvec = m_records[seriesID];
+      for(std::vector<ImRecord*>::iterator rit = rvec.begin(); rit != rvec.end(); rit++) delete *rit;
     }
   }
   m_activeThreads--;

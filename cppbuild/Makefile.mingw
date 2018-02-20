@@ -32,6 +32,9 @@ all:
 	x86_64-w64-mingw32-g++ src/main.cpp -o obj/main.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ -o launcher obj/*.o obj/my.res -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0 $(LIBS)
 
+optimized:
+	x86_64-w64-mingw32-g++ -o launcher src/*.cpp obj/my.res -O3 -std=c++11 -I/usr/x86_64-w64-mingw32/sys-root/mingw/include -D_GLIBCXX_USE_CXX11_ABI=0 $(CFLAGS) $(LIBS)
+
 debug:
 	x86_64-w64-mingw32-g++ -g src/NiaBuffer.cpp -o obj/NiaBuffer.o -c -std=c++11 $(CFLAGS)
 	x86_64-w64-mingw32-g++ -g src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11 -D_GLIBCXX_USE_CXX11_ABI=0

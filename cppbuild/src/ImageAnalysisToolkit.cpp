@@ -77,7 +77,7 @@ void ImageAnalysisToolkit::standardAnalysis(ImStack* stack, ImRecord* rec, int a
 
   findSynapses(rec);
 
-  if(arg_zplane < 0) delete analysisStack;
+  if(arg_zplane < 0 && stack->nz() > 1) delete analysisStack;
 }
 
 void ImageAnalysisToolkit::filter(ImFrame* frame)
@@ -205,6 +205,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
     Mask* densityMask = applyThreshold(frame,rec,chan);
     globalThreshold = findThreshold(frame,rec->getSignalMask(chan)->inverse(),densityMask->inverse(),globalThreshold);
     delete densityMask;
+    i++;
   }
   if(globalThreshold >= 0){
     rec->setThreshold(chan,globalThreshold);

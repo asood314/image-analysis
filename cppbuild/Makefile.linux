@@ -28,6 +28,9 @@ all:
 	g++ src/main.cpp -o obj/main.o -c -std=c++11 -I$(BOOSTDIR)/include/ `pkg-config gtkmm-2.4 --cflags`
 	g++ -o launcher obj/*.o -std=c++11 `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
 
+optimized:
+	g++ -o launcher src/*.cpp -std=c++11 -O3 -I$(BOOSTDIR)/include/ `pkg-config gtkmm-2.4 --cflags` `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
+
 debug:
 	g++ -g src/NiaBuffer.cpp -o obj/NiaBuffer.o -c -std=c++11 -I$(BOOSTDIR)/include/
 	g++ -g src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
