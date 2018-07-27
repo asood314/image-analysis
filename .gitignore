@@ -8,6 +8,8 @@ JohnPaulImages.*
 ClaireImages.*
 cppbuild/obj/*
 cppbuild/launcher*
+cppbuild/scanner*
+cppbuild/roc*
 cppbuild/src/my.rc
 cppbuild/Nia.app/*
 cppbuild/src/vidwriter.*

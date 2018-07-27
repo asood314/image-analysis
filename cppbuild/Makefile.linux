@@ -1,5 +1,9 @@
 BOOSTDIR=/usr/local
 
+MAINCPPS=src/NiaBuffer.cpp src/NiaUtils.cpp src/Mask.cpp src/LocalizedObject.cpp src/Cluster.cpp src/StormData.cpp src/StormCluster.cpp src/Synapse.cpp src/SynapseCollection.cpp src/Region.cpp src/Segment.cpp src/ImRecord.cpp src/ImFrame.cpp src/ImStack.cpp src/ImSeries.cpp src/ImageAnalysisToolkit.cpp src/FileManager.cpp src/FileConverter.cpp src/BatchWindow.cpp src/BatchService.cpp src/FileSelector.cpp src/ConfigurationDialog.cpp src/NiaViewer.cpp src/NiaCore.cpp src/main.cpp
+
+SCANCPPS=src/NiaBuffer.cpp src/NiaUtils.cpp src/Mask.cpp src/LocalizedObject.cpp src/Cluster.cpp src/StormData.cpp src/StormCluster.cpp src/Synapse.cpp src/SynapseCollection.cpp src/Region.cpp src/Segment.cpp src/ImRecord.cpp src/ImFrame.cpp src/ImStack.cpp src/ImSeries.cpp src/ImageAnalysisToolkit.cpp src/FileManager.cpp src/FileConverter.cpp src/BatchWindow.cpp src/BatchService.cpp src/Scanner.cpp src/scan.cpp
+
 all:
 	g++ src/NiaBuffer.cpp -o obj/NiaBuffer.o -c -std=c++11 -I$(BOOSTDIR)/include/
 	g++ src/NiaUtils.cpp -o obj/NiaUtils.o -c -std=c++11
@@ -29,7 +33,8 @@ all:
 	g++ -o launcher obj/*.o -std=c++11 `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
 
 optimized:
-	g++ -o launcher src/*.cpp -std=c++11 -O3 -I$(BOOSTDIR)/include/ `pkg-config gtkmm-2.4 --cflags` `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
+	g++ -o launcher $(MAINCPPS) -std=c++11 -O3 -I$(BOOSTDIR)/include/ `pkg-config gtkmm-2.4 --cflags` `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
+	g++ -o scanner $(SCANCPPS) -std=c++11 -O3 -I$(BOOSTDIR)/include/ `pkg-config gtkmm-2.4 --cflags` `pkg-config gtkmm-2.4 --libs` -L$(BOOSTDIR)/lib/ -lboost_filesystem -lboost_system -lboost_thread
 
 debug:
 	g++ -g src/NiaBuffer.cpp -o obj/NiaBuffer.o -c -std=c++11 -I$(BOOSTDIR)/include/

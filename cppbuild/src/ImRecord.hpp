@@ -35,6 +35,7 @@ public:
   ImRecord(){}
   ImRecord(int nchan, int w, int h);
   virtual ~ImRecord();
+  ImRecord* emptyCopy();
   void setResolutionXY(double res){ m_resolutionXY = res; }
   double resolutionXY(){ return m_resolutionXY; }
   int nchannels(){ return m_nchannels; }

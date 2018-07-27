@@ -27,6 +27,16 @@ ImRecord::~ImRecord()
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++) delete *it;
 }
 
+ImRecord* ImRecord::emptyCopy()
+{
+  ImRecord* newRecord = new ImRecord(m_nchannels, m_imWidth, m_imHeight);
+  newRecord->setResolutionXY(m_resolutionXY);
+  for(int i = 0; i < m_nchannels; i++) newRecord->setChannelName(i,m_channelNames[i]);
+  for(int i = 0; i < nRegions(); i++) newRecord->addRegion(m_regions[i]->getCopy());
+  for(int i = 0; i < nSynapseCollections(); i++) newRecord->addSynapseCollection(m_synapseCollections[i]->emptyCopy());
+  return newRecord;
+}
+
 void ImRecord::removePunctum(int chan, int index)
 {
   std::vector<Cluster*> clusters = m_puncta[chan];

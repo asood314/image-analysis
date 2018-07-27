@@ -191,7 +191,8 @@ void ImageAnalysisToolkit::findSignal(ImStack* analysisStack, ImRecord* rec, int
       }
     }
   }
-  nia::nout << "Done signal finding" << "\n";
+  nia::nout << "Done signal finding\n";
+  std::cout << "Done signal finding" << std::endl;
 }
 
 void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
@@ -212,6 +213,7 @@ void ImageAnalysisToolkit::findSignal(ImFrame* frame, ImRecord* rec, int chan)
     Mask* densityMask = applyThreshold(frame,rec,chan);
     delete densityMask;
   }
+  nia::nout << "Using global threshold " << rec->getThreshold(chan) << "\n";
   std::cout << "Using global threshold " << rec->getThreshold(chan) << std::endl;
 }
 
@@ -1172,6 +1174,7 @@ void ImageAnalysisToolkit::findPuncta(ImFrame* frame, ImRecord* rec, int chan)
   //resolveOverlaps(frame,rec,chan);
   watershedSegmentation(frame,rec,chan);
   nia::nout << "Found " << rec->nPuncta(chan) << " puncta in channel " << chan << "\n";//<< " after " << count << " iterations." << "\n";
+  std::cout << "Found " << rec->nPuncta(chan) << " puncta in channel " << chan << std::endl;//<< " after " << count << " iterations." << "\n";
  }
 
 void ImageAnalysisToolkit::findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan)
@@ -1965,6 +1968,7 @@ void ImageAnalysisToolkit::findSynapses(ImRecord* rec)
     delete[] np;
     delete[] pi;
     nia::nout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << "\n";
+    std::cout << "Found " << nSynapses << " synapses of type " << icol << ": " << sc->description() << std::endl;
   }
 }
 
