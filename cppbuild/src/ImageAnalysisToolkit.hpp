@@ -32,13 +32,13 @@ protected:
   MasterMode m_mode;
   int m_punctaFindingIterations,m_signalFindingIterations;
   int m_saturationThreshold;
-  double m_kernelWidth,m_subtractionAmount;
+  double m_subtractionAmount;
   std::vector<int> m_contaminatedChannels,m_backgroundChannels;
   std::vector<std::string> m_channelNames;
   std::vector<double> m_localWindow,m_backgroundThreshold;
   std::vector<int> m_windowSteps;
   std::vector<double> m_minPunctaRadius,m_maxPunctaRadius,m_reclusterThreshold,m_noiseRemovalThreshold;
-  std::vector<double> m_peakThreshold,m_floorThreshold;
+  std::vector<double> m_peakThreshold,m_floorThreshold,m_kernelWidth;
   std::vector<SynapseCollection*> m_synapseDefinitions;
 
 public:
@@ -53,8 +53,8 @@ public:
   void findSignal(ImStack* analysisStack, ImRecord* rec, int zplane);
   void findSignal(ImFrame* frame, ImRecord* rec, int chan);
   Mask* applyThreshold(ImFrame* frame, ImRecord* rec, int chan);
-  int findThreshold(ImFrame* frame);
-  int findThreshold(ImFrame* frame, Mask* sigMask, Mask* outMask, int prev);
+  int findThreshold(double kernelWidth, ImFrame* frame);
+  int findThreshold(double kernelWidth, ImFrame* frame, Mask* sigMask, Mask* outMask, int prev);
   void findPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void findSaturatedPuncta(ImFrame* frame, ImRecord* rec, int chan);
   void resolveOverlaps(ImFrame* frame, ImRecord* rec, int chan);
@@ -72,7 +72,7 @@ public:
   void setMaxPunctaFindingIterations(int it){ m_punctaFindingIterations = it; }
   void setMaxSignalFindingIterations(int it){ m_signalFindingIterations = it; }
   void setSaturationThreshold(int s){ m_saturationThreshold = s; }
-  void setKernelWidth(double sigma){ m_kernelWidth = sigma; }
+  void setKernelWidth(double sigma){ m_kernelWidth[0] = sigma; }
   void setSubtractionAmount(double x){ m_subtractionAmount = x; }
   void setChannelNames(std::vector<std::string> names){ m_channelNames = names; }
   void setLocalWindow(double lw){ m_localWindow[0] = lw; }
@@ -84,6 +84,7 @@ public:
   void setNoiseRemovalThreshold(double nrt){ m_noiseRemovalThreshold[0] = nrt; }
   void setPeakThreshold(double p){ m_peakThreshold[0] = p; }
   void setFloorThreshold(double f){ m_floorThreshold[0] = f; }
+  void setKernelWidth(int chan, double sigma){ m_kernelWidth[chan] = sigma; }
   void setLocalWindow(int chan, double lw){ m_localWindow[chan] = lw; }
   void setWindowSteps(int chan, int nsteps){ m_windowSteps[chan] = nsteps; }
   void setBackgroundThreshold(int chan, double lwi){ m_backgroundThreshold[chan] = lwi; }
@@ -108,7 +109,7 @@ public:
   int maxPunctaFindingIterations(){ return m_punctaFindingIterations; }
   int maxSignalFindingIterations(){ return m_signalFindingIterations; }
   int saturationThreshold(){ return m_saturationThreshold; }
-  double kernelWidth(){ return m_kernelWidth; }
+  double kernelWidth(int chan = 0){ return m_kernelWidth[chan]; }
   double subtractionAmount(){ return m_subtractionAmount; }
   std::string getChannelName(int chan){ return m_channelNames[chan]; }
   std::vector<std::string> getChannelNames(){ return m_channelNames; }

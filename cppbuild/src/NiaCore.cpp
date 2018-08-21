@@ -19,7 +19,7 @@ NiaCore::~NiaCore()
 
 void NiaCore::init()
 {
-  set_title("Neuron Image Analysis v0.7");
+  set_title("Neuron Image Analysis v0.8");
   set_default_size(1200,1000);
   add(m_vbox);
 
@@ -458,13 +458,13 @@ void NiaCore::on_start_batch_jobs()
   biat->setBitDepth(cd.getBitDepth());
   biat->setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   biat->setMaxSignalFindingIterations(cd.getSignalFindingIterations());
-  biat->setKernelWidth(cd.getKernelWidth());
   if(cd.doSeparateConfigs()){
     if(biat->nConfigs() < cd.nchannels()){
       biat->makeSingleConfig();
       biat->makeSeparateConfigs(cd.nchannels());
     }
     for(int i = 0; i < cd.nchannels(); i++){
+      biat->setKernelWidth(i,cd.getKernelWidth(i));
       biat->setLocalWindow(i,cd.getLocalWindow(i));
       biat->setWindowSteps(i,cd.getWindowSteps(i));
       biat->setMinPunctaRadius(i,cd.getRadius(i));
@@ -477,6 +477,7 @@ void NiaCore::on_start_batch_jobs()
     }
   }
   else{
+    biat->setKernelWidth(cd.getKernelWidth());
     biat->setLocalWindow(cd.getLocalWindow());
     biat->setWindowSteps(cd.getWindowSteps());
     biat->setMinPunctaRadius(cd.getRadius());
@@ -534,13 +535,13 @@ void NiaCore::on_configure_clicked()
   m_iat.setBitDepth(cd.getBitDepth());
   m_iat.setMaxPunctaFindingIterations(cd.getPunctaFindingIterations());
   m_iat.setMaxSignalFindingIterations(cd.getSignalFindingIterations());
-  m_iat.setKernelWidth(cd.getKernelWidth());
   if(cd.doSeparateConfigs()){
     if(m_iat.nConfigs() < nchan){
       m_iat.makeSingleConfig();
       m_iat.makeSeparateConfigs(nchan);
     }
     for(int i = 0; i < nchan; i++){
+      m_iat.setKernelWidth(i,cd.getKernelWidth(i));
       m_iat.setLocalWindow(i,cd.getLocalWindow(i));
       m_iat.setWindowSteps(i,cd.getWindowSteps(i));
       m_iat.setMinPunctaRadius(i,cd.getRadius(i));
@@ -553,6 +554,7 @@ void NiaCore::on_configure_clicked()
     }
   }
   else{
+    m_iat.setKernelWidth(cd.getKernelWidth());
     m_iat.setLocalWindow(cd.getLocalWindow());
     m_iat.setWindowSteps(cd.getWindowSteps());
     m_iat.setMinPunctaRadius(cd.getRadius());

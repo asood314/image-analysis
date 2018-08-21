@@ -128,18 +128,23 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
   m_hbox17.pack_start(m_sfiEntry, Gtk::PACK_SHRINK);
   m_analysisBox.pack_start(m_hbox17, Gtk::PACK_SHRINK);
 
-  m_kernelEntry.set_max_length(5);
-  m_kernelEntry.set_width_chars(5);
-  m_kernelEntry.set_text(boost::lexical_cast<std::string>(m_toolkit->kernelWidth()));
-  m_hbox19.pack_start(m_kernelLabel, Gtk::PACK_SHRINK);
-  m_hbox19.pack_start(m_kernelEntry, Gtk::PACK_SHRINK);
-  m_analysisBox.pack_start(m_hbox19, Gtk::PACK_SHRINK);
-
   int nconfig = m_toolkit->nConfigs();
   if(nconfig > 1) m_splitConfigBox.set_active(true);
   else m_splitConfigBox.set_active(false);
   m_splitConfigBox.signal_clicked().connect(sigc::mem_fun(*this,&ConfigurationDialog::on_split_button_clicked));
   m_analysisBox.pack_start(m_splitConfigBox, Gtk::PACK_SHRINK);
+
+  m_hbox19.pack_start(m_kernelLabel, Gtk::PACK_SHRINK);
+  m_kernelEntry.assign(nchan,NULL);
+  for(int i = 0; i < nchan; i++){
+    m_kernelEntry[i] = new Gtk::Entry();
+    m_kernelEntry[i]->set_max_length(5);
+    m_kernelEntry[i]->set_width_chars(5);
+    if(i < nconfig) m_kernelEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->kernelWidth(i)));
+    else m_kernelEntry[i]->set_text(boost::lexical_cast<std::string>(m_toolkit->kernelWidth()));
+    m_hbox19.pack_start(*(m_kernelEntry[i]), Gtk::PACK_SHRINK, 10);
+  }
+  m_analysisBox.pack_start(m_hbox19, Gtk::PACK_SHRINK);
 
   m_hbox4.pack_start(m_radiusLabel, Gtk::PACK_SHRINK);
   m_radiusEntry.assign(nchan,NULL);
@@ -363,6 +368,7 @@ ConfigurationDialog::ConfigurationDialog(ImageAnalysisToolkit* iat, int nchan, i
 
   if(!m_splitConfigBox.get_active()){
     for(int i = 1; i < nchan; i++){
+      m_kernelEntry[i]->hide();
       m_radiusEntry[i]->hide();
       //m_maxRadiusEntry[i]->hide();
       m_nrtEntry[i]->hide();
@@ -385,6 +391,9 @@ ConfigurationDialog::~ConfigurationDialog()
     if(*it) delete *it;
   }
   for(std::vector<Gtk::HBox*>::iterator it = m_channelBoxes.begin(); it != m_channelBoxes.end(); it++){
+    if(*it) delete *it;
+  }
+  for(std::vector<Gtk::Entry*>::iterator it = m_kernelEntry.begin(); it != m_kernelEntry.end(); it++){
     if(*it) delete *it;
   }
   for(std::vector<Gtk::Entry*>::iterator it = m_radiusEntry.begin(); it != m_radiusEntry.end(); it++){
@@ -422,6 +431,7 @@ void ConfigurationDialog::on_split_button_clicked()
 {
   if(m_splitConfigBox.get_active()){
     for(int i = 1; i < m_nchannels; i++){
+      m_kernelEntry[i]->show();
       m_radiusEntry[i]->show();
       //m_maxRadiusEntry[i]->show();
       m_nrtEntry[i]->show();
@@ -435,6 +445,7 @@ void ConfigurationDialog::on_split_button_clicked()
   }
   else{
     for(int i = 1; i < m_nchannels; i++){
+      m_kernelEntry[i]->hide();
       m_radiusEntry[i]->hide();
       //m_maxRadiusEntry[i]->hide();
       m_nrtEntry[i]->hide();

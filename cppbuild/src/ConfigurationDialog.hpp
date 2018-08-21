@@ -14,8 +14,8 @@ protected:
   ImageAnalysisToolkit* m_toolkit;
   int m_nchannels;
   Gtk::CheckButton m_masterBox,m_splitConfigBox,m_subtractBackgroundBox;
-  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry,m_kernelEntry,m_contChanEntry,m_bkgChanEntry,m_subAmtEntry;
-  std::vector<Gtk::Entry*> m_lwEntry,m_windowStepsEntry,m_radiusEntry,/*m_maxRadiusEntry,*/m_reclusterEntry,m_nrtEntry,m_peakEntry,m_floorEntry,m_bkgEntry;
+  Gtk::Entry m_masterEntry,m_pfiEntry,m_saturationEntry,m_sfiEntry,m_contChanEntry,m_bkgChanEntry,m_subAmtEntry;
+  std::vector<Gtk::Entry*> m_lwEntry,m_windowStepsEntry,m_radiusEntry,/*m_maxRadiusEntry,*/m_reclusterEntry,m_nrtEntry,m_peakEntry,m_floorEntry,m_bkgEntry,m_kernelEntry;
   Gtk::ComboBox m_modeBox;
   Gtk::TreeModelColumn<ImageAnalysisToolkit::MasterMode> m_colMode;
   Gtk::TreeModelColumn<std::string> m_colString;
@@ -64,7 +64,7 @@ public:
   int getBitDepth(){ return boost::lexical_cast<int>(m_saturationEntry.get_text()); }
   int getPunctaFindingIterations(){ return boost::lexical_cast<int>(m_pfiEntry.get_text()); }
   int getSignalFindingIterations(){ return boost::lexical_cast<int>(m_sfiEntry.get_text()); }
-  double getKernelWidth(){ return boost::lexical_cast<double>(m_kernelEntry.get_text()); }
+  double getKernelWidth(int index = 0){ return boost::lexical_cast<double>(m_kernelEntry[index]->get_text()); }
   double getSubtractionAmount(){ return boost::lexical_cast<double>(m_subAmtEntry.get_text()); }
   bool doSeparateConfigs(){ return m_splitConfigBox.get_active(); }
   bool doBackgroundSubtraction(){ return m_subtractBackgroundBox.get_active(); }
