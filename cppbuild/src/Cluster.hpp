@@ -6,6 +6,7 @@
 #include "NiaUtils.hpp"
 #include "LocalizedObject.hpp"
 #include "Mask.hpp"
+#include "ImFrame.hpp"
 
 class Cluster : public LocalizedObject
 {
@@ -56,6 +57,7 @@ public:
   void computeCenter();
   bool contains(LocalizedObject::Point pt);
   bool contains(int x, int y);
+  void sort(ImFrame* frame);
   void swap(int index1, int index2);
   std::vector<LocalizedObject::Point> getPoints(){ return m_points; }
   std::vector<LocalizedObject::Point>::iterator begin(){ return m_points.begin(); }

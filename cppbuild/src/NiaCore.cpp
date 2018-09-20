@@ -28,6 +28,8 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("load","Load Images"),Gtk::AccelKey("<control>O"),sigc::mem_fun(*this, &NiaCore::on_menu_load));
   m_refActionGroup->add(Gtk::Action::create("unscale","Fix Myka's Images"),sigc::mem_fun(m_viewer, &NiaViewer::unscale));
   m_refActionGroup->add(Gtk::Action::create("loadMMR","Load MetaMorph Regions"),sigc::mem_fun(*this, &NiaCore::on_load_regions));
+  m_refActionGroup->add(Gtk::Action::create("loadMMP","Load MetaMorph Puncta"),sigc::mem_fun(*this, &NiaCore::on_load_mm_puncta));
+  m_refActionGroup->add(Gtk::Action::create("loadPAP","Load PunctaAnalyzer Puncta"),sigc::mem_fun(*this, &NiaCore::on_load_pa_puncta));
   m_refActionGroup->add(Gtk::Action::create("loadStorm","Load Storm Data"),sigc::mem_fun(*this, &NiaCore::on_load_storm_data_clicked));
   m_refActionGroup->add(Gtk::Action::create("save","Save"),Gtk::AccelKey("<control><shift>S"),sigc::mem_fun(*this, &NiaCore::on_save));
   m_refActionGroup->add(Gtk::Action::create("screenshot","Save Screenshot"),sigc::mem_fun(*this, &NiaCore::on_save_screenshot));
@@ -91,6 +93,7 @@ void NiaCore::init()
   m_refActionGroup->add(Gtk::Action::create("regMask","Region Mask"),Gtk::AccelKey("<control>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleRegionMask));
   m_refActionGroup->add(Gtk::Action::create("segMask","Segment Mask"),Gtk::AccelKey("<control><shift>R"),sigc::mem_fun(m_viewer, &NiaViewer::toggleSegmentMask));
   m_refActionGroup->add(Gtk::Action::create("stormMask","Storm Mask"),Gtk::AccelKey("<control>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleStormMask));
+    m_refActionGroup->add(Gtk::Action::create("utilMask","Utility Mask"),Gtk::AccelKey("<control><shift>U"),sigc::mem_fun(m_viewer, &NiaViewer::toggleUtilityMask));
   m_refActionGroup->add(Gtk::Action::create("conMap","Contour Map"),sigc::mem_fun(m_viewer, &NiaViewer::showContourMap));
   m_refActionGroup->add(Gtk::Action::create("clearMask","Clear Masks"),Gtk::AccelKey("<control>N"),sigc::mem_fun(m_viewer, &NiaViewer::clearMasks));
   m_refActionGroup->add(Gtk::Action::create("viewStorm","Storm Image"),Gtk::AccelKey("<control><shift>T"),sigc::mem_fun(m_viewer, &NiaViewer::toggleImageType));
@@ -158,6 +161,8 @@ void NiaCore::init()
     "   <menuitem action='load'/>"
     "   <menuitem action='unscale'/>"
     "   <menuitem action='loadMMR'/>"
+    "   <menuitem action='loadMMP'/>"
+    "   <menuitem action='loadPAP'/>"
     "   <menuitem action='loadStorm'/>"
     "   <menuitem action='save'/>"
     "   <menuitem action='screenshot'/>"
@@ -223,6 +228,7 @@ void NiaCore::init()
     "    <menuitem action='regMask'/>"
     "    <menuitem action='segMask'/>"
     "    <menuitem action='stormMask'/>"
+    "    <menuitem action='utilMask'/>"
     "    <menuitem action='conMap'/>"
     "    <menuitem action='clearMask'/>"
     "   </menu>"
@@ -752,6 +758,58 @@ void NiaCore::on_load_regions()
       m_viewer.setCurrentRecord(rec);
     }
     rec->loadMetaMorphRegions(fcd.get_filename());
+  }
+}
+
+void NiaCore::on_load_mm_puncta()
+{
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
+
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Load",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("RGN files");
+  filt2.add_pattern("*.rgn");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  
+  if(result == Gtk::RESPONSE_OK){
+    ImRecord* rec = m_viewer.currentRecord();
+    if(!rec){
+      rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
+      rec->setResolutionXY(m_viewer.data()->resolutionXY());
+      m_viewer.setCurrentRecord(rec);
+    }
+    rec->loadMetaMorphTraces(fcd.get_filename(),m_viewer.viewW(),frame,true);
+  }
+}
+
+void NiaCore::on_load_pa_puncta()
+{
+  ImFrame* frame = m_viewer.currentFrame();
+  if(!frame) return;
+
+  Gtk::FileChooserDialog fcd("",Gtk::FILE_CHOOSER_ACTION_OPEN);
+  fcd.set_transient_for(*this);
+  fcd.add_button("Cancel",Gtk::RESPONSE_CANCEL);
+  fcd.add_button("Load",Gtk::RESPONSE_OK);
+  Gtk::FileFilter filt2;
+  filt2.set_name("pmask files");
+  filt2.add_pattern("*_pmask.tif");
+  fcd.add_filter(filt2);
+  int result = fcd.run();
+  
+  if(result == Gtk::RESPONSE_OK){
+    ImRecord* rec = m_viewer.currentRecord();
+    if(!rec){
+      rec = new ImRecord(m_viewer.getNW(),frame->width(),frame->height());
+      rec->setResolutionXY(m_viewer.data()->resolutionXY());
+      m_viewer.setCurrentRecord(rec);
+    }
+    rec->loadPunctaAnalyzerPuncta(fcd.get_filename(),m_viewer.viewW(),frame,true);
   }
 }
 

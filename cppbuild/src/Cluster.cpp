@@ -303,6 +303,24 @@ bool Cluster::contains(int x, int y)
   return false;
 }
 
+void Cluster::sort(ImFrame* frame)
+{
+  LocalizedObject::Point tmp;
+  for(int i = 0; i < size(); i++){
+    for(int j = i+1; j < size(); j++){
+      if(frame->getPixel(m_points[j].x,m_points[j].y) > frame->getPixel(m_points[i].x,m_points[i].y)){
+	tmp.x = m_points[i].x;
+	tmp.y = m_points[i].y;
+	m_points[i].x = m_points[j].x;
+	m_points[i].y = m_points[j].y;
+	m_points[j].x = tmp.x;
+	m_points[j].y = tmp.y;
+      }
+    }
+  }
+  m_peak = frame->getPixel(m_points[0].x,m_points[0].y);
+}
+
 void Cluster::swap(int index1, int index2)
 {
   LocalizedObject::Point tmp = m_points[index1];

@@ -22,7 +22,9 @@ ImRecord::~ImRecord()
   for(std::vector<Mask*>::iterator it = m_utilityMasks.begin(); it != m_utilityMasks.end(); it++) delete *it;
   for(std::vector< std::vector<Cluster*> >::iterator it = m_puncta.begin(); it != m_puncta.end(); it++){
     for(std::vector<Cluster*>::iterator jt = it->begin(); jt != it->end(); jt++) delete *jt;
+    it->clear();
   }
+  m_puncta.clear();
   for(std::vector<SynapseCollection*>::iterator it = m_synapseCollections.begin(); it != m_synapseCollections.end(); it++) delete *it;
   for(std::vector<Region*>::iterator it = m_regions.begin(); it != m_regions.end(); it++) delete *it;
 }
@@ -58,8 +60,14 @@ void ImRecord::removePunctum(int chan, Cluster* c)
 void ImRecord::clearPuncta(int chan)
 {
     std::vector<Cluster*> clusters = m_puncta.at(chan);
-    for(std::vector<Cluster*>::iterator it = clusters.begin(); it != clusters.end(); it++) delete *it;
+    for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++) delete *clit;
     m_puncta[chan].clear();
+}
+
+void ImRecord::sortPuncta(int chan, ImFrame* frame)
+{
+  std::vector<Cluster*> clusters = m_puncta.at(chan);
+  for(std::vector<Cluster*>::iterator clit = clusters.begin(); clit != clusters.end(); clit++) (*clit)->sort(frame);
 }
 
 void ImRecord::removeSynapseCollection(int index)
@@ -1629,6 +1637,7 @@ void ImRecord::read(std::ifstream& fin, int version)
       m_signalMasks.push_back(m);
     }
     else m_signalMasks.push_back(NULL);
+    m_utilityMasks.push_back(NULL);
 
     std::vector<Cluster*> clusters;
     fin.read(buf,4);
@@ -1739,10 +1748,196 @@ void ImRecord::loadMetaMorphRegions(std::string filename)
     }
     addRegion(r);
   }
+  fin.close();
 }
 
-void ImRecord::loadMetaMorphTraces(std::string filename, int chan, bool overwrite)
+void ImRecord::loadMetaMorphTraces(std::string filename, int chan, ImFrame* frame, bool overwrite)
 {
+  std::string line;
+  std::ifstream fin(filename);
+  if(!m_utilityMasks[chan]){
+    m_utilityMasks[chan] = new Mask(m_imWidth,m_imHeight);
+  }
+  else m_utilityMasks[chan]->clear(0,m_imWidth,0,m_imHeight);
+  clearPuncta(chan);
+  while(getline(fin,line)){
+    boost::char_separator<char> sep(",");
+    boost::tokenizer< boost::char_separator<char> > tokens(line,sep);
+    boost::tokenizer< boost::char_separator<char> >::iterator it = tokens.begin();
+    for(int i = 0; i < 6; i++) it++;
+    boost::char_separator<char> sep2(" ");
+    boost::tokenizer< boost::char_separator<char> > tokens2(*it,sep2);
+    boost::tokenizer< boost::char_separator<char> >::iterator it2 = tokens2.begin();
+    if(boost::lexical_cast<int>(*it2) != 6){
+      std::cout << "Format error: didn't find list of points where expected" << std::endl;
+      return;
+    }
+    it2++;
+    int npoints = boost::lexical_cast<int>(*it2);
+    it2++;
+    std::vector<LocalizedObject::Point> border;
+    Cluster* c = new Cluster();
+    int xmax = 0;
+    int xmin = m_imWidth;
+    int ymax = 0;
+    int ymin = m_imHeight;
+    while(it2 != tokens2.end()){
+      LocalizedObject::Point pt;
+      pt.x = boost::lexical_cast<int>(*it2);
+      if(pt.x < xmin) xmin = pt.x;
+      if(pt.x > xmax) xmax = pt.x;
+      it2++;
+      pt.y = boost::lexical_cast<int>(*it2);
+      if(pt.y < ymin) ymin = pt.y;
+      if(pt.y > ymax) ymax = pt.y;
+      m_utilityMasks[chan]->setValue(pt.x,pt.y,1);
+      c->addPoint(pt,frame->getPixel(pt.x,pt.y));
+      border.push_back(pt);
+      it2++;
+    }
+    for(int x = xmin; x < xmax; x++){
+      for(int y = ymin; y < ymax; y++){
+	if(m_utilityMasks[chan]->getValue(x,y) > 0) continue;
+	bool inside = false;
+	for(std::vector<LocalizedObject::Point>::iterator it = border.begin(); it != border.end()-1; it++){
+	  std::vector<LocalizedObject::Point>::iterator jt = it + 1;
+	  if( ((it->y > y) != (jt->y > y)) && (x < it->x + (double(jt->x) - it->x)*(double(y) - it->y)/(double(jt->y) - it->y)) ) inside = !inside;
+	}
+	std::vector<LocalizedObject::Point>::iterator it = border.end()-1;
+	std::vector<LocalizedObject::Point>::iterator jt = border.begin();
+	if( ((it->y > y) != (jt->y > y)) && (x < it->x + (double(jt->x) - it->x)*(double(y) - it->y)/(double(jt->y) - it->y)) ) inside = !inside;
+	if(inside) c->addPoint(x,y,frame->getPixel(x,y));
+      }
+    }
+    addPunctum(chan,c);
+  }
+  fin.close();
+}
+
+void ImRecord::loadPunctaAnalyzerPuncta(std::string filename, int chan, ImFrame* frame, bool overwrite)
+{
+  std::ifstream fin(filename.c_str(),std::ifstream::binary);
+  char* buf = new char[42000000];
+  fin.read(buf,4);
+  if(NiaUtils::convertToShort(buf[3],buf[2]) != 42){
+    std::cout << "ERROR: Unexpected byte order" << std::endl;
+    delete[] buf;
+    return;
+  }
+  fin.read(buf,4);
+  uint32_t offset = NiaUtils::convertToInt(buf[3],buf[2],buf[1],buf[0]);
+  fin.seekg(offset);
+  fin.read(buf,2);
+  uint16_t nTags = NiaUtils::convertToShort(buf[1],buf[0]);
+  uint32_t width = 1;
+  uint32_t height = 1;
+  uint32_t nStrips = 0;
+  uint32_t stripOffsets = 0;
+  uint32_t stripByteCountOffsets = 0;
+  for(uint16_t i = 0; i < nTags; i++){
+    fin.read(buf,12);
+    uint16_t tag = NiaUtils::convertToShort(buf[1],buf[0]);
+    uint16_t type = NiaUtils::convertToShort(buf[3],buf[2]);
+    if(tag == 273){
+      nStrips = NiaUtils::convertToInt(buf[7],buf[6],buf[5],buf[4]);
+      if(type == 4) stripOffsets = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+      else if(type == 3) stripOffsets = NiaUtils::convertToShort(buf[9],buf[8]);
+      else std::cout << "ERROR: Unknown type for strip offsets\n";
+    }
+    else if(tag == 279){
+      if(type == 4) stripByteCountOffsets = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+      else if(type == 3) stripByteCountOffsets = NiaUtils::convertToShort(buf[9],buf[8]);
+      else std::cout << "ERROR: Unknown type for strip byte count offsets\n";
+    }
+    else if(tag == 256) width = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+    else if(tag == 257) height = NiaUtils::convertToInt(buf[11],buf[10],buf[9],buf[8]);
+  }
+  ImFrame* pam = new ImFrame(width,height);
+  uint32_t index = 0;
+  if(nStrips == 1){
+    uint32_t nbytes = stripByteCountOffsets;
+    fin.seekg(stripOffsets);
+    fin.read(buf,nbytes);
+    for(uint32_t pixel = 0; pixel < nbytes; pixel++){
+      uint32_t y = index / width;
+      uint32_t x = index - width*y;
+      pam->setPixel(x,y,(uint16_t)buf[pixel]);
+      index++;
+    }
+  }
+  else{
+    for(uint32_t i = 0; i < nStrips; i++){
+      fin.seekg(stripByteCountOffsets + 4*i);
+      fin.read(buf,4);
+      uint32_t nbytes = NiaUtils::convertToInt(buf[3],buf[2],buf[1],buf[0]);
+      fin.seekg(stripOffsets + 4*i);
+      fin.read(buf,4);
+      uint32_t stripOff = NiaUtils::convertToInt(buf[3],buf[2],buf[1],buf[0]);
+      fin.seekg(stripOff);
+      fin.read(buf,nbytes);
+      for(uint32_t pixel = 0; pixel < nbytes; pixel++){
+	uint32_t y = index / width;
+	uint32_t x = index - width*y;
+	pam->setPixel(x,y,(uint16_t)buf[pixel]);
+	index++;
+      }
+    }
+  }
+  delete[] buf;
+  fin.close();
+  if(pam->width() != m_imWidth || pam->height() != m_imHeight){
+    std::cout << "Error: size mismatch" << std::endl;
+    return;
+  }
+  if(!m_utilityMasks[chan]){
+    m_utilityMasks[chan] = new Mask(m_imWidth,m_imHeight);
+  }
+  else m_utilityMasks[chan]->clear(0,m_imWidth,0,m_imHeight);
+  for(int x = 0; x < m_imWidth; x++){
+    for(int y = 0; y < m_imHeight; y++){
+      if(pam->getPixel(x,y) > 0) m_utilityMasks[chan]->setValue(x,y,1);
+    }
+  }
+  clearPuncta(chan);
+  Mask* subMask = m_utilityMasks[chan]->getCopy();
+  std::vector<int> borderX,borderY;
+  for(int i = 0; i < frame->width(); i++){
+    for(int j = 0; j < frame->height(); j++){
+      if(subMask->getValue(i,j) != 1) continue;
+      borderX.push_back(i);
+      borderY.push_back(j);
+      subMask->setValue(i,j,0);
+      Cluster* c = new Cluster();
+      c->addPoint(i,j,frame->getPixel(i,j));
+      while(borderX.size() > 0){
+	int bi = borderX.at(0);
+	int bj = borderY.at(0);
+	int left = bi-1;
+	int right = bi+2;
+	int top = bj-1;
+	int bottom = bj+2;
+	if(left < 0) left++;
+	if(right >= frame->width()) right--;
+	if(top < 0) top++;
+	if(bottom >= frame->height()) bottom--;
+	for(int di = left; di < right; di++){
+	  for(int dj = top; dj < bottom; dj++){
+	    if(m_utilityMasks[chan]->getValue(di,dj) > 0 && subMask->getValue(di,dj) > 0){
+	      subMask->setValue(di,dj,0);
+	      borderX.push_back(di);
+	      borderY.push_back(dj);
+	      c->addPoint(di,dj,frame->getPixel(di,dj));
+	    }
+	  }
+	}
+	borderX.erase(borderX.begin());
+	borderY.erase(borderY.begin());
+      }
+      addPunctum(chan,c);
+    }
+  }
+  delete pam;
+  delete subMask;
 }
 
 void ImRecord::setStormClusters(int chan, std::vector<StormCluster*> clusters)

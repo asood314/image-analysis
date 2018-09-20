@@ -94,6 +94,7 @@ public:
   void toggleRegionMask();
   void toggleSegmentMask();
   void toggleStormMask();
+  void toggleUtilityMask();
   void clearMasks();
   void setRecords(std::vector<ImRecord*> recs);
   void setToolkit(ImageAnalysisToolkit* kit){ m_toolkit = kit; }

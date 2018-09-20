@@ -42,6 +42,8 @@ protected:
   void on_find_synapses_clicked();
   void on_full_analysis_clicked();
   void on_load_regions();
+  void on_load_mm_puncta();
+  void on_load_pa_puncta();
   void on_print_density();
   void on_batch_print_density();
   void on_quit(){ hide(); }

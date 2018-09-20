@@ -943,6 +943,14 @@ void NiaViewer::toggleSignalMask()
   if(m_records.at(index)) toggleMask(m_records.at(index)->getSignalMask(m_view_w)->getCopy());
 }
 
+void NiaViewer::toggleUtilityMask()
+{
+  if(!m_data) return;
+  int nz = m_data->fourLocation(m_view_p,m_view_t)->nz();
+  int index = m_view_p*m_data->nt()*nz + m_view_t*nz + m_view_z;
+  if(m_records.at(index)) toggleMask(m_records.at(index)->getUtilityMask(m_view_w)->getCopy());
+}
+
 void NiaViewer::togglePunctaMask()
 {
   if(!m_data) return;

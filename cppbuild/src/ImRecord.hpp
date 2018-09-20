@@ -70,6 +70,7 @@ public:
   void removePunctum(int chan, int index);
   void removePunctum(int chan, Cluster* c);
   void clearPuncta(int chan);
+  void sortPuncta(int chan, ImFrame* frame);
   Cluster* getPunctum(int chan, int index){ return m_puncta.at(chan).at(index); }
   int nPuncta(int chan){ return m_puncta.at(chan).size(); }
   std::vector<Cluster*> puncta(int chan){ return m_puncta.at(chan); }
@@ -105,7 +106,8 @@ public:
   void unpack(char* buf, Mask* m, int startY);
   //void unpack(char* buf, uint64_t offset, Mask* m, int index);
   void loadMetaMorphRegions(std::string filename);
-  void loadMetaMorphTraces(std::string filename, int chan, bool overwrite);
+  void loadMetaMorphTraces(std::string filename, int chan, ImFrame* frame, bool overwrite);
+  void loadPunctaAnalyzerPuncta(std::string filename, int chan, ImFrame*frame, bool overwrite);
   void setStormClusters(int chan, std::vector<StormCluster*> clusters);
   int nStormClusters(int chan){ return m_stormClusters[chan].size(); }
   StormCluster* stormCluster(int chan, int i){ return m_stormClusters[chan][i]; }

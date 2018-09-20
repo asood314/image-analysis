@@ -15,7 +15,7 @@ int main(int argc, char** argv)
   //----------Linux/Mac-----------
 
   Gtk::Main kit(argc,argv);
-  nia::niaVersion = 7;
+  nia::niaVersion = 8;
   Scanner s(argc, argv);
   Gtk::Main::run(s);
 
