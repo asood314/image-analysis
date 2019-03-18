@@ -1645,8 +1645,10 @@ void ImRecord::read(std::ifstream& fin, int version)
     for(int i = 0; i < nClusters; i++){
       Cluster* c = new Cluster();
       c->read(buf,fin);
-      c->computeCenter();
-      clusters.push_back(c);
+      if(c->size() > 0){
+	c->computeCenter();
+	clusters.push_back(c);
+      }
     }
     m_puncta.push_back(clusters);
     if(version < 4) m_stormClusters.push_back(std::vector<StormCluster*>());

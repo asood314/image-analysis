@@ -281,6 +281,7 @@ void Cluster::computeCenter()
     y += it->y;
     size++;
   }
+  if(size == 0) return;
   x = x / size;
   y = y / size;
   m_center.x = x;
